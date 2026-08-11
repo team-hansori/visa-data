@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "da-template"
+name = "visa-data"
 version = "0.1.0"
-description = "데이터분석·ML 프로젝트 템플릿"
+description = "비자 및 지원사업 자료 구조화 데이터로 변환"
 requires-python = ">=3.11"
 dependencies = [
     # 데이터
