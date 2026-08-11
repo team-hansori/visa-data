@@ -14,6 +14,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([d1cb1f1](https://github.com/team-hansori/visa-data/commit/d1cb1f1bbd71409d23122943db5deeaabbf28bae))
 - README를 근거표 추출 작업 기준으로 재작성 ([b6dc199](https://github.com/team-hansori/visa-data/commit/b6dc19967fc2b72dc3ded86b5855411b08de279c))
 - CHANGELOG 자동 업데이트 [skip ci] ([21c5790](https://github.com/team-hansori/visa-data/commit/21c5790de9018e488a01771ff3b2085ab85839c2))
 - CHANGELOG 자동 업데이트 [skip ci] ([1722c75](https://github.com/team-hansori/visa-data/commit/1722c754c63d02c74fa5823ebe1943a3bd9fbeb1))
@@ -22,5 +23,9 @@
 - CHANGELOG 자동 업데이트 [skip ci] ([85283a1](https://github.com/team-hansori/visa-data/commit/85283a17b4fc07d744a3c72bb96f3122494bb348))
 - CHANGELOG 자동 업데이트 [skip ci] ([018368e](https://github.com/team-hansori/visa-data/commit/018368e85da84cccdd2558add2794c517504b4ee))
 - CHANGELOG 자동 업데이트 [skip ci] ([f168678](https://github.com/team-hansori/visa-data/commit/f16867821914858636e019f18b1ebf453e0f60a3))
+
+### 새 기능
+
+- 공고문 PDF·HWPX 원문 텍스트 추출 스크립트 추가 (#5) ([ada76f5](https://github.com/team-hansori/visa-data/commit/ada76f54c74f0e24b139d1adb3569abb810fe4a2))
 
 
