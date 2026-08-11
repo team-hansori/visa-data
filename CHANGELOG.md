@@ -14,6 +14,8 @@
 
 ### 문서
 
+- README를 근거표 추출 작업 기준으로 재작성 ([b6dc199](https://github.com/team-hansori/visa-data/commit/b6dc19967fc2b72dc3ded86b5855411b08de279c))
+- CHANGELOG 자동 업데이트 [skip ci] ([21c5790](https://github.com/team-hansori/visa-data/commit/21c5790de9018e488a01771ff3b2085ab85839c2))
 - CHANGELOG 자동 업데이트 [skip ci] ([1722c75](https://github.com/team-hansori/visa-data/commit/1722c754c63d02c74fa5823ebe1943a3bd9fbeb1))
 - CHANGELOG 자동 업데이트 [skip ci] ([5fc04c6](https://github.com/team-hansori/visa-data/commit/5fc04c658e9eb92588bfade9824af44c9e848c49))
 - CHANGELOG 자동 업데이트 [skip ci] ([5ac0bf0](https://github.com/team-hansori/visa-data/commit/5ac0bf0adcb595badb514b4599fd9d4fd84b6373))
