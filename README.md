@@ -101,6 +101,11 @@ visa-data/
 ├── requirements.txt              # 핵심 의존성 목록
 ├── cliff.toml                    # git-cliff 변경 이력 설정
 │
+├── extraction/                   # 비자 유형별 근거표 추출 작업 (담당자별 폴더)
+│   ├── A_F-2-R/
+│   ├── B_E-7-4R/                 # current_requirements/scoring_items/document_forms/change_history.csv
+│   └── C_D-2-common/
+│
 ├── data/
 │   ├── raw/                      # 원본 PDF·자료, git 추적 제외
 │   ├── interim/                  # 중간 처리 데이터 (근거표 CSV 등)
