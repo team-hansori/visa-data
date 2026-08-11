@@ -25,6 +25,7 @@ credentials/
 
 # 데이터 (원본 데이터는 추적하지 않음)
 data/raw/
+data/raw_hwp_to_pdf/
 data/interim/
 data/processed/
 !data/raw/.gitkeep
