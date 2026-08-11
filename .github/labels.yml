@@ -1,10 +1,14 @@
+- name: "extraction"
+  color: "10B981"
+  description: "비자유형 근거표(CSV) 추출 작업"
+
 - name: "design"
   color: "00B4CC"
-  description: "분석 방법론 및 실험 설계 논의"
+  description: "공통 스키마·근거표 구조 설계 논의"
 
 - name: "review"
   color: "A855F7"
-  description: "분석 결과 또는 코드 리뷰 요청"
+  description: "근거표 검수 요청"
 
 - name: "긴급"
   color: "EF4444"
