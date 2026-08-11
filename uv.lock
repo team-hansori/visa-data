@@ -519,70 +519,6 @@ wheels = [
 ]
 
 [[package]]
-name = "da-template"
-version = "0.1.0"
-source = { editable = "." }
-dependencies = [
-    { name = "lightgbm" },
-    { name = "matplotlib" },
-    { name = "numpy" },
-    { name = "pandas" },
-    { name = "plotly" },
-    { name = "polars" },
-    { name = "python-dotenv" },
-    { name = "pyyaml" },
-    { name = "scikit-learn" },
-    { name = "scipy" },
-    { name = "seaborn" },
-    { name = "statsmodels" },
-    { name = "streamlit" },
-    { name = "xgboost" },
-]
-
-[package.optional-dependencies]
-dev = [
-    { name = "ipykernel" },
-    { name = "nbconvert" },
-    { name = "pre-commit" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-]
-gis = [
-    { name = "folium" },
-    { name = "geopandas" },
-    { name = "shapely" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "folium", marker = "extra == 'gis'", specifier = ">=0.15" },
-    { name = "geopandas", marker = "extra == 'gis'", specifier = ">=0.14" },
-    { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.28" },
-    { name = "lightgbm", specifier = ">=4.0" },
-    { name = "matplotlib", specifier = ">=3.8" },
-    { name = "nbconvert", marker = "extra == 'dev'", specifier = ">=7.14" },
-    { name = "numpy", specifier = ">=1.26" },
-    { name = "pandas", specifier = ">=2.0" },
-    { name = "plotly", specifier = ">=5.18" },
-    { name = "polars", specifier = ">=0.20" },
-    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.7" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1" },
-    { name = "python-dotenv", specifier = ">=1.0" },
-    { name = "pyyaml", specifier = ">=6.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.3" },
-    { name = "scikit-learn", specifier = ">=1.4" },
-    { name = "scipy", specifier = ">=1.11" },
-    { name = "seaborn", specifier = ">=0.13" },
-    { name = "shapely", marker = "extra == 'gis'", specifier = ">=2.0" },
-    { name = "statsmodels", specifier = ">=0.14" },
-    { name = "streamlit", specifier = ">=1.30" },
-    { name = "xgboost", specifier = ">=2.0" },
-]
-provides-extras = ["gis", "dev"]
-
-[[package]]
 name = "debugpy"
 version = "1.8.20"
 source = { registry = "https://pypi.org/simple" }
@@ -2789,6 +2725,70 @@ sdist = { url = "https://files.pythonhosted.org/packages/97/c5/aff062c66b42e2183
 wheels = [
     { url = "https://files.pythonhosted.org/packages/20/0e/f083a76cb590e60dff3868779558eefefb8dfb7c9ed020babc7aa014ccbf/virtualenv-21.2.1-py3-none-any.whl", hash = "sha256:bd16b49c53562b28cf1a3ad2f36edb805ad71301dee70ddc449e5c88a9f919a2", size = 5828326, upload-time = "2026-04-09T18:47:09.331Z" },
 ]
+
+[[package]]
+name = "visa-data"
+version = "0.1.0"
+source = { editable = "." }
+dependencies = [
+    { name = "lightgbm" },
+    { name = "matplotlib" },
+    { name = "numpy" },
+    { name = "pandas" },
+    { name = "plotly" },
+    { name = "polars" },
+    { name = "python-dotenv" },
+    { name = "pyyaml" },
+    { name = "scikit-learn" },
+    { name = "scipy" },
+    { name = "seaborn" },
+    { name = "statsmodels" },
+    { name = "streamlit" },
+    { name = "xgboost" },
+]
+
+[package.optional-dependencies]
+dev = [
+    { name = "ipykernel" },
+    { name = "nbconvert" },
+    { name = "pre-commit" },
+    { name = "pytest" },
+    { name = "pytest-cov" },
+    { name = "ruff" },
+]
+gis = [
+    { name = "folium" },
+    { name = "geopandas" },
+    { name = "shapely" },
+]
+
+[package.metadata]
+requires-dist = [
+    { name = "folium", marker = "extra == 'gis'", specifier = ">=0.15" },
+    { name = "geopandas", marker = "extra == 'gis'", specifier = ">=0.14" },
+    { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.28" },
+    { name = "lightgbm", specifier = ">=4.0" },
+    { name = "matplotlib", specifier = ">=3.8" },
+    { name = "nbconvert", marker = "extra == 'dev'", specifier = ">=7.14" },
+    { name = "numpy", specifier = ">=1.26" },
+    { name = "pandas", specifier = ">=2.0" },
+    { name = "plotly", specifier = ">=5.18" },
+    { name = "polars", specifier = ">=0.20" },
+    { name = "pre-commit", marker = "extra == 'dev'", specifier = ">=3.7" },
+    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.4" },
+    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1" },
+    { name = "python-dotenv", specifier = ">=1.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.3" },
+    { name = "scikit-learn", specifier = ">=1.4" },
+    { name = "scipy", specifier = ">=1.11" },
+    { name = "seaborn", specifier = ">=0.13" },
+    { name = "shapely", marker = "extra == 'gis'", specifier = ">=2.0" },
+    { name = "statsmodels", specifier = ">=0.14" },
+    { name = "streamlit", specifier = ">=1.30" },
+    { name = "xgboost", specifier = ">=2.0" },
+]
+provides-extras = ["gis", "dev"]
 
 [[package]]
 name = "watchdog"

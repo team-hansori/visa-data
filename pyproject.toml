@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "da-template"
+name = "visa-data"
 version = "0.1.0"
-description = "데이터분석·ML 프로젝트 템플릿"
+description = "충청북도 외국인 비자·정착지원 데이터 구조화 (13회 전국 ICT융합 공모전)"
 requires-python = ">=3.11"
 dependencies = [
     # 데이터

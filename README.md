@@ -1,37 +1,29 @@
-# da-template
+# visa-data
 
-[![Use this template](https://img.shields.io/badge/Use%20this%20template-2ea44f?style=for-the-badge&logo=github)](https://github.com/JungYeoni/da-template/generate)
+충청북도 외국인 비자·정착지원 자료를 검색·계산 가능한 구조화 데이터(스키마, 근거표, SQL)로 변환하는 프로젝트입니다. 13회 전국 ICT융합 공모전 출품작(team-hansori)의 데이터 구축 저장소이며, [`da-template`](https://github.com/JungYeoni/da-template)을 기반으로 시작했습니다.
 
-데이터 분석과 머신러닝 프로젝트를 빠르게 시작하기 위한 Python 프로젝트 템플릿입니다.
-
-반복적으로 필요한 디렉터리 구조, 설정 파일, 테스트, GitHub Actions, 이슈/PR 템플릿, Claude Code용 분석 지침을 미리 갖추고 있습니다. 의존성 관리는 기본적으로 `uv`와 `pyproject.toml`/`uv.lock`을 사용합니다. 새 프로젝트를 만들 때 위 **Use this template** 버튼을 누르면 같은 구조로 저장소를 시작할 수 있습니다.
+담당자별로 비자 유형을 나눠 공고문·심사표·서식을 원문 근거와 함께 정규화하고, 검수된 결과만 공통 스키마(SQL)로 반영합니다. 원본 PDF는 이 저장소에 올리지 않고 상대 경로 또는 별도 공유 저장소로 참조합니다.
 
 ---
 
 ## 언제 사용하나요?
 
-- 정형 데이터 EDA, 전처리, 피처 엔지니어링
-- 분류/회귀 모델링과 모델 평가
-- 시계열 분석과 예측
-- 회귀분석, 인과추론, 패널 데이터 분석
-- GIS 데이터 결합 분석
-- 보고서용 시각화와 간단한 대시보드 제작
+- 비자 유형별 공고문·심사표(K-POINT 등)를 근거표(CSV)로 구조화
+- 차수별(공고 회차) 변경 이력 추적
+- 검수된 근거표를 공통 스키마의 SQL seed로 변환
+- 구조화 데이터 기반 EDA, 시각화, 간단한 대시보드 제작
 
-개인 프로젝트뿐 아니라 소규모 팀에서 분석 흐름과 산출물 위치를 맞추고 싶을 때도 사용할 수 있습니다.
+여러 담당자가 비자 유형별로 병렬 작업하되, 공통 스키마 반영은 리뷰 후 병합하는 것을 전제로 합니다.
 
 ---
 
 ## 빠른 시작
 
-### 1. 템플릿으로 저장소 만들기
-
-GitHub 상단의 **Use this template** 버튼을 눌러 새 저장소를 만듭니다.
-
-또는 이 저장소를 직접 클론해 실험할 수 있습니다.
+### 1. 저장소 클론
 
 ```bash
-git clone https://github.com/JungYeoni/da-template.git my-project
-cd my-project
+git clone https://github.com/team-hansori/visa-data.git
+cd visa-data
 ```
 
 ### 2. 개발 환경 준비
@@ -60,15 +52,12 @@ Windows PowerShell에서는 가상환경 활성화 명령이 다릅니다.
 .venv\Scripts\Activate.ps1
 ```
 
-### 3. 프로젝트 이름과 설정 바꾸기
+### 3. 아직 남은 설정
 
-새 프로젝트로 복사한 뒤에는 아래 항목을 먼저 바꾸는 것을 권장합니다.
+`pyproject.toml`의 `name`/`description`, `README.md` 설명, `cliff.toml`의 저장소 URL은 반영했습니다. 아래 항목은 아직 `da-template` 기준으로 남아 있어 실제 담당자 배정 시 갱신이 필요합니다.
 
-- `pyproject.toml`의 `name`, `description`, 의존성
-- `README.md`의 프로젝트 설명
-- `configs/base.yaml`의 경로, seed, train/validation/test 분할 기준
-- `.github/CODEOWNERS`와 GitHub 이슈/PR 템플릿
-- `cliff.toml`의 GitHub 저장소 URL
+- `configs/base.yaml`의 경로, seed, 분할 기준
+- `.github/CODEOWNERS`의 실제 GitHub 사용자명 (담당자 배정 후)
 
 ---
 
@@ -103,7 +92,7 @@ uv add --dev pytest
 ## 디렉터리 구조
 
 ```text
-da-template/
+visa-data/
 ├── README.md                     # 프로젝트 설명과 사용 방법
 ├── CHANGELOG.md                  # 변경 이력
 ├── CLAUDE.md                     # Claude Code용 프로젝트 지침
@@ -112,25 +101,18 @@ da-template/
 ├── requirements.txt              # 핵심 의존성 목록
 ├── cliff.toml                    # git-cliff 변경 이력 설정
 │
-├── configs/
-│   ├── base.yaml                 # 공통 설정
-│   ├── dev.yaml                  # 개발 환경 설정
-│   └── prod.yaml                 # 제출/운영 환경 설정
-│
 ├── data/
-│   ├── raw/                      # 원본 데이터, git 추적 제외
-│   ├── interim/                  # 중간 처리 데이터
-│   └── processed/                # 모델 입력용 최종 데이터
+│   ├── raw/                      # 원본 PDF·자료, git 추적 제외
+│   ├── interim/                  # 중간 처리 데이터 (근거표 CSV 등)
+│   └── processed/                # 검수 완료된 최종 데이터
 │
 ├── notebooks/                    # 탐색 분석과 실험 노트북
 ├── reports/                      # 보고서, 그림, 표, 대시보드 산출물
 │
 ├── src/
-│   ├── features/                 # 피처 생성 코드
-│   ├── modeling/                 # 모델 학습 코드
-│   ├── evaluation/               # 평가 지표와 검증 코드
-│   └── visualization/            # 시각화 코드
+│   └── visualization/            # 시각화 코드 (보고서·대시보드용)
 │
+├── scripts/                      # 검증·SQL 변환 스크립트 (예정)
 ├── tests/                        # 단위 테스트
 │
 ├── .github/
@@ -166,11 +148,9 @@ git checkout -b experiment/short-description
 
 예를 들어:
 
-- `notebooks/01_eda.ipynb`: 데이터 확인, 결측치/분포/이상치 탐색
-- `src/features/build_features.py`: 실험에 반복 사용되는 피처 함수
-- `src/modeling/train.py`: 모델 학습 함수
-- `src/evaluation/evaluate.py`: 평가 지표 계산
-- `tests/test_features.py`: 피처 함수 검증
+- `notebooks/01_eda.ipynb`: 구조화된 근거표(CSV)의 결측치/상태값 분포 탐색
+- `src/visualization/plots.py`: 보고서·대시보드에 재사용하는 시각화 함수
+- `tests/test_visualization.py`: 시각화 함수 검증
 
 ---
 
