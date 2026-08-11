@@ -1,0 +1,13 @@
+name: Issue Helper
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  suggest:
+    uses: JungYeoni/issue-helper/.github/workflows/issue-helper.yml@main
