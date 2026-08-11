@@ -14,6 +14,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([98d6597](https://github.com/team-hansori/visa-data/commit/98d6597c4ec5ebcc5ca63a690b803a2e17cd2ccc))
 - CHANGELOG 자동 업데이트 [skip ci] ([d1cb1f1](https://github.com/team-hansori/visa-data/commit/d1cb1f1bbd71409d23122943db5deeaabbf28bae))
 - README를 근거표 추출 작업 기준으로 재작성 ([b6dc199](https://github.com/team-hansori/visa-data/commit/b6dc19967fc2b72dc3ded86b5855411b08de279c))
 - CHANGELOG 자동 업데이트 [skip ci] ([21c5790](https://github.com/team-hansori/visa-data/commit/21c5790de9018e488a01771ff3b2085ab85839c2))
@@ -23,6 +24,10 @@
 - CHANGELOG 자동 업데이트 [skip ci] ([85283a1](https://github.com/team-hansori/visa-data/commit/85283a17b4fc07d744a3c72bb96f3122494bb348))
 - CHANGELOG 자동 업데이트 [skip ci] ([018368e](https://github.com/team-hansori/visa-data/commit/018368e85da84cccdd2558add2794c517504b4ee))
 - CHANGELOG 자동 업데이트 [skip ci] ([f168678](https://github.com/team-hansori/visa-data/commit/f16867821914858636e019f18b1ebf453e0f60a3))
+
+### 버그 수정
+
+- Extract_hwpx.py가 <hp:fwSpace/> 뒤 텍스트를 못 읽는 버그 (#7) ([efd4ac3](https://github.com/team-hansori/visa-data/commit/efd4ac3c1c7d2cd5ccea1acdbffa490f466ca4bb))
 
 ### 새 기능
 
