@@ -23,8 +23,8 @@ def extract_section_texts(hwpx_path: Path) -> list[str]:
     section_texts = []
     for name in section_names:
       root = ET.fromstring(archive.read(name))
-      runs = root.iter(f"{{{HWP_PARAGRAPH_NS}}}t")
-      section_texts.append("".join(run.text or "" for run in runs))
+      runs = root.iter(f"{{{HWP_PARAGRAPH_NS}}}t") # <hp:fwSpace/> 같은 빈 태그 뒤의 글자가 .text가 아니라 자식의 .tail에 있어서 누락
+      section_texts.append("".join("".join(run.itertext()) for run in runs)) # itertext()로 태그 밑 모든 글자 순서대로 모음 
     return section_texts
 
 def save_section_texts(
@@ -45,7 +45,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="HWPX 자격요건/공고 텍스트 추출")
     parser.add_argument("hwpx_path", type=Path, help="추출할 HWPX 파일 경로")
     parser.add_argument(
-      "---output-dir", 
+      "--output-dir", 
       type=Path, 
       default=DEFAULT_OUTPUT_DIR,
       help="추출한 텍스트를 저장할 폴더 (기본 : data/interim)"
