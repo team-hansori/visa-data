@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 [project]
 name = "visa-data"
 version = "0.1.0"
-description = "비자 및 지원사업 자료 구조화 데이터로 변환"
+description = "충청북도 외국인 비자·정착지원 데이터 구조화 (13회 전국 ICT융합 공모전)"
 requires-python = ">=3.11"
 dependencies = [
     # 데이터

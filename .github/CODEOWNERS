@@ -5,13 +5,6 @@
 CLAUDE.md                    @project-owner
 .claude/                     @project-owner
 
-# 피처 엔지니어링
-src/features/                @feature-owner
-
-# 모델링 / 평가
-src/modeling/                @data-scientist-owner
-src/evaluation/              @data-scientist-owner
-
 # 시각화 / 노트북
 src/visualization/           @visualization-owner
 notebooks/                   @visualization-owner
