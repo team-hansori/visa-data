@@ -1,17 +1,26 @@
 # C_D-2-common — D-2(유학생) 비자 공통 요건
 
-`chungbuk-sari`(충북살이 서비스 DB 저장소)에서 이미 검수 완료 상태로 만들어져 있던 D-2 관련 근거표 3종을 그대로 옮겨왔다.
+## 우리 데이터에 맞는 포맷이 무엇인가
 
-## 파일
+D-2는 `B_E-7-4R`(지역특화 숙련기능인력)처럼 차수별 경쟁 공고·K-POINT 점수 심사를 거치는 비자가 아니다. 대학 유학생이라면 상시 적용되는 규정(시간제취업 허용시간, 광역형 비자 대상 학과, 인증대학 명단)이라 아래 두 가지 성격의 데이터만 존재한다.
 
-| 파일 | 내용 |
-|------|------|
-| `parttime_work_rules.csv` | D-2/D-4 시간제취업 허가 요건 (학적별 한국어능력·근로시간 한도) |
-| `certified_universities.csv` | 교육국제화역량 인증대학 명단 |
-| `gwangyeok_eligible_departments.csv` | 충북 K-유학생 광역형 비자(D-2-GWANGYEOK) 대상 학과 |
+1. **임계값 매트릭스**: "학적상태 × 한국어능력 충족 여부 → 허용시간"처럼, 조건 조합에 값 하나가 매핑되는 표. 시간제취업 허가 요건이 여기 해당.
+2. **목록**: "이 대학의 이 학과는 대상이다"처럼 단순 나열. 광역형 비자 대상 학과, 인증대학 명단이 여기 해당.
 
-## 스키마 관련 주의
+`B_E-7-4R`의 4종 근거표(`current_requirements`/`scoring_items`/`document_forms`/`change_history`)는 복합조건 분리(`condition_group`/`condition_operator`)와 차수별 변경이력이 핵심인데, 둘 다 D-2엔 없는 개념이라 그대로 가져오면 5×2 매트릭스를 25행 넘는 flat list로 풀어써야 해서 오히려 원본 표보다 읽기 어려워진다. 그래서 이 폴더는 데이터 형태에 맞춰 별도 스키마를 쓴다.
 
-이 3개 파일은 `B_E-7-4R`이 쓰는 표준 4종 근거표(`current_requirements.csv`/`scoring_items.csv`/`document_forms.csv`/`change_history.csv`) 포맷이 아니라 `chungbuk-sari`에서 쓰던 원래 컬럼 구조 그대로다. `current_requirements.csv` 포맷으로 재구성하려면 `raw_text`(원문 보존)·`status`·`condition_group`/`condition_operator` 같은 필드를 채워야 하는데, 원본 PDF 재확인 없이는 추측으로 채우게 되어 "확인되지 않은 값은 추측하지 않는다" 원칙에 어긋난다. 그래서 이번 PR에서는 원본 스키마 그대로 옮기고, 표준 포맷 재구성은 원본 재확인이 가능한 후속 작업으로 미룬다.
+## 왜 이렇게 구성했는가
 
-각 파일의 `source_document`/`source_page`/`last_verified_at` 컬럼에 근거 문서·페이지·최종 확인일이 남아 있다.
+- **매트릭스는 매트릭스 그대로**: `parttime_work_rules.csv`는 학적상태(`academic_status`)·한국어능력충족여부(`meets_korean_requirement`) 조합별로 한 행씩, 원본 표(p.13)의 구조를 그대로 컬럼화했다. 조건을 인위적으로 여러 행으로 쪼개지 않아도 한 행이 "이 조합일 때 이 시간까지 허용된다"는 사실 하나를 온전히 표현한다.
+- **원문 보존은 컬럼 하나로 충분**: 저장소 공통 원칙(모든 값에 근거·원문 보존)을 지키기 위해 `raw_text` 컬럼 하나만 추가했다. PDF p.13 표의 해당 셀 문구를 그대로 옮겨서, 숫자로 정규화된 `weekday_hours` 등의 값이 원문 어디서 왔는지 바로 대조할 수 있다.
+- **목록은 목록대로 별도 파일**: `certified_universities.csv`(인증대학 18개교)와 `gwangyeok_eligible_departments.csv`(광역형 비자 대상 71개 학과)는 조건문이 아니라 나열형 데이터라 `current_requirements.csv` 같은 조건-근거표 형식에 끼워 맞추지 않고 각자 원래 스키마(대학명/학과명 등)를 그대로 유지했다.
+
+## 최종 포맷
+
+| 파일 | 형태 | 비고 |
+|------|------|------|
+| `parttime_work_rules.csv` | 임계값 매트릭스 (10행 = 5개 학적상태 × 2개 한국어능력 충족여부) | `raw_text` 컬럼 추가(원문 보존), 나머지는 chungbuk-sari 원본 스키마 유지 |
+| `certified_universities.csv` | 목록 (18행) | 원본 스키마 그대로 |
+| `gwangyeok_eligible_departments.csv` | 목록 (71행, 13개 대학) | 원본 스키마 그대로 |
+
+`bonus_hours`(광역형 비자 특례 시간)는 PDF p.13 각주에 전문학사~학사3·4학년 구간만 명시돼 있지만, 어학연수(25시간)·석박사(35시간) 값은 `studyinchungbuk.or.kr` 시간제근로가이드에서 확인된 정확한 값이다 — `source_document` 컬럼에 두 출처가 함께 기재되어 있다.
