@@ -23,7 +23,7 @@ FOOTNOTE_MARKER = "*"
 # 최상위 챕터 제목은 원문에서 항상 '<숫자> |  | <제목>\n' 형태(헤딩 번호박스 표)로만 등장한다.
 # 숫자가 다른 글자에 안 붙어있고(바로 앞이 공백/줄바꿈) 제목 뒤에 바로 줄바꿈이 오는 것으로,
 # 표 안에서 우연히 숫자+파이프가 이어지는 경우(예: '...접수주2 |  | 하이코리아...')와 구분한다.
-HEADING_DISCOVERY_PATTERN = re.compile(r"(?<!\S)\d\s*\|\s*\|\s*([가-힣][가-힣·() 　]*?)(?=\n)")
+HEADING_DISCOVERY_PATTERN = re.compile(r"(?<!\S)\d+\s*\|\s*\|\s*([가-힣][가-힣·() 　]*?)(?=\n)")
 
 # 조각 분리 기호 앞에서 자르는 기본 규칙(최상위 챕터 제목 부분은 문서마다 달라서 여기 안 포함)
 BASE_SPLIT_PATTERN = (
@@ -53,8 +53,8 @@ def build_split_pattern(top_headings: tuple[str, ...]) -> re.Pattern[str]:
     """발견된 최상위 챕터 제목까지 포함한 전체 분리 정규식을 만든다."""
     pattern = BASE_SPLIT_PATTERN
     if top_headings:
-        heading_alt = "|".join(top_headings)
-        pattern += rf"|(?=\d\s*\|\s*\|\s*(?:{heading_alt}))"  # 최상위 챕터 제목(번호박스 표 패턴)에서만 잘라 본문 속 재언급과 구분함
+        heading_alt = "|".join(re.escape(heading) for heading in top_headings)
+        pattern += rf"|(?=\d+\s*\|\s*\|\s*(?:{heading_alt}))"  # 최상위 챕터 제목(번호박스 표 패턴)에서만 잘라 본문 속 재언급과 구분함
     return re.compile(pattern)
 
 
@@ -64,8 +64,8 @@ def build_top_section_pattern(top_headings: tuple[str, ...]) -> re.Pattern[str]:
         not top_headings
     ):  # 제목을 하나도 못 찾았으면 절대 안 걸리는 패턴을 돌려줌 (빈 캡처그룹 방지)
         return re.compile(r"(?!x)x")
-    heading_alt = "|".join(top_headings)
-    return re.compile(rf"\d\s*\|\s*\|\s*({heading_alt})")
+    heading_alt = "|".join(re.escape(heading) for heading in top_headings)
+    return re.compile(rf"\d+\s*\|\s*\|\s*({heading_alt})")
 
 
 def split_into_chunks(text: str, split_pattern: re.Pattern[str]) -> list[str]:

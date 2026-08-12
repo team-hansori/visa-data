@@ -67,6 +67,23 @@ class TestDiscoverTopHeadings:
         text = "❍ 자격 요건을 충족하지 못한 경우 반려됩니다"
         assert discover_top_headings(text) == ()
 
+    def test_multi_digit_chapter_number_is_found(self):
+        """챕터 번호가 두 자리 이상이어도(\\d 한 글자가 아니라 \\d+) 제목을 찾아야 한다."""
+        text = "10 |  | 기타 사항\n"
+        assert discover_top_headings(text) == ("기타 사항",)
+
+    def test_heading_with_parentheses_does_not_break_split(self):
+        """제목에 괄호가 있어도(정규식 특수문자) re.escape로 안전하게 처리되어야 한다."""
+        text = "1 |  | 신청(변경)\n  ❍ 내용\n"
+        headings = discover_top_headings(text)
+        assert headings == ("신청(변경)",)
+
+        split_pattern = build_split_pattern(headings)
+        top_section_pattern = build_top_section_pattern(headings)
+        chunks = split_into_chunks(text, split_pattern)
+        assert any("신청(변경)" in chunk for chunk in chunks)
+        assert detect_top_section(text, "", top_section_pattern) == "신청(변경)"
+
 
 class TestBuildDraftRows:
     def test_condition_group_set_but_operator_left_blank(self):
