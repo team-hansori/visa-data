@@ -14,11 +14,12 @@ import logging
 logger = logging.getLogger(__name__)
 SHORT_TEXT_THRESHOLD = 8
 
-# 졍규식 전역 설정 
+# 졍규식 전역 설정
 SPLIT_PATTERN = re.compile(
-      r"(?=[□❍※①②③④⑤⑥⑦⑧⑨⑩])" # 바로 다음 글자가 이 기호들 중 하나면 여기서 자름 
-      r"|(?<=\s)(?=-\s)" # 바로 앞 공백이 2개 이상 + 바로 다음이 (하이픈+공백) 이면 여기서 자름 -> 공백 없이 붙은 하이픈은 건드리지 않음. 
-      r"|(?<=\s)(?=\*\s)" # 바로 앞에 공백이 있고, 다음이 '* '이면 여기서 자름 
+      r"(?=[□❍※])" # 바로 다음 글자가 이 기호들 중 하나면 여기서 자름
+      r"|(?<!<)(?=[①②③④⑤⑥⑦⑧⑨⑩])" # 번호 앞에서 자르되, 바로 앞이 '<'면 자르지 않음 (다이어그램 라벨 보호)
+      r"|(?<=\s)(?=-\s)" # 바로 앞 공백이 2개 이상 + 바로 다음이 (하이픈+공백) 이면 여기서 자름 -> 공백 없이 붙은 하이픈은 건드리지 않음.
+      r"|(?<=\s)(?=\*\s)" # 바로 앞에 공백이 있고, 다음이 '* '이면 여기서 자름
 )
 
 SECTION_MARKER = "□"
@@ -94,13 +95,20 @@ def build_draft_rows(chunks: list[str], source_documnet: str, fieldnames: list[s
 
       return rows
 
-def detect_short_numbered_itmes(rows: list[dict]) -> None:
+def detect_short_numbered_items(rows: list[dict]) -> None:
       """번호 항목인데 글자 수가 비정상적으로 짧으면 경고를 남긴다. """
-      for row in rows: 
-          text = row["raw_text"]
-          if text and text[0] in  NUMBERED_MARKERS and len(text) < SHORT_TEXT_THRESHOLD:
+      for current_row, next_row in zip(rows, rows[1:]): 
+          current_text = current_row["raw_text"]
+          next_text = next_row["raw_text"]
+          if (
+                current_text and next_text
+                and current_text[0] in NUMBERED_MARKERS
+                and next_text[0] in NUMBERED_MARKERS
+                and len(current_text) < SHORT_TEXT_THRESHOLD
+          ):
                 logger.warning(
-                    "%s: 내용이 너무 짧음 (%d자) - %r", row["record_id"], len(text), text
+                    "%s: 내용이 너무 짧음 (%d자) - %r", 
+                    current_row["record_id"], len(current_text), current_text, 
                 )
 
 
@@ -122,7 +130,7 @@ def main() -> None:
       chunks = split_into_chunks(text)
       fieldnames = read_fieldnames(args.template_csv)
       rows = build_draft_rows(chunks, args.text_path.stem, fieldnames)
-      detect_short_numbered_itmes(rows)
+      detect_short_numbered_items(rows)
 
       output_path = args.template_csv.with_name(f"_draft_{args.template_csv.name}")
       write_draft_csv(rows, fieldnames, output_path)

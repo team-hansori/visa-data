@@ -34,7 +34,7 @@ def extract_table_text(tbl: ET.ElementTree) -> str:
 def extract_node_text(node: ET.Element) -> str: 
   """XML 노드(태그) 하나를 받아서 그 아래 텍스트를 문자열로 추출한다. 표(<hp:tbl>)를 만나면 행/칸 구분을 보존한다."""
   if node.tag == HWP_TABLE_TAG: # 표를 만나면 extract_table_text로 넘김
-    return extract_table_text(node)
+    return f"\n{extract_table_text(node)}\n"
   if node.tag == HWP_TEXT_TAG: # 표가 아닌 글자 태그면 그 안의 글자를 다 모아서 돌려줌 
     return "".join(node.itertext()) 
   return "".join(extract_node_text(child) for child in node) # 두 경우를 만날 때까지 재귀 호출 
