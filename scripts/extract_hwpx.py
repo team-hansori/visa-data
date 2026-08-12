@@ -19,6 +19,11 @@ HWP_TEXT_TAG = f"{{{HWP_PARAGRAPH_NS}}}t" # 글자 -> 칸 안의 글자를 찾�
 
 DEFAULT_OUTPUT_DIR = Path("data/interim")
 
+def section_number(name: str) -> int:
+  """Contents/section12.xml 에서 숫자 12를 뽑아 정수로 반환한다."""
+  digits = name.removeprefix("Contents/section").removesuffix(".xml")
+  return int(digits)
+
 def extract_table_text(tbl: ET.ElementTree) -> str:
   """<hp:tbl> 요소를 행마다 칸을 | 으로 구분한 문자열로 변환한다."""
   rows = []
@@ -44,8 +49,9 @@ def extract_section_texts(hwpx_path: Path) -> list[str]:
   """hwpx 내부 Contents/section*.xml 각각에서 원문 텍스트를 추출해 리스트로 반환한다. """
   with zipfile.ZipFile(hwpx_path) as archive: 
     section_names = sorted(
-      name for name in archive.namelist()
-      if name.startswith("Contents/section") and name.endswith(".xml")
+      (name for name in archive.namelist()
+      if name.startswith("Contents/section") and name.endswith(".xml")),
+      key=section_number,
     )
 
     section_texts = []
