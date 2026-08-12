@@ -14,8 +14,13 @@
 - 프로젝트 설정 ([9982431](https://github.com/team-hansori/visa-data/commit/99824311dd6662c88edc86528ce8c62116f47a60))
 - 프로젝트 컨셉 작성 ([1382990](https://github.com/team-hansori/visa-data/commit/138299016c3b7968a0aa792858477b05fbeb9d9b))
 
+### 리팩터링
+
+- C_D-2-common 스키마를 데이터 형태(매트릭스/목록)에 맞게 재설계 ([13da43a](https://github.com/team-hansori/visa-data/commit/13da43a3852673875c48d899b0b740ef2a807ee3))
+
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([ca11d4a](https://github.com/team-hansori/visa-data/commit/ca11d4a2e4fafac82d5f9e174653cc716f0eace3))
 - CHANGELOG 자동 업데이트 [skip ci] ([9287f29](https://github.com/team-hansori/visa-data/commit/9287f299cae52580b779d6e67eab9721bbc0e01e))
 - CHANGELOG 자동 업데이트 [skip ci] ([98d6597](https://github.com/team-hansori/visa-data/commit/98d6597c4ec5ebcc5ca63a690b803a2e17cd2ccc))
 - CHANGELOG 자동 업데이트 [skip ci] ([d1cb1f1](https://github.com/team-hansori/visa-data/commit/d1cb1f1bbd71409d23122943db5deeaabbf28bae))
@@ -39,6 +44,8 @@
 
 ### 새 기능
 
+- Agency_contacts.csv에 비자/유학생/정착지원 문의처 75건 추가 ([c87b9cb](https://github.com/team-hansori/visa-data/commit/c87b9cb7c847cfcf645c6f6d83b80d1e19f3b216))
+- Chungbuk-sari의 D-2 근거표·기관연락처 데이터 이관 ([923518a](https://github.com/team-hansori/visa-data/commit/923518a09ce3be8c0f7a5842a72378550cae8094))
 - Source_section에 최상위 챕터 계층 정보 추가 ([9e7e975](https://github.com/team-hansori/visa-data/commit/9e7e975d7803a3bc8416b437bc9495d4c010d5b0))
 - Csv 근거표 골격 자동완성 및 결측 경로 로직 구현 (#9) ([16e68ea](https://github.com/team-hansori/visa-data/commit/16e68ea0f8f43f92237d6d0f00fcf886162f9c5c))
 - Extract_hwpx.py가 표(hp:tbl)를 칸 구분 없이 한 줄로 뭉개는 문제 (#11) ([c29cae5](https://github.com/team-hansori/visa-data/commit/c29cae59fbb9e59bd12591ac8a5b7dd13e3082a5))
