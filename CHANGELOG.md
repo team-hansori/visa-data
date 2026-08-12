@@ -4,6 +4,8 @@
 
 ### 기타
 
+- Ruff 정리, condition_group 문서화, 회귀 테스트 추가 ([29839e0](https://github.com/team-hansori/visa-data/commit/29839e02fa5886e0d3f1c61684ab1e3d3e921d93))
+- B_E-7-4R 8차 공고 current_requirements.csv 초안 생성 (#9) ([5d432bd](https://github.com/team-hansori/visa-data/commit/5d432bd7f4f30c79f0acf0057b2a3f16ff3d9e13))
 - PR 템플릿을 근거표 추출 작업 기준으로 재작성 ([51b5d30](https://github.com/team-hansori/visa-data/commit/51b5d30bfe0285160d4d0ffea8457b9d74d7130c))
 - 이슈 템플릿을 근거표 추출 작업 기준으로 재작성 ([94126bf](https://github.com/team-hansori/visa-data/commit/94126bf70a173964f24fa0cdbd0a4ac81ad69bdf))
 - Extraction 근거표 폴더 구조 세팅 (B_E-7-4R) ([f3725fe](https://github.com/team-hansori/visa-data/commit/f3725fe29946f0c9a90caf53d2ed18557b2582ac))
@@ -14,6 +16,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([9287f29](https://github.com/team-hansori/visa-data/commit/9287f299cae52580b779d6e67eab9721bbc0e01e))
 - CHANGELOG 자동 업데이트 [skip ci] ([98d6597](https://github.com/team-hansori/visa-data/commit/98d6597c4ec5ebcc5ca63a690b803a2e17cd2ccc))
 - CHANGELOG 자동 업데이트 [skip ci] ([d1cb1f1](https://github.com/team-hansori/visa-data/commit/d1cb1f1bbd71409d23122943db5deeaabbf28bae))
 - README를 근거표 추출 작업 기준으로 재작성 ([b6dc199](https://github.com/team-hansori/visa-data/commit/b6dc19967fc2b72dc3ded86b5855411b08de279c))
@@ -27,10 +30,20 @@
 
 ### 버그 수정
 
+- 코드래빗 리뷰 반영 - 두 자리 이상 챕터 번호, 제목 내 특수문자 이스케이프 ([edca276](https://github.com/team-hansori/visa-data/commit/edca27607f935769d12a34fa9e446a9d57370d05))
+- Hwpx 섹션 파일을 숫자가 아니라 문자열로 정렬하던 버그 수정 ([b588e82](https://github.com/team-hansori/visa-data/commit/b588e82f9eb7010e84b820243ec43e64855d9976))
+- Other로 분류된 텍스트가 보존되지 않는 문제 수정 (#9) ([640153d](https://github.com/team-hansori/visa-data/commit/640153dc2a1a8ce0139070baa29d634c30a22357))
+- 코드래빗 리뷰 반영 - 챕터 전환 시 상태 초기화 및 구분자 처리 ([8928cb6](https://github.com/team-hansori/visa-data/commit/8928cb6f474836e741b8b0a5c77e1ec689cc6da8))
+- 코드래빗 리뷰 반영 및 다이어그램 라벨 과분할 수정 ([2d2781f](https://github.com/team-hansori/visa-data/commit/2d2781f524521e10765cab31f524da5cb4e313dc))
 - Extract_hwpx.py가 <hp:fwSpace/> 뒤 텍스트를 못 읽는 버그 (#7) ([efd4ac3](https://github.com/team-hansori/visa-data/commit/efd4ac3c1c7d2cd5ccea1acdbffa490f466ca4bb))
 
 ### 새 기능
 
+- Source_section에 최상위 챕터 계층 정보 추가 ([9e7e975](https://github.com/team-hansori/visa-data/commit/9e7e975d7803a3bc8416b437bc9495d4c010d5b0))
+- Csv 근거표 골격 자동완성 및 결측 경로 로직 구현 (#9) ([16e68ea](https://github.com/team-hansori/visa-data/commit/16e68ea0f8f43f92237d6d0f00fcf886162f9c5c))
+- Extract_hwpx.py가 표(hp:tbl)를 칸 구분 없이 한 줄로 뭉개는 문제 (#11) ([c29cae5](https://github.com/team-hansori/visa-data/commit/c29cae59fbb9e59bd12591ac8a5b7dd13e3082a5))
+- 데이터 파이프라인 구조와 문서화 기준 정비 (#10) ([ca0ec93](https://github.com/team-hansori/visa-data/commit/ca0ec9300aac7994ed49d96fe97530174e31d1e2))
+- Extract_hwpx.py가 표(hp:tbl)를 칸 구분 없이 한 줄로 뭉개는 문제 (#11) ([c84f474](https://github.com/team-hansori/visa-data/commit/c84f474ae4ed6336f060cace38cd829386202d39))
 - 공고문 PDF·HWPX 원문 텍스트 추출 스크립트 추가 (#5) ([ada76f5](https://github.com/team-hansori/visa-data/commit/ada76f54c74f0e24b139d1adb3569abb810fe4a2))
 
 
