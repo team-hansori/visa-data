@@ -22,9 +22,9 @@ DEFAULT_OUTPUT_DIR = Path("data/interim")
 def extract_table_text(tbl: ET.ElementTree) -> str:
   """<hp:tbl> 요소를 행마다 칸을 | 으로 구분한 문자열로 변환한다."""
   rows = []
-  for tr in tbl.iter(HWP_ROW_TAG):
+  for tr in tbl.findall(HWP_ROW_TAG):
     cells = [
-      "".join("".join(t.itertext()) for t in tc.iter(HWP_TEXT_TAG)).strip() 
+      extract_node_text(tc).strip() # 칸 안에 중첩 표가 있어도 extract_node_text 알아서 처리 
       for tc in tr.findall(HWP_CELL_TAG) # 표 안의 행(tr) 마다 칸(tc)을 찾음
     ]
 
