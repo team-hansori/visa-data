@@ -20,6 +20,7 @@ SPLIT_PATTERN = re.compile(
       r"|(?<!<)(?=[①②③④⑤⑥⑦⑧⑨⑩])" # 번호 앞에서 자르되, 바로 앞이 '<'면 자르지 않음 (다이어그램 라벨 보호)
       r"|(?<=\s)(?=-\s)" # 바로 앞 공백이 2개 이상 + 바로 다음이 (하이픈+공백) 이면 여기서 자름 -> 공백 없이 붙은 하이픈은 건드리지 않음.
       r"|(?<=\s)(?=\*\s)" # 바로 앞에 공백이 있고, 다음이 '* '이면 여기서 자름
+      r"|(?=공고 개요|추진 체계|자격 요건|제출서류)" # 최상위 챕터 제목 앞에서도 잘라 앞 내용과 안 섞이게 함
 )
 
 SECTION_MARKER = "□"
@@ -27,6 +28,8 @@ GROUP_START_MARKER = "❍"
 SUBCONDITION_MARKERS = ("※", "-")
 NUMBERED_MARKERS = "①②③④⑤⑥⑦⑧⑨⑩"
 FOOTNOTE_MARKER = "*"
+
+TOP_LEVEL_HEADINGS = ("공고 개요", "추진 체계", "자격 요건", "제출서류")
 
 def split_into_chunks(text: str) -> list[str]:
       """원문을 □/❍/※/번호(①②③...)/공백 뒤 -/공백 뒤 * 기준으로 조각낸다."""
@@ -55,14 +58,32 @@ def read_fieldnames(template_csv_path: Path) -> list[str]:
         reader = csv.reader(f)
         return next(reader)
 
+def detect_top_section(chunk: str, current_top_section: str) -> str:
+    """조각 안에 있는 최상위 제목 문구 중 가장 뒤(오른쪽)에 있는 것으로 갱신한다.
+
+    한 조각 안에 여러 제목이 섞여 있을 수 있어(예: '추진 체계'와 '자격 요건'이
+    같은 조각에 같이 들어있는 경우), 첫 번째로 찾은 것이 아니라 가장 마지막에
+    등장한 것을 써야 조각이 끝난 시점의 실제 챕터를 반영할 수 있다.
+    """
+    last_found = None
+    last_index = -1
+    for heading in TOP_LEVEL_HEADINGS:
+        idx = chunk.rfind(heading)
+        if idx > last_index:
+            last_index = idx
+            last_found = heading
+    return last_found if last_found is not None else current_top_section
+
 def build_draft_rows(chunks: list[str], source_documnet: str, fieldnames: list[str]) -> list[dict]:
       """분류된 조각들을 근거표 초안 행(dict) 리스트로 변환한다. fieldnames에 없는 컬럼은 빈 값으로 채운다. """
       rows = []
       current_section = ""
+      current_top_section = ""
       current_group = ""
       group_count = 0
 
       for chunk in chunks:
+            current_top_section = detect_top_section(chunk, current_top_section)
             kind = classify_chunk(chunk)
 
             if kind == "other": 
@@ -89,7 +110,7 @@ def build_draft_rows(chunks: list[str], source_documnet: str, fieldnames: list[s
                 "condition_group": condition_group, 
                 "status": "not_checked",
                 "source_document": source_documnet, 
-                "source_section": current_section,
+                "source_section": (f"{current_top_section} > {current_section}" if current_section else current_top_section),
             })
             rows.append(row)
 
