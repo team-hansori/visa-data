@@ -53,32 +53,51 @@ def extract_measurement_window(raw_text: str) -> dict[str, str] | None:
 def _append_note(row: dict, note: str) -> None:
     """notes 컬럼에 메모를 이어붙인다 (기존 내용은 유지)."""
     existing = row.get("notes", "")
+    if note in existing:
+        return
     row["notes"] = f"{existing} / {note}".strip(" /") if existing else note
 
 
-def apply_extracted_values(rows: list[dict]) -> None:
-    """행마다 raw_text에서 값을 추출해 비어있는 칸만 채운다. 후보가 여러 개면 notes에 표시."""
+def apply_extracted_values(rows: list[dict]) -> int:
+    """행마다 raw_text에서 값을 추출해 비어있는 칸만 채운다. 후보가 여러 개면 notes에 표시.
+
+    이미 값이 있는 칸은(형제 칸이 비어있어도) 절대 덮어쓰지 않는다.
+    반환값은 이번 호출로 실제 칸이 하나 이상 채워진 행 수.
+    """
+    updated_row_count = 0
     for row in rows:
         raw_text = row.get("raw_text", "")
+        row_changed = False
 
-        if not row.get("value_numeric"):
-            condition_matches = list(CONDITION_VALUE_PATTERN.finditer(raw_text))
-            if len(condition_matches) == 1:
-                extracted = extract_condition_value(raw_text)
-                row["value_numeric"] = extracted["value_numeric"]
-                row["unit"] = extracted["unit"]
-                row["operator"] = extracted["operator"]
-            elif len(condition_matches) > 1:
-                _append_note(row, "값 후보 여러 개 발견 - 직접 확인 필요")
+        condition_matches = list(CONDITION_VALUE_PATTERN.finditer(raw_text))
+        if len(condition_matches) == 1:
+            extracted = extract_condition_value(raw_text)
+            for field in ("value_numeric", "unit", "operator"):
+                if not row.get(field):
+                    row[field] = extracted[field]
+                    row_changed = True
+        elif len(condition_matches) > 1 and any(
+            not row.get(field) for field in ("value_numeric", "unit", "operator")
+        ):
+            _append_note(row, "값 후보 여러 개 발견 - 직접 확인 필요")
 
-        if not row.get("measurement_window_value"):
-            window_matches = list(MEASUREMENT_WINDOW_PATTERN.finditer(raw_text))
-            if len(window_matches) == 1:
-                extracted = extract_measurement_window(raw_text)
-                row["measurement_window_value"] = extracted["measurement_window_value"]
-                row["measurement_window_unit"] = extracted["measurement_window_unit"]
-            elif len(window_matches) > 1:
-                _append_note(row, "측정기간 후보 여러 개 발견 - 직접 확인 필요")
+        window_matches = list(MEASUREMENT_WINDOW_PATTERN.finditer(raw_text))
+        if len(window_matches) == 1:
+            extracted = extract_measurement_window(raw_text)
+            for field in ("measurement_window_value", "measurement_window_unit"):
+                if not row.get(field):
+                    row[field] = extracted[field]
+                    row_changed = True
+        elif len(window_matches) > 1 and any(
+            not row.get(field)
+            for field in ("measurement_window_value", "measurement_window_unit")
+        ):
+            _append_note(row, "측정기간 후보 여러 개 발견 - 직접 확인 필요")
+
+        if row_changed:
+            updated_row_count += 1
+
+    return updated_row_count
 
 
 def main() -> None:
@@ -92,15 +111,14 @@ def main() -> None:
         fieldnames = reader.fieldnames
         rows = list(reader)
 
-    apply_extracted_values(rows)
+    updated_row_count = apply_extracted_values(rows)
 
     with args.csv_path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()
         writer.writerows(rows)
 
-    filled = sum(1 for r in rows if r.get("value_numeric"))
-    print(f"value_numeric 채워진 행: {filled}개 / 전체 {len(rows)}행")
+    print(f"이번 실행으로 채워진 행: {updated_row_count}개 / 전체 {len(rows)}행")
 
 
 if __name__ == "__main__":

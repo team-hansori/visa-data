@@ -65,6 +65,38 @@ class TestApplyExtractedValues:
         apply_extracted_values(rows)
         assert rows[0]["value_numeric"] == "999"  # 그대로 유지
 
+    def test_preserves_sibling_field_already_filled(self):
+        """value_numeric이 비어있어도, 이미 채워진 unit(형제 칸)은 덮어쓰면 안 된다."""
+        rows = [
+            {
+                "raw_text": "① 벌금 300만 원 이상의 형을 받은 자",
+                "value_numeric": "",
+                "unit": "만원(사람이 직접 기재)",
+                "operator": "",
+                "notes": "",
+            }
+        ]
+        apply_extracted_values(rows)
+        assert rows[0]["unit"] == "만원(사람이 직접 기재)"  # 그대로 유지됨
+        assert rows[0]["value_numeric"] == "300"  # 비어있던 칸만 채워짐
+        assert rows[0]["operator"] == ">="
+
+    def test_returns_count_of_actually_changed_rows(self):
+        """이미 값이 다 채워진 행은 반환 개수에 포함되지 않는다."""
+        rows = [
+            {"raw_text": "① 벌금 300만 원 이상의 형을 받은 자", "value_numeric": "", "notes": ""},
+            {"raw_text": "조세 체납자(완납 시 신청 가능)", "value_numeric": "", "notes": ""},
+            {
+                "raw_text": "③ 출입국관리법 4회 이상 위반자",
+                "value_numeric": "999",
+                "unit": "회",
+                "operator": ">=",
+                "notes": "",
+            },
+        ]
+        updated_count = apply_extracted_values(rows)
+        assert updated_count == 1
+
     def test_ambiguous_row_is_flagged_not_filled(self):
         """71명 초과 / 135명 이상처럼 후보가 여러 개면 값은 비워두고 notes에 표시한다."""
         rows = [
@@ -80,3 +112,38 @@ class TestApplyExtractedValues:
         apply_extracted_values(rows)
         assert rows[0]["value_numeric"] == ""
         assert "직접 확인 필요" in rows[0]["notes"]
+
+    def test_partial_ambiguous_row_is_flagged(self):
+        """값 하나가 이미 있어도 나머지 필드가 비어 있으면 모호성을 표시한다."""
+        rows = [
+            {
+                "raw_text": (
+                    "내국인 고용인원이 71명을 초과하는 경우 또는 "
+                    "내국인 고용인원이 135명 이상인 경우"
+                ),
+                "value_numeric": "71",
+                "unit": "",
+                "operator": "",
+                "notes": "",
+            }
+        ]
+        apply_extracted_values(rows)
+        assert rows[0]["unit"] == ""
+        assert rows[0]["operator"] == ""
+        assert "직접 확인 필요" in rows[0]["notes"]
+
+    def test_ambiguous_note_is_not_duplicated_on_rerun(self):
+        """같은 행에 스크립트를 재적용해도 모호성 메모리는 한 번만 남긴다."""
+        rows = [
+            {
+                "raw_text": (
+                    "내국인 고용인원이 71명을 초과하는 경우 또는 "
+                    "내국인 고용인원이 135명 이상인 경우"
+                ),
+                "value_numeric": "",
+                "notes": "",
+            }
+        ]
+        apply_extracted_values(rows)
+        apply_extracted_values(rows)
+        assert rows[0]["notes"] == "값 후보 여러 개 발견 - 직접 확인 필요"
