@@ -31,7 +31,7 @@
 ## 작성 규칙
 
 - `raw_text`에는 문서 원문을 그대로 남긴다.
-- 한 문장에 여러 요건이 섞여 있으면 개별 행으로 분리한다. 같은 조건 그룹(AND/OR)은 `condition_group`/`condition_operator`로 묶는다.
+- 한 문장에 여러 요건이 섞여 있으면 개별 행으로 분리한다. `condition_group`은 서로 관련된 조건들의 묶음만 나타낸다 — 논리적 결합 관계(AND/OR)는 자동으로 정하지 않고, 원문을 직접 읽고 `condition_operator`에 사람이 입력한다.
 - "최근 N년간" 같은 평가 범위는 `measurement_window_value`/`measurement_window_unit`에 따로 기록한다.
 - 확인되지 않은 값은 추측하지 않는다.
 - 공고문과 심사표의 값이 다르면 하나를 임의로 고르지 않고 두 값을 각각 근거와 함께 남긴 뒤 `notes`에 불일치를 표시한다.
