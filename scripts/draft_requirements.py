@@ -83,7 +83,11 @@ def build_draft_rows(chunks: list[str], source_documnet: str, fieldnames: list[s
       group_count = 0
 
       for chunk in chunks:
-            current_top_section = detect_top_section(chunk, current_top_section)
+            next_top_section = detect_top_section(chunk, current_top_section)
+            if next_top_section != current_top_section: # 최상위 챕터가 바뀌면 하위 섹션/그룹은 이전 챕터 것이라 초기화
+                  current_section = ""
+                  current_group = ""
+            current_top_section = next_top_section
             kind = classify_chunk(chunk)
 
             if kind == "other": 
@@ -110,7 +114,9 @@ def build_draft_rows(chunks: list[str], source_documnet: str, fieldnames: list[s
                 "condition_group": condition_group, 
                 "status": "not_checked",
                 "source_document": source_documnet, 
-                "source_section": (f"{current_top_section} > {current_section}" if current_section else current_top_section),
+                "source_section": " > ".join(
+                    part for part in (current_top_section, current_section) if part
+                ),
             })
             rows.append(row)
 
