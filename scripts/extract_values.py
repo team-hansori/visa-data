@@ -89,8 +89,7 @@ def apply_extracted_values(rows: list[dict]) -> int:
                     row[field] = extracted[field]
                     row_changed = True
         elif len(window_matches) > 1 and any(
-            not row.get(field)
-            for field in ("measurement_window_value", "measurement_window_unit")
+            not row.get(field) for field in ("measurement_window_value", "measurement_window_unit")
         ):
             _append_note(row, "측정기간 후보 여러 개 발견 - 직접 확인 필요")
 
