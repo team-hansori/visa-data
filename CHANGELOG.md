@@ -25,6 +25,9 @@
 
 ### 문서
 
+- 벌금 감점 기준 300만원/100만원 불일치를 notes에 기록 ([bae3ef5](https://github.com/team-hansori/visa-data/commit/bae3ef5a35806844ce77cc1885f50e61a3943c7a))
+- 한국어능력 이수/사전평가 단계 차이가 오타 아님을 확인해 notes에 기록 ([c414fe2](https://github.com/team-hansori/visa-data/commit/c414fe2933385367c4dab6584b44d642ebb41e9e))
+- CHANGELOG 자동 업데이트 [skip ci] ([5e2d07b](https://github.com/team-hansori/visa-data/commit/5e2d07b66e7d7cb9c9a68ef3c3952c9a1d3c8e4c))
 - CHANGELOG 자동 업데이트 [skip ci] ([39814f4](https://github.com/team-hansori/visa-data/commit/39814f4b0f7d84d94201813c8e8c2a176ab906c4))
 - CHANGELOG 자동 업데이트 [skip ci] ([206e4ee](https://github.com/team-hansori/visa-data/commit/206e4ee40213e3c3204d7ad7ebdf2a6b94dfc163))
 - CHANGELOG 자동 업데이트 [skip ci] ([ca11d4a](https://github.com/team-hansori/visa-data/commit/ca11d4a2e4fafac82d5f9e174653cc716f0eace3))
@@ -57,6 +60,7 @@
 - Current_requirements.csv 나머지 7행 확정 및 반영 완료 ([2553502](https://github.com/team-hansori/visa-data/commit/25535026aacabcee25a2211c1f5298c308f46548))
 - Source_page 자동 매칭 스크립트 추가 및 일부 페이지 반영 ([346892f](https://github.com/team-hansori/visa-data/commit/346892f64050257e99023868825b5f547f4a69dd))
 - 추천대상 섹션 current_requirements.csv 21행 반영 ([d1388f7](https://github.com/team-hansori/visa-data/commit/d1388f7aeb133800ca49ad5cd70efbde26731e5f))
+- 8차 공고 K-POINT 점수제 scoring_items.csv 채우기 ([fa5155f](https://github.com/team-hansori/visa-data/commit/fa5155f2cdf3c5cb299ae714aecd520c1999629a))
 - Raw_text에서 숫자·단위·비교연산자 자동 추출 스크립트 추가 (#15) ([c581352](https://github.com/team-hansori/visa-data/commit/c581352eb1e1628e6c8a1378d7b3b63a29cdf510))
 - Agency_contacts.csv에 비자/유학생/정착지원 문의처 75건 추가 ([c87b9cb](https://github.com/team-hansori/visa-data/commit/c87b9cb7c847cfcf645c6f6d83b80d1e19f3b216))
 - Chungbuk-sari의 D-2 근거표·기관연락처 데이터 이관 ([923518a](https://github.com/team-hansori/visa-data/commit/923518a09ce3be8c0f7a5842a72378550cae8094))
