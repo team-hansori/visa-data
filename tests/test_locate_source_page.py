@@ -46,7 +46,9 @@ class TestApplySourcePage:
         assert rows[0]["source_page"] == "2"
 
     def test_does_not_overwrite_already_filled_page(self):
-        rows = [{"raw_text": "① 벌금 300만 원 이상의 형을 받은 자", "source_page": "5", "notes": ""}]
+        rows = [
+            {"raw_text": "① 벌금 300만 원 이상의 형을 받은 자", "source_page": "5", "notes": ""}
+        ]
         pages = ["벌금 300만 원 이상의 형을 받은 자가 있는 페이지"]
         apply_source_page(rows, pages)
         assert rows[0]["source_page"] == "5"
@@ -84,4 +86,7 @@ class TestApplySourcePage:
         pages = ["전혀 관련 없는 내용"]
         apply_source_page(rows, pages)
         apply_source_page(rows, pages)
-        assert rows[0]["notes"] == "PDF에서 일치하는 페이지를 못 찾음(굵은 글씨 누락 가능) - 직접 확인 필요"
+        assert (
+            rows[0]["notes"]
+            == "PDF에서 일치하는 페이지를 못 찾음(굵은 글씨 누락 가능) - 직접 확인 필요"
+        )
