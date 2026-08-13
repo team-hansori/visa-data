@@ -15,12 +15,32 @@ def filter_rows_by_section(rows: list[dict], sections: set[str]) -> list[dict]:
     return [row for row in rows if row.get("source_section") in sections]
 
 
+def resolve_output_path(csv_path: Path) -> Path:
+    """입력 경로에서 '_draft_'를 '_review_'로 바꾼 출력 경로를 만든다.
+
+    입력 파일명에 '_draft_'가 없으면 출력 경로가 입력 경로와 같아져 원본을
+    덮어쓰게 되므로, 이 경우 예외를 발생시켜 중단한다.
+    """
+    output_path = csv_path.with_name(csv_path.name.replace("_draft_", "_review_"))
+    if output_path == csv_path:
+        raise ValueError(
+            f"입력 파일명에 '_draft_'가 없어 출력 경로가 입력 경로와 같습니다: {csv_path} "
+            "(원본을 덮어쓰지 않도록 중단함)"
+        )
+    return output_path
+
+
 def main() -> None:
     """CLI 진입점: 초안 CSV와 섹션 목록을 받아 필터링한 결과를 별도 파일로 저장한다."""
     parser = argparse.ArgumentParser(description="근거표 초안에서 특정 섹션만 필터링")
     parser.add_argument("csv_path", type=Path, help="필터링할 초안 CSV 경로")
     parser.add_argument("sections", help="쉼표로 구분한 source_section 목록")
     args = parser.parse_args()
+
+    try:
+        output_path = resolve_output_path(args.csv_path)
+    except ValueError as exc:
+        raise SystemExit(str(exc)) from exc
 
     sections = {s.strip() for s in args.sections.split(",")}
 
@@ -31,7 +51,6 @@ def main() -> None:
 
     filtered = filter_rows_by_section(rows, sections)
 
-    output_path = args.csv_path.with_name(args.csv_path.name.replace("_draft_", "_review_"))
     with output_path.open("w", encoding="utf-8", newline="") as f:
         writer = csv.DictWriter(f, fieldnames=fieldnames)
         writer.writeheader()

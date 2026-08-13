@@ -12,7 +12,9 @@ from __future__ import annotations
 
 import argparse
 import csv
+import os
 import re
+import tempfile
 from pathlib import Path
 
 import pdfplumber
@@ -72,12 +74,29 @@ def apply_source_page(rows: list[dict], normalized_pages: list[str]) -> tuple[in
             filled += 1
         elif len(matches) == 0:
             not_found += 1
-            _append_note(row, "PDF에서 일치하는 페이지를 못 찾음(굵은 글씨 누락 가능) - 직접 확인 필요")
+            _append_note(
+                row, "PDF에서 일치하는 페이지를 못 찾음(굵은 글씨 누락 가능) - 직접 확인 필요"
+            )
         else:
             ambiguous += 1
             _append_note(row, f"{len(matches)}개 페이지에서 중복 발견 - 직접 확인 필요")
 
     return filled, not_found, ambiguous
+
+
+def write_csv_atomic(csv_path: Path, fieldnames: list[str], rows: list[dict]) -> None:
+    """같은 디렉터리에 임시 파일로 먼저 쓰고 os.replace로 교체해, 쓰는 도중 오류가 나도
+    원본 CSV가 반쯤 쓰인 채로 깨지지 않게 한다."""
+    fd, tmp_path = tempfile.mkstemp(dir=csv_path.parent, prefix=f".{csv_path.name}.", suffix=".tmp")
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
+            writer = csv.DictWriter(f, fieldnames=fieldnames)
+            writer.writeheader()
+            writer.writerows(rows)
+        os.replace(tmp_path, csv_path)
+    except BaseException:
+        os.remove(tmp_path)
+        raise
 
 
 def _append_note(row: dict, note: str) -> None:
@@ -106,10 +125,7 @@ def main() -> None:
 
     filled, not_found, ambiguous = apply_source_page(rows, normalized_pages)
 
-    with args.csv_path.open("w", encoding="utf-8", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=fieldnames)
-        writer.writeheader()
-        writer.writerows(rows)
+    write_csv_atomic(args.csv_path, fieldnames, rows)
 
     print(f"source_page 채움: {filled}행 / 못 찾음: {not_found}행 / 중복 매칭: {ambiguous}행")
 

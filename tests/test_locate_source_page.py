@@ -1,10 +1,13 @@
 """근거표 페이지 찾기 스크립트(locate_source_page.py) 회귀 테스트."""
 
+import csv
+
 from scripts.locate_source_page import (
     apply_source_page,
     build_search_fragment,
     find_matching_pages,
     normalize,
+    write_csv_atomic,
 )
 
 
@@ -90,3 +93,39 @@ class TestApplySourcePage:
             rows[0]["notes"]
             == "PDF에서 일치하는 페이지를 못 찾음(굵은 글씨 누락 가능) - 직접 확인 필요"
         )
+
+
+class TestWriteCsvAtomic:
+    def test_writes_rows_and_replaces_original(self, tmp_path):
+        csv_path = tmp_path / "current_requirements.csv"
+        csv_path.write_text("record_id,notes\nREQ-001,old\n", encoding="utf-8")
+
+        write_csv_atomic(
+            csv_path, ["record_id", "notes"], [{"record_id": "REQ-001", "notes": "new"}]
+        )
+
+        with csv_path.open(encoding="utf-8", newline="") as f:
+            rows = list(csv.DictReader(f))
+        assert rows == [{"record_id": "REQ-001", "notes": "new"}]
+
+    def test_no_leftover_temp_file_after_success(self, tmp_path):
+        csv_path = tmp_path / "current_requirements.csv"
+        csv_path.write_text("record_id\n", encoding="utf-8")
+
+        write_csv_atomic(csv_path, ["record_id"], [{"record_id": "REQ-001"}])
+
+        assert list(tmp_path.iterdir()) == [csv_path]
+
+    def test_original_untouched_when_write_fails(self, tmp_path):
+        """쓰는 도중 오류가 나면 원본 CSV는 손상되지 않고 그대로 남아야 한다."""
+        csv_path = tmp_path / "current_requirements.csv"
+        csv_path.write_text("record_id\nREQ-001\n", encoding="utf-8")
+
+        bad_row = {"record_id": "REQ-002", "unexpected_field": "boom"}
+        try:
+            write_csv_atomic(csv_path, ["record_id"], [bad_row])
+        except ValueError:
+            pass
+
+        assert csv_path.read_text(encoding="utf-8") == "record_id\nREQ-001\n"
+        assert list(tmp_path.iterdir()) == [csv_path]
