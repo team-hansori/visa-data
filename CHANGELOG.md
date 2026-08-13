@@ -2,6 +2,10 @@
 
 ## 미출시 변경사항
 
+### style
+
+- 테스트 코드 ruff 포맷 적용 ([00ca0d1](https://github.com/team-hansori/visa-data/commit/00ca0d1a8137ec7a8c83932008cd4e5bc42cdb83))
+
 ### 기타
 
 - Ruff 포맷 정리 및 초안 CSV 재생성 ([2df55e2](https://github.com/team-hansori/visa-data/commit/2df55e274137acec74948b9e843ea5e0c2f2a7fc))
@@ -21,6 +25,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([39814f4](https://github.com/team-hansori/visa-data/commit/39814f4b0f7d84d94201813c8e8c2a176ab906c4))
 - CHANGELOG 자동 업데이트 [skip ci] ([206e4ee](https://github.com/team-hansori/visa-data/commit/206e4ee40213e3c3204d7ad7ebdf2a6b94dfc163))
 - CHANGELOG 자동 업데이트 [skip ci] ([ca11d4a](https://github.com/team-hansori/visa-data/commit/ca11d4a2e4fafac82d5f9e174653cc716f0eace3))
 - CHANGELOG 자동 업데이트 [skip ci] ([9287f29](https://github.com/team-hansori/visa-data/commit/9287f299cae52580b779d6e67eab9721bbc0e01e))
@@ -37,6 +42,7 @@
 
 ### 버그 수정
 
+- 근거표 원본 CSV를 덮어쓸 수 있는 두 가지 위험 제거 ([836926c](https://github.com/team-hansori/visa-data/commit/836926c46acd86348ec26f4bfa241dce1810f1de))
 - 값 추출 모호성 처리 보강 ([d7299a5](https://github.com/team-hansori/visa-data/commit/d7299a58f936b7bd5dec2ed61f07b74be587e72e))
 - 코드래빗 리뷰 반영 - 두 자리 이상 챕터 번호, 제목 내 특수문자 이스케이프 ([edca276](https://github.com/team-hansori/visa-data/commit/edca27607f935769d12a34fa9e446a9d57370d05))
 - Hwpx 섹션 파일을 숫자가 아니라 문자열로 정렬하던 버그 수정 ([b588e82](https://github.com/team-hansori/visa-data/commit/b588e82f9eb7010e84b820243ec43e64855d9976))
@@ -47,6 +53,10 @@
 
 ### 새 기능
 
+- 점수제 심사 섹션에서 발견된 계약 연봉 자격요건 2행 추가 ([1be4227](https://github.com/team-hansori/visa-data/commit/1be422707ab58f7f70ddd45b69ec2c0cdee4af12))
+- Current_requirements.csv 나머지 7행 확정 및 반영 완료 ([2553502](https://github.com/team-hansori/visa-data/commit/25535026aacabcee25a2211c1f5298c308f46548))
+- Source_page 자동 매칭 스크립트 추가 및 일부 페이지 반영 ([346892f](https://github.com/team-hansori/visa-data/commit/346892f64050257e99023868825b5f547f4a69dd))
+- 추천대상 섹션 current_requirements.csv 21행 반영 ([d1388f7](https://github.com/team-hansori/visa-data/commit/d1388f7aeb133800ca49ad5cd70efbde26731e5f))
 - Raw_text에서 숫자·단위·비교연산자 자동 추출 스크립트 추가 (#15) ([c581352](https://github.com/team-hansori/visa-data/commit/c581352eb1e1628e6c8a1378d7b3b63a29cdf510))
 - Agency_contacts.csv에 비자/유학생/정착지원 문의처 75건 추가 ([c87b9cb](https://github.com/team-hansori/visa-data/commit/c87b9cb7c847cfcf645c6f6d83b80d1e19f3b216))
 - Chungbuk-sari의 D-2 근거표·기관연락처 데이터 이관 ([923518a](https://github.com/team-hansori/visa-data/commit/923518a09ce3be8c0f7a5842a72378550cae8094))
