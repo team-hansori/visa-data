@@ -26,6 +26,7 @@ from scripts.extract_pdf import extract_page_texts
 
 FORM_PAGE_PATTERN = re.compile(r"^【서식([^】]+)】\s*(.*)")
 CHECKLIST_ITEM_PATTERN = re.compile(r"(?=\((외국인 본인|현재 근무처)\))")
+SECTION_HEADER_PATTERN = re.compile(r"<[^>]+>")
 DEFAULT_CHECKLIST_SECTION_TITLE = "제출서류"
 NEEDS_REVIEW_NOTE = "사람이 원문을 읽고 채워야 함 - 자동 채움 안 됨"
 
@@ -57,9 +58,20 @@ def find_checklist_page(page_texts: list[str], section_title: str) -> str | None
     return None
 
 
+def truncate_before_next_section(text: str) -> str:
+    """체크리스트 시작 표시(예: <시군 제출 서류>) 다음에 '<...>' 형태의 다른 섹션 헤더가
+    있으면 그 앞까지만 남긴다. 이걸 안 하면 뒤에 오는 다른 섹션(예: <법무부 제출 서류>)의
+    텍스트가 마지막 항목 끝에 그대로 붙어버린다."""
+    matches = list(SECTION_HEADER_PATTERN.finditer(text))
+    if len(matches) < 2:
+        return text
+    return text[: matches[-1].start()]
+
+
 def split_checklist_items(checklist_text: str) -> list[str]:
     """'(외국인 본인)'/'(현재 근무처)' 표시를 기준으로 체크리스트를 항목별로 나눈다."""
-    chunks = CHECKLIST_ITEM_PATTERN.split(checklist_text)
+    truncated = truncate_before_next_section(checklist_text)
+    chunks = CHECKLIST_ITEM_PATTERN.split(truncated)
     return [chunk.strip() for chunk in chunks if chunk.strip().startswith(("(외국인", "(현재"))]
 
 
@@ -70,7 +82,7 @@ def read_fieldnames(template_csv_path: Path) -> list[str]:
         return next(reader)
 
 
-def build_draft_rows(forms: list[dict], fieldnames: list[str]) -> list[dict]:
+def build_draft_rows(forms: list[dict], fieldnames: list[str], source_document: str) -> list[dict]:
     """서식 페이지 목록을 document_forms.csv 초안 행(dict) 리스트로 변환한다."""
     rows = []
     for form in forms:
@@ -79,6 +91,7 @@ def build_draft_rows(forms: list[dict], fieldnames: list[str]) -> list[dict]:
             {
                 "form_id": f"서식{form['form_number']}",
                 "raw_text": form["raw_text"],
+                "source_document": source_document,
                 "source_page": str(form["source_page"]),
                 "notes": NEEDS_REVIEW_NOTE,
             }
@@ -117,7 +130,7 @@ def main() -> None:
     print(f"서식 페이지 {len(forms)}개 발견: {', '.join('서식' + f['form_number'] for f in forms)}")
 
     fieldnames = read_fieldnames(args.template_csv)
-    rows = build_draft_rows(forms, fieldnames)
+    rows = build_draft_rows(forms, fieldnames, source_document=args.pdf_path.stem)
 
     output_path = args.template_csv.with_name(f"_draft_{args.template_csv.name}")
     write_draft_csv(rows, fieldnames, output_path)

@@ -5,6 +5,7 @@ from scripts.draft_document_forms import (
     find_checklist_page,
     find_form_pages,
     split_checklist_items,
+    truncate_before_next_section,
 )
 
 FIELDNAMES = [
@@ -58,6 +59,17 @@ class TestFindChecklistPage:
         assert find_checklist_page(pages, "제출서류") is None
 
 
+class TestTruncateBeforeNextSection:
+    def test_truncates_at_last_marker_when_two_or_more(self):
+        text = "<시군 제출 서류>\n항목들...\n<법무부 제출 서류>\n다른 항목들..."
+        result = truncate_before_next_section(text)
+        assert result == "<시군 제출 서류>\n항목들...\n"
+
+    def test_keeps_text_unchanged_when_only_one_marker(self):
+        text = "<시군 제출 서류>\n항목들..."
+        assert truncate_before_next_section(text) == text
+
+
 class TestSplitChecklistItems:
     def test_splits_on_submitter_markers(self):
         text = (
@@ -77,13 +89,26 @@ class TestSplitChecklistItems:
         assert len(items) == 1
         assert "필수 서류" not in items[0]
 
+    def test_next_section_text_not_appended_to_last_item(self):
+        """<법무부 제출 서류> 같은 다음 섹션 텍스트가 마지막 항목 뒤에 붙으면 안 된다."""
+        text = (
+            "4 제출서류\n<시군 제출 서류>\n□ 필수 서류\n"
+            "(현재 근무처) 고용기업 추천서 및 추천자 신분증 사본\n"
+            "<법무부 제출 서류>\n"
+            "광역지자체장 추천서, 통합신청서 등"
+        )
+        items = split_checklist_items(text)
+        assert len(items) == 1
+        assert "법무부" not in items[0]
+        assert "광역지자체장" not in items[0]
+
 
 class TestBuildDraftRows:
     def test_fills_only_mechanically_safe_fields(self):
         forms = [
             {"form_number": "1", "label": "제목", "source_page": 13, "raw_text": "원문..."},
         ]
-        rows = build_draft_rows(forms, FIELDNAMES)
+        rows = build_draft_rows(forms, FIELDNAMES, source_document="8차 공고문")
 
         assert len(rows) == 1
         row = rows[0]
@@ -95,3 +120,10 @@ class TestBuildDraftRows:
         assert row["form_name"] == ""
         assert row["filled_by"] == ""
         assert row["signer"] == ""
+
+    def test_fills_source_document(self):
+        forms = [
+            {"form_number": "1", "label": "제목", "source_page": 13, "raw_text": "원문..."},
+        ]
+        rows = build_draft_rows(forms, FIELDNAMES, source_document="8차 공고문")
+        assert rows[0]["source_document"] == "8차 공고문"
