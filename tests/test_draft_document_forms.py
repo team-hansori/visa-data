@@ -60,8 +60,18 @@ class TestFindChecklistPage:
 
 
 class TestTruncateBeforeNextSection:
-    def test_truncates_at_last_marker_when_two_or_more(self):
+    def test_truncates_at_second_marker_when_exactly_two(self):
         text = "<시군 제출 서류>\n항목들...\n<법무부 제출 서류>\n다른 항목들..."
+        result = truncate_before_next_section(text)
+        assert result == "<시군 제출 서류>\n항목들...\n"
+
+    def test_truncates_at_second_marker_not_last_when_three_or_more(self):
+        """마커가 3개 이상이면 마지막이 아니라 두 번째 마커에서 잘라야 중간 섹션이 안 낀다."""
+        text = (
+            "<시군 제출 서류>\n항목들...\n"
+            "<법무부 제출 서류>\n다른 항목들...\n"
+            "<기타 참고사항>\n또 다른 항목들..."
+        )
         result = truncate_before_next_section(text)
         assert result == "<시군 제출 서류>\n항목들...\n"
 

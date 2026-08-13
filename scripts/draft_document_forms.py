@@ -59,13 +59,13 @@ def find_checklist_page(page_texts: list[str], section_title: str) -> str | None
 
 
 def truncate_before_next_section(text: str) -> str:
-    """체크리스트 시작 표시(예: <시군 제출 서류>) 다음에 '<...>' 형태의 다른 섹션 헤더가
-    있으면 그 앞까지만 남긴다. 이걸 안 하면 뒤에 오는 다른 섹션(예: <법무부 제출 서류>)의
-    텍스트가 마지막 항목 끝에 그대로 붙어버린다."""
+    """체크리스트 시작 표시(예: <시군 제출 서류>) 바로 다음에 나오는 '<...>' 형태의 다른
+    섹션 헤더 앞까지만 남긴다. 마지막 마커가 아니라 두 번째 마커(여는 마커 다음 마커) 기준으로
+    잘라야, 섹션이 3개 이상이어도 중간 섹션 텍스트가 안 끼어든다."""
     matches = list(SECTION_HEADER_PATTERN.finditer(text))
     if len(matches) < 2:
         return text
-    return text[: matches[-1].start()]
+    return text[: matches[1].start()]
 
 
 def split_checklist_items(checklist_text: str) -> list[str]:
