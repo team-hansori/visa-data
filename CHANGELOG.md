@@ -25,6 +25,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([09d7fbc](https://github.com/team-hansori/visa-data/commit/09d7fbc9eefac4907922072b41cd730773bbd3ba))
 - 벌금 감점 기준 300만원/100만원 불일치를 notes에 기록 ([bae3ef5](https://github.com/team-hansori/visa-data/commit/bae3ef5a35806844ce77cc1885f50e61a3943c7a))
 - 한국어능력 이수/사전평가 단계 차이가 오타 아님을 확인해 notes에 기록 ([c414fe2](https://github.com/team-hansori/visa-data/commit/c414fe2933385367c4dab6584b44d642ebb41e9e))
 - CHANGELOG 자동 업데이트 [skip ci] ([5e2d07b](https://github.com/team-hansori/visa-data/commit/5e2d07b66e7d7cb9c9a68ef3c3952c9a1d3c8e4c))
@@ -45,6 +46,11 @@
 
 ### 버그 수정
 
+- SCORE-000의 빠졌던 raw_text 채움 ([38f3cc9](https://github.com/team-hansori/visa-data/commit/38f3cc9c585c772de2df951a1e1e4c031a6bc887))
+- Current_requirements.csv, scoring_items.csv source_page를 HWPX 기준으로 정정 ([9e92cd3](https://github.com/team-hansori/visa-data/commit/9e92cd38d51dcac3f6c8d276f890fe08c7d5620e))
+- Document_forms.csv source_page를 HWPX 기준으로 정정 ([f1f549c](https://github.com/team-hansori/visa-data/commit/f1f549cddd2afb3f89784bbd30039dd4471ff4e8))
+- 섹션 자르기를 마지막 마커가 아니라 두 번째 마커 기준으로 수정 ([149d5f1](https://github.com/team-hansori/visa-data/commit/149d5f1ec1d6cf72b0ce9e884be6e040201f04da))
+- 코드래빗 리뷰 반영 - 다음 섹션 텍스트 혼입, source_document 누락 ([096f040](https://github.com/team-hansori/visa-data/commit/096f040b09f52021ea3f183a8b4f5c9130e80bfe))
 - 근거표 원본 CSV를 덮어쓸 수 있는 두 가지 위험 제거 ([836926c](https://github.com/team-hansori/visa-data/commit/836926c46acd86348ec26f4bfa241dce1810f1de))
 - 값 추출 모호성 처리 보강 ([d7299a5](https://github.com/team-hansori/visa-data/commit/d7299a58f936b7bd5dec2ed61f07b74be587e72e))
 - 코드래빗 리뷰 반영 - 두 자리 이상 챕터 번호, 제목 내 특수문자 이스케이프 ([edca276](https://github.com/team-hansori/visa-data/commit/edca27607f935769d12a34fa9e446a9d57370d05))
@@ -56,6 +62,8 @@
 
 ### 새 기능
 
+- Scoring_items.csv에 source_document 컬럼 추가 ([67f70b7](https://github.com/team-hansori/visa-data/commit/67f70b7541ca9f07b2eaaf4fdd1d7468a02c694a))
+- 8차 공고 document_forms.csv 채우기 (서식1~9) ([046664d](https://github.com/team-hansori/visa-data/commit/046664d8826dc8f7a53a07255a6dba731e46e83c))
 - 점수제 심사 섹션에서 발견된 계약 연봉 자격요건 2행 추가 ([1be4227](https://github.com/team-hansori/visa-data/commit/1be422707ab58f7f70ddd45b69ec2c0cdee4af12))
 - Current_requirements.csv 나머지 7행 확정 및 반영 완료 ([2553502](https://github.com/team-hansori/visa-data/commit/25535026aacabcee25a2211c1f5298c308f46548))
 - Source_page 자동 매칭 스크립트 추가 및 일부 페이지 반영 ([346892f](https://github.com/team-hansori/visa-data/commit/346892f64050257e99023868825b5f547f4a69dd))
