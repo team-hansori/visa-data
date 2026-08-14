@@ -1,19 +1,22 @@
-# D_visa_requirements — 비자 요건·절차·쿼터 공유 마스터 테이블
+# D_visa_requirements — 비자 요건·절차·쿼터·변경이력 공유 마스터 테이블
 
 `A_F-2-R`/`B_E-7-4R`/`C_D-2-common`이 비자유형별 전용 폴더인 것과 달리, 이 폴더의 4개 테이블은 `visa_code`(F-2-R/E-7-4R/F-4-R/F-5-6R/E-7-4-GENERAL/D-2-GWANGYEOK 등)를 하나의 파일에 함께 담는 공유 마스터 테이블이다. 여러 비자 담당자가 같은 CSV에 각자 비자의 행을 추가하는 구조이므로, PR을 올릴 때 다른 비자유형의 행을 건드리지 않았는지 diff를 확인한다.
 
 F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 확정된 설계 원칙이며, F-2-R·E-7-4R 등 다른 비자유형에도 그대로 적용되는지는 실제 공고문 확인 시 재검증이 필요하다.
 
-## 왜 4개 테이블로 나눴는가
+## 왜 5개 테이블로 나눴는가
 
-비자 하나를 둘러싼 정보는 변경 빈도가 서로 다른 네 가지로 나뉜다. 하나의 테이블에 담으면 "거의 안 바뀌는 값"과 "매달 바뀌는 값"이 섞여서, 갱신할 때마다 안 바뀐 값까지 같이 손대야 하는 문제가 생긴다.
+비자 하나를 둘러싼 정보는 변경 빈도가 서로 다른 다섯 가지로 나뉜다. 하나의 테이블에 담으면 "거의 안 바뀌는 값"과 "매달 바뀌는 값"이 섞여서, 갱신할 때마다 안 바뀐 값까지 같이 손대야 하는 문제가 생긴다.
 
 | 파일 | 담는 정보 | 변경 빈도 | 성격 |
 |------|-----------|-----------|------|
 | `visa_requirements.csv` | 비자의 기본 정체성(요건 범위, 총 모집인원 등) | 거의 안 바뀜 | 마스터 |
 | `visa_requirement_criteria.csv` | 합격 여부를 가르는 개별 조건 | 연 1회 내외(요건 개정 시) | 마스터(정규화) |
-| `visa_process_stages.csv` | 신청 절차의 각 단계(누가·누구에게·언제까지) | 회차마다 재확인 필요 | 마스터(회차별 이력) |
+| `visa_process_stages.csv` | 신청 절차의 각 단계(누가·누구에게·언제까지) | 회차마다 재확인 필요 | 마스터(회차별 이력, 회차마다 새 행 추가) |
 | `visa_quota_status.csv` | 잔여 인원 스냅샷 | 매달 | 로그(시계열) |
+| `change_history.csv` | `visa_requirements`·`visa_requirement_criteria` 값이 회차 간 어떻게 바뀌었는지 | 값이 바뀔 때마다 | 로그(변경 diff) |
+
+`visa_process_stages`·`visa_quota_status`는 애초에 회차별/시점별로 새 행을 쌓는 구조라 그 자체로 이력이다. 반면 `visa_requirements`·`visa_requirement_criteria`는 "현재 유효한 값"만 `valid_from`/`valid_to`로 관리하는 마스터라, 회차가 바뀔 때 무엇이 왜 바뀌었는지는 별도로 기록해야 한다 — 그 역할을 `change_history.csv`가 한다.
 
 ## 파일별 스펙
 
@@ -87,6 +90,25 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 
 **표준 5필드에서 벗어난 이유**: "현재 유효한 값"이 아니라 시점별 기록을 영구히 쌓는 로그다. `valid_from`/`valid_to`(언제까지 유효했는지) 개념이 안 맞아서 `as_of_date`+`recorded_at`으로 대체했다. `total_quota` 자체가 NULL(무제한)인 비자는 이 테이블에 행을 만들지 않는다.
 
+### `change_history.csv`
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `change_id` | uuid (PK) | |
+| `visa_id` | uuid (FK) | |
+| `table_name` | text | `visa_requirements`/`visa_requirement_criteria` — 변경이 어느 테이블에서 났는지 |
+| `field_identifier` | text | `table_name=visa_requirements`면 컬럼명(`total_quota` 등), `visa_requirement_criteria`면 `criteria_name` |
+| `from_round` | integer | 변경 전 회차(공고 차수) |
+| `to_round` | integer | 변경 후 회차 |
+| `old_value` | text, nullable | 변경 전 값 (`added`면 비움) |
+| `new_value` | text, nullable | 변경 후 값 (`removed`면 비움) |
+| `change_type` | text | `added`/`removed`/`value_changed`/`scope_changed`/`procedure_changed`/`document_changed`/`editorial_change`(단순 문구 수정은 새 행으로 만들지 않음) |
+| `old_source_page` | text, nullable | |
+| `new_source_page` | text | |
+| `description` | text | 무엇이 왜 바뀌었는지 서술 |
+
+`B_E-7-4R/change_history.csv`와 같은 패턴이되, 이 폴더는 여러 비자유형·테이블이 한 파일을 공유하므로 `visa_id`와 `table_name`으로 어느 비자의 어느 테이블 변경인지 구분한다. `visa_requirements`·`visa_requirement_criteria`에 새 회차 값을 반영할 때마다(기존 행의 `valid_to`를 마감하고 새 행을 추가할 때) 이 테이블에도 diff 행을 같이 남긴다.
+
 ## 판단 기준 5단계 질문
 
 새 정보를 발견할 때마다 이 순서로 어느 테이블에 넣을지(또는 스키마화하지 않을지) 정한다.
@@ -118,6 +140,10 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 ## `admin_guide_corpus`로 가는 정보 (스키마화하지 않음)
 
 계산도 알림 판단도 필요 없이 읽어주기만 하면 되는 정보는 이 폴더에 CSV로 만들지 않는다. 예: 취업제한범위 비교표, 허가조건 위반 사유, 재량판단 예외조항 서술, 정착지원 프로그램 소개(→ 기존 `support_programs`에 행만 추가), 붙임서식 원본(→ `required_documents.document_url`에 링크만), 설문조사지 등 앱 기능과 무관한 옵션.
+
+## 배열 필드 표기
+
+`target_region`/`allowed_industries`처럼 `text[]` 타입인 필드는 CSV 셀 안에 `|`(파이프)로 구분해서 넣는다. 예: `제천시|보은군|옥천군|영동군|괴산군|단양군`. 값이 없으면(NULL) 빈 문자열로 둔다.
 
 ## 원본 문서
 
