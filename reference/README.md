@@ -6,6 +6,16 @@
 
 | 파일 | 내용 |
 |------|------|
-| `agency_contacts.csv` | 충북 시군별 가족센터·다문화가족지원센터·외국인지원센터 연락처 |
+| `agency_contacts.csv` | 충북 시군별 가족센터·다문화가족지원센터·외국인지원센터 연락처. `url` 컬럼 추가됨(전화 다음 위치) — 기존 행은 아직 URL 미검증이라 빈 값, 추가 조사 필요 |
+| `risk_routing_table.csv` | ⑤번 위험 키워드 감지 기능의 라우팅 규칙표. 사용자 대화에서 위험 신호(임금체불·산재·폭행·불법취업·거주지 유지의무 위반 등)가 감지되면 AI가 직접 답하지 않고 전문기관으로 연결한다. `admin_guide_corpus`(사용자가 물어봤을 때만 답하는 RAG)와 달리 선제적으로 개입하는 성격이 다르다 |
 
-`support_programs.csv`(지원사업 목록), `external_link_registry.csv`, `risk_routing_table.csv`도 같은 성격으로 이 폴더에 들어올 예정이지만, 아직 `chungbuk-sari` 쪽에서 데이터가 만들어지지 않아 이번 PR에는 포함하지 않았다 — 스키마만 있는 빈 파일은 만들지 않는다.
+`support_programs.csv`, `external_link_registry.csv`도 같은 성격으로 이 폴더에 들어올 예정이지만, 아직 `chungbuk-sari` 쪽에서 데이터가 만들어지지 않아 이번 PR에는 포함하지 않았다 — 스키마만 있는 빈 파일은 만들지 않는다.
+
+## `risk_routing_table.csv` 설계 원칙
+
+- **도메인 안/밖 구분**: 담당기관이 우리 서비스가 이미 추적하는 도메인 안에 있으면(`resolution_type=IN_DOMAIN`) `target_agency_category`에 `agency_contacts.category_minor` 값을 적어두고, 실제 지역별 기관은 화면에서 `region + target_agency_category`로 `agency_contacts.csv`를 조인해 조회한다. 도메인 밖(노동청·근로복지공단·다누리콜센터 등 범용 공공기관)이면 `resolution_type=EXTERNAL`로 두고 `external_*` 필드에 연락처를 직접 보유한다 — agency_contacts에는 도메인 밖 기관을 추가하지 않는다.
+- **user_type=FOREIGN_WORKER만 채움**: 현재 7행 모두 이주노동자 대상으로만 확인했다. 유학생(STUDENT)에게도 동일 카테고리가 적용되는지는 검토하지 않았으므로 임의로 행을 늘리지 않았다 — 필요 시 검토 후 추가.
+- **한국어 템플릿만 작성**: `escalation_message_template`은 한국어 원문만 채운다. 다국어 지원은 앱 전체 i18n 전략이 정해진 뒤 별도 테이블(예: `risk_routing_message_i18n.csv`)로 확장할 예정이며, 지금은 보류 상태다.
+- **`external_region_scope`는 NULL과 `NATIONWIDE`를 구분한다**: `resolution_type=EXTERNAL`인 행에서 이 필드가 비어 있으면 "관할지역을 아직 확인 안 함"이라는 뜻이다. 전국 단일기관으로 **확인된** 경우(예: 다누리콜센터)는 빈 칸이 아니라 `NATIONWIDE`를 명시한다 — `quota_type`(LIMITED/UNLIMITED/UNKNOWN)과 같은 이유로, 비어 있는 값을 자동으로 "지역 제한 없음"으로 해석해 넘어가면 안 된다. `resolution_type=IN_DOMAIN`인 행은 이 필드 자체가 해당 없음이라 빈 칸이어도 무방하다(`resolution_type`으로 구분됨).
+- **`notes`에 확인되지 않은 부분을 명시**: 예를 들어 다누리콜센터(1577-1366)는 이주여성 대상 서비스로 명시돼 있어 남성 피해자 커버 여부가 확인되지 않았고, 근로복지공단 콜센터(1588-0075)는 지사 직통이 아니라 전국 단일번호다. 이런 확인되지 않은 판단은 추측해서 메우지 않고 `notes`에 남긴다.
+- **보류된 카테고리**: `ATTENDANCE_SHORTAGE`(출석미달)는 단일 담당기관을 확인하지 못해 제외했다. `RESTRICTED_PARTTIME_WORK`(제한업종 시간제취업)는 필요성 재검토 후 채택하지 않기로 했다.
