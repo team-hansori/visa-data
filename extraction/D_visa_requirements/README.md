@@ -18,6 +18,16 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 
 `visa_process_stages`·`visa_quota_status`는 애초에 회차별/시점별로 새 행을 쌓는 구조라 그 자체로 이력이다. 반면 `visa_requirements`·`visa_requirement_criteria`는 "현재 유효한 값"만 `valid_from`/`valid_to`로 관리하는 마스터라, 회차가 바뀔 때 무엇이 왜 바뀌었는지는 별도로 기록해야 한다 — 그 역할을 `change_history.csv`가 한다.
 
+## 마스터 레코드 수명주기 (`visa_id` 안정성)
+
+`visa_requirements`·`visa_requirement_criteria`는 회차마다 새 버전 행을 쌓지 않는 **스냅샷** 테이블이다(B_E-7-4R의 `current_requirements.csv`와 동일한 "현재값만 유지" 패턴). 이 문서 초안에 있던 "기존 행을 마감하고 새 행을 추가한다"는 표현은 부정확했다 — 실제 규칙은 다음과 같다.
+
+- **`visa_id`는 `visa_code` 1개당 정확히 하나, 영구히 고정된 식별자다.** 새 공고 회차가 나와도 새 `visa_id`를 발급하지 않고, 다른 회차에도 재사용하지 않는다(재사용 금지 + 불변 = 안정적 논리 키).
+- **`visa_requirements.csv`는 `visa_code`당 정확히 1행만 유지한다.** 새 회차 값으로 갱신할 때는 해당 행을 그 자리에서 덮어쓴다(필드 값 + `valid_from`/`valid_to`를 이번 회차 기준으로 갱신). 이전 회차 값은 이 테이블에 별도 행으로 남기지 않고 `change_history.csv`에 diff로만 보존한다.
+- **`visa_requirement_criteria.csv`도 같은 원칙**을 요건 단위로 적용한다: 요건이 없어지면(`change_type=removed`) 해당 `criteria_id` 행을 삭제하고, 새로 생기면(`added`) 새 `criteria_id` 행을 추가하고, 값만 바뀌면(`value_changed`) 기존 `criteria_id` 행을 그 자리에서 갱신한다. 세 경우 모두 `change_history.csv`에 대응하는 diff 행을 반드시 같이 남긴다.
+- **`visa_process_stages.csv`·`visa_quota_status.csv`는 반대로 append-only 로그다.** 회차마다 새 행을 추가하고 과거 행은 절대 지우거나 덮어쓰지 않는다 — `notice_round`/`as_of_date`가 사실상 버전 축 역할을 한다.
+- **하위 테이블은 모두 `visa_id` 단일 컬럼 FK로 마스터를 참조한다.** `visa_requirements`가 회차별로 여러 버전 행을 갖지 않고 항상 "현재 값 1개"만 유지하므로, 특정 회차의 마스터 버전을 가리키는 복합 키(`visa_id`+`notice_round` 등)는 필요 없다 — `visa_id` 하나로 항상 최신 마스터 행을 가리킨다. 과거 회차 값이 필요하면 `change_history.csv`를 조회한다.
+
 ## 파일별 스펙
 
 ### `visa_requirements.csv`
@@ -33,7 +43,8 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 | `residency_limit_years` | integer | 거주지 제한기간 |
 | `allowed_industries` | text[], nullable | 업종 제한(제한 없으면 NULL). 배열 직렬화 규칙은 "배열 필드 표기" 참고 |
 | `application_method` | text | 신청 방법 요약 |
-| `total_quota` | integer, nullable | 총 모집인원. NULL = 무제한 |
+| `quota_type` | text | `LIMITED`(정원 있음)/`UNLIMITED`(원문에 무제한이라고 명시됨)/`UNKNOWN`(원문에서 쿼터 언급 자체를 아직 확인 못함) |
+| `total_quota` | integer, nullable | `quota_type=LIMITED`일 때만 정원 숫자를 채운다. `UNLIMITED`/`UNKNOWN`이면 NULL |
 | `quota_shared_with` | text, nullable | 쿼터 공유 비자코드 |
 | `next_visa_code` | text, nullable | 전환 가능한 다음 비자(F-4-R→F-5-6R 등) |
 | `valid_from`/`valid_to`/`source_document`/`source_page`/`last_verified_at` | — | 표준 버전관리 |
@@ -87,12 +98,14 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 | `quota_status_id` | uuid (PK) | |
 | `visa_id` | uuid (FK) | |
 | `notice_round` | integer | 몇 차 공고 기준 |
-| `remaining_quota` | integer, nullable | 잔여 인원. NULL = 무제한 |
+| `remaining_quota` | integer, nullable | 잔여 인원. 이 테이블은 `quota_type=LIMITED`인 비자만 대상이므로 원칙적으로 숫자가 채워진다. NULL은 "무제한"이 아니라 "이번 회차 공고에 잔여인원 수치가 발표되지 않음"을 뜻한다 |
 | `as_of_date` | date | 공고일 기준 |
 | `source_document`/`source_page` | — | 표준 |
 | `recorded_at` | date | 팀이 기록한 날짜 |
 
-**표준 5필드에서 벗어난 이유**: "현재 유효한 값"이 아니라 시점별 기록을 영구히 쌓는 로그다. `valid_from`/`valid_to`(언제까지 유효했는지) 개념이 안 맞아서 `as_of_date`+`recorded_at`으로 대체했다. `total_quota` 자체가 NULL(무제한)인 비자는 이 테이블에 행을 만들지 않는다.
+**표준 5필드에서 벗어난 이유**: "현재 유효한 값"이 아니라 시점별 기록을 영구히 쌓는 로그다. `valid_from`/`valid_to`(언제까지 유효했는지) 개념이 안 맞아서 `as_of_date`+`recorded_at`으로 대체했다.
+
+**행을 만드는 기준**: `visa_requirements.quota_type=UNLIMITED`로 **확정된** 비자만 이 테이블에 행을 만들지 않는다. `quota_type=UNKNOWN`(원문에서 쿼터 여부 자체를 아직 확인 못한 상태)인 비자는 무제한으로 단정하지 않는다 — `total_quota`가 NULL이라고 자동으로 "쿼터 없음"으로 해석해 이 테이블을 건너뛰면 안 된다. 확인 전까지는 `visa_requirements.quota_type=UNKNOWN`으로 남겨 두고, 공고문에서 정원 여부가 확인되는 대로 `LIMITED`/`UNLIMITED`로 갱신한다.
 
 ### `change_history.csv`
 
@@ -111,13 +124,13 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 | `new_source_page` | text | |
 | `description` | text | 무엇이 왜 바뀌었는지 서술 |
 
-`B_E-7-4R/change_history.csv`와 같은 패턴이되, 이 폴더는 여러 비자유형·테이블이 한 파일을 공유하므로 `visa_id`와 `table_name`으로 어느 비자의 어느 테이블 변경인지 구분한다. `visa_requirements`·`visa_requirement_criteria`에 새 회차 값을 반영할 때마다(기존 행의 `valid_to`를 마감하고 새 행을 추가할 때) 이 테이블에도 diff 행을 같이 남긴다.
+`B_E-7-4R/change_history.csv`와 같은 패턴이되, 이 폴더는 여러 비자유형·테이블이 한 파일을 공유하므로 `visa_id`와 `table_name`으로 어느 비자의 어느 테이블 변경인지 구분한다. `visa_requirements`·`visa_requirement_criteria`는 "마스터 레코드 수명주기"에서 설명한 대로 스냅샷이라 옛 값이 테이블 안에 남지 않으므로, 새 회차 값으로 그 자리에서 갱신할 때마다 이 테이블에 diff 행을 반드시 같이 남긴다 — 그래야 이전 값을 조회할 유일한 경로가 생긴다.
 
 ## 판단 기준 5단계 질문
 
 새 정보를 발견할 때마다 이 순서로 어느 테이블에 넣을지(또는 스키마화하지 않을지) 정한다.
 
-```
+```text
 ① 트래커가 이 값으로 합격여부를 계산하는가?
    Yes → visa_requirement_criteria
    No ↓
@@ -170,5 +183,5 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 2. `visa_requirements.csv`에 F-4-R 1행을 채운다.
 3. `visa_requirement_criteria.csv`에 F-4-R 요건을 5단계 질문 기준으로 분류해 채운다(신청자격 3갈래 OR, 거주지 유지의무, 결격사유, 동반자녀 추가요건, 취업지역 제한 등).
 4. `visa_process_stages.csv`에 12차 공고 기준 절차 단계를 채운다.
-5. `visa_quota_status.csv`는 F-4-R의 `total_quota`가 NULL(무제한)이면 행을 만들지 않는다.
+5. `visa_quota_status.csv`는 F-4-R처럼 `quota_type=UNLIMITED`로 확정된 비자면 행을 만들지 않는다.
 6. F-2-R·E-7-4R 등 다른 비자유형 담당자가 공고문을 확인할 때 이 설계 원칙이 그대로 적용되는지 재검증한다.

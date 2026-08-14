@@ -101,11 +101,11 @@ visa-data/
 ├── requirements.txt              # 핵심 의존성 목록
 ├── cliff.toml                    # git-cliff 변경 이력 설정
 │
-├── extraction/                   # 비자 유형별 근거표 추출 작업 (담당자별 폴더)
-│   ├── A_F-2-R/
-│   ├── B_E-7-4R/                 # current_requirements/scoring_items/document_forms/change_history.csv
-│   ├── C_D-2-common/
-│   └── D_visa_requirements/      # 비자 요건·절차·쿼터 공유 마스터 테이블 (여러 비자유형이 공통 사용)
+├── extraction/                   # 비자 요건 추출 작업 (담당자별 전용 폴더 + 비자유형 공동 사용 폴더)
+│   ├── A_F-2-R/                  # F-2-R 전용 (담당자 폴더)
+│   ├── B_E-7-4R/                 # E-7-4R 전용 (담당자 폴더). current_requirements/scoring_items/document_forms/change_history.csv
+│   ├── C_D-2-common/             # D-2(유학생) 전용 (담당자 폴더)
+│   └── D_visa_requirements/      # 여러 비자유형이 공동 사용하는 공유 마스터 테이블 (담당자 전용 폴더 아님)
 │
 ├── data/
 │   ├── raw/                      # 원본 PDF·자료, git 추적 제외
