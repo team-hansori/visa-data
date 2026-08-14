@@ -28,10 +28,10 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 | `visa_code` | text | `F-2-R`/`E-7-4R`/`F-4-R`/`F-5-6R`/`E-7-4-GENERAL`/`D-2-GWANGYEOK` |
 | `visa_name_kr` | text | 표시명 |
 | `program_type` | text | `REGIONAL_SPECIALIZED`/`GENERAL`/`GWANGYEOK` |
-| `target_region` | text[] | 대상 시군(전국이면 NULL) |
+| `target_region` | text[] | 대상 시군(전국이면 NULL). 배열 직렬화 규칙은 "배열 필드 표기" 참고 |
 | `total_score_threshold` | integer, nullable | 점수제 합격선(점수제 아니면 NULL) |
 | `residency_limit_years` | integer | 거주지 제한기간 |
-| `allowed_industries` | text[], nullable | 업종 제한(제한 없으면 NULL) |
+| `allowed_industries` | text[], nullable | 업종 제한(제한 없으면 NULL). 배열 직렬화 규칙은 "배열 필드 표기" 참고 |
 | `application_method` | text | 신청 방법 요약 |
 | `total_quota` | integer, nullable | 총 모집인원. NULL = 무제한 |
 | `quota_shared_with` | text, nullable | 쿼터 공유 비자코드 |
@@ -50,12 +50,16 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 | `criteria_type` | text | `binary`/`graduated` |
 | `threshold_value` | text | 기준값 |
 | `point_value` | integer, nullable | 점수제만 |
-| `special_case_note` | text, nullable | 예외조건, OR조건 명시 |
+| `condition_group` | text, nullable | 서로 대체 가능한(OR) 조건 묶음 ID(`G1`, `G2`… 임의 라벨, 의미 없음). 유일성은 같은 `visa_id` 안에서만 보장하면 되고, 다른 비자유형 행과 번호가 겹쳐도 무방하다. 묶이지 않은 행은 다른 모든 criteria 행과 기본적으로 AND로 결합된다 |
+| `condition_operator` | text, nullable | `condition_group`이 있는 행에만 채움. 현재는 `OR`만 쓴다(AND는 그룹 없이 표현되므로) |
+| `special_case_note` | text, nullable | 예외조건 설명, 재량판단 단서 등 — 논리 연산 자체는 여기 적지 않고 `condition_group`/`condition_operator`로 표현 |
 | `valid_from`/`valid_to`/`source_document`/`source_page`/`last_verified_at` | — | 표준 버전관리 |
 
 **이 테이블에 넣을지 판단하는 기준**은 아래 "판단 기준 5단계 질문"을 그대로 따른다 — 트래커가 자동으로 충족/미충족을 판정할 수 있는 조건만 행으로 만든다. "인정되는 경우"·"부득이한 경우" 같은 재량 판단 표현이 들어간 조건은 절대 여기 넣지 않는다(`admin_guide_corpus`로).
 
-**OR 조건 처리**: F-4-R의 "기존거주자/국내전입자/해외전입자" 3갈래처럼 "이 중 하나만 충족하면 됨"은 각각 별도 행으로 만들고, `special_case_note`에 "N개 유형 중 하나만 충족하면 됨(OR)"이라고 명시한다.
+**OR 조건 처리**: `B_E-7-4R/current_requirements.csv`와 같은 구조를 그대로 쓴다 — 한 문장에 여러 조건이 섞여 있으면 개별 행으로 분리하고, `condition_group`은 서로 관련된(대체 가능한) 조건들의 묶음만 나타낸다. 논리적 결합 관계는 자동으로 정하지 않고 원문을 직접 읽고 `condition_operator`에 사람이 입력한다. F-4-R의 "기존거주자/국내전입자/해외전입자" 3갈래처럼 "이 중 하나만 충족하면 됨"은 세 행 모두 같은 `condition_group`(예: `G1`)과 `condition_operator=OR`을 준다. `condition_group`이 없는 행은 같은 `visa_id`의 다른 모든 행과 AND로 결합된다고 간주한다.
+
+**복합 조건("A AND (B OR C)") 처리**: 하나의 필수 조건(A)과 그 조건을 만족하는 두 가지 대체 경로(B/C)가 섞인 경우, A는 `condition_group` 없이 독립 행으로 두고(전체와 AND), B·C만 같은 `condition_group`을 줘서 OR로 묶는다. 예: F-4-R "동반자녀 추가요건"은 "만 6~19세(연령, AND)" + "① 재학중/입학예정 OR ② 질병·장애로 재학 곤란"이므로, 연령요건은 그룹 없이 1행, ①·②는 같은 그룹(`condition_operator=OR`)으로 2행 — 총 3행으로 분리한다. 하나의 행에 AND와 OR를 텍스트로 섞어 넣지 않는다(자동판정이 불가능해지므로).
 
 ### `visa_process_stages.csv`
 
@@ -143,7 +147,11 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 
 ## 배열 필드 표기
 
-`target_region`/`allowed_industries`처럼 `text[]` 타입인 필드는 CSV 셀 안에 `|`(파이프)로 구분해서 넣는다. 예: `제천시|보은군|옥천군|영동군|괴산군|단양군`. 값이 없으면(NULL) 빈 문자열로 둔다.
+`target_region`/`allowed_industries`처럼 `text[]` 타입인 필드는 CSV 셀(하나의 컬럼) 안에 `|`(파이프)로 원소를 구분해서 넣는다. 예: `제천시|보은군|옥천군|영동군|괴산군|단양군`. 값이 없으면(NULL) 빈 문자열로 둔다.
+
+- **원소 구분자**: `|` 앞뒤에 공백을 두지 않는다(`A|B`, `A |B` 아님).
+- **원소 자체에 `|`가 들어가면 안 된다**: 시군명·업종명에 파이프 문자가 나올 일이 없으므로 이 표기법을 쓴다. 원문에 파이프가 포함된 값이 나오면 이 컬럼에 그대로 넣지 말고 별도 필드(예: `notes`)에 원문을 남기고 이슈로 공유한다.
+- **콤마·큰따옴표는 CSV 표준 이스케이프를 그대로 따른다**: `|` 구분은 셀 *내부*의 배열 표기일 뿐, 셀 자체의 CSV 이스케이프(RFC 4180)와는 별개 레이어다. 원소 중 하나에 콤마가 들어가면(예: `제조업, 도소매업` 같은 업종명) 셀 전체를 큰따옴표로 감싸고(`"제조업, 도소매업|건설업"`), 원소 안에 큰따옴표가 있으면 두 번 겹쳐 이스케이프한다(`""`). 엑셀·Python `csv` 모듈 등 CSV 인식 도구로 저장하면 이 처리가 자동으로 이루어지므로, 텍스트 에디터로 셀 값을 직접 이어붙이지 않는다.
 
 ## 원본 문서
 
