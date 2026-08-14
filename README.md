@@ -104,7 +104,8 @@ visa-data/
 ├── extraction/                   # 비자 유형별 근거표 추출 작업 (담당자별 폴더)
 │   ├── A_F-2-R/
 │   ├── B_E-7-4R/                 # current_requirements/scoring_items/document_forms/change_history.csv
-│   └── C_D-2-common/
+│   ├── C_D-2-common/
+│   └── D_visa_requirements/      # 비자 요건·절차·쿼터 공유 마스터 테이블 (여러 비자유형이 공통 사용)
 │
 ├── data/
 │   ├── raw/                      # 원본 PDF·자료, git 추적 제외
