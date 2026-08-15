@@ -25,6 +25,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([9a7a0f7](https://github.com/team-hansori/visa-data/commit/9a7a0f73bf94e62056dc9167b3d8e06177983e12))
 - CHANGELOG 자동 업데이트 [skip ci] ([02886c5](https://github.com/team-hansori/visa-data/commit/02886c55ce46862bd596f65fa6cd660c626d494d))
 - CHANGELOG 자동 업데이트 [skip ci] ([3cc6d63](https://github.com/team-hansori/visa-data/commit/3cc6d630ab0646a5314260a8c5f56e4ea2b45fd6))
 - CHANGELOG 자동 업데이트 [skip ci] ([09d7fbc](https://github.com/team-hansori/visa-data/commit/09d7fbc9eefac4907922072b41cd730773bbd3ba))
@@ -48,6 +49,7 @@
 
 ### 버그 수정
 
+- ASSAULT 행 notes의 external_region_scope 오기 수정 (NULL→NATIONWIDE) ([ab349bc](https://github.com/team-hansori/visa-data/commit/ab349bc445dbb0fc15f92454e05d923d86905f1f))
 - Condition_group을 OR 전용으로 명확히 하고 B의 G번호 재사용 금지 규칙 추가 ([50933f9](https://github.com/team-hansori/visa-data/commit/50933f9d6a863145f390eff22e2f01068552774d))
 - Visa_requirement_criteria.csv threshold_value 구조화 및 scoring_items.csv 경계 정리 ([0e2fe49](https://github.com/team-hansori/visa-data/commit/0e2fe49b52c235b10bbfc69e1d06d33f676d4acf))
 - Visa_id 수명주기 명시, 쿼터 무제한/미확인 구분, 문서 정리 ([1f13f43](https://github.com/team-hansori/visa-data/commit/1f13f434c5613ec76424adfe81dd7e706137bac0))
