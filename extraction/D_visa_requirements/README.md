@@ -1,6 +1,6 @@
 # D_visa_requirements — 비자 요건·절차·쿼터·변경이력 공유 마스터 테이블
 
-`A_F-2-R`/`B_E-7-4R`/`C_D-2-common`이 비자유형별 전용 폴더인 것과 달리, 이 폴더의 4개 테이블은 `visa_code`(F-2-R/E-7-4R/F-4-R/F-5-6R/E-7-4-GENERAL/D-2-GWANGYEOK 등)를 하나의 파일에 함께 담는 공유 마스터 테이블이다. 여러 비자 담당자가 같은 CSV에 각자 비자의 행을 추가하는 구조이므로, PR을 올릴 때 다른 비자유형의 행을 건드리지 않았는지 diff를 확인한다.
+`A_F-2-R`/`B_E-7-4R`/`C_D-2-common`이 비자유형별 전용 폴더인 것과 달리, 이 폴더의 5개 테이블은 `visa_code`(F-2-R/E-7-4R/F-4-R/F-5-6R/E-7-4-GENERAL/D-2-GWANGYEOK 등)를 하나의 파일에 함께 담는 공유 마스터 테이블이다. 여러 비자 담당자가 같은 CSV에 각자 비자의 행을 추가하는 구조이므로, PR을 올릴 때 다른 비자유형의 행을 건드리지 않았는지 diff를 확인한다.
 
 F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 확정된 설계 원칙이며, F-2-R·E-7-4R 등 다른 비자유형에도 그대로 적용되는지는 실제 공고문 확인 시 재검증이 필요하다.
 
@@ -58,19 +58,37 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 | `criteria_id` | uuid (PK) | |
 | `visa_id` | uuid (FK) | |
 | `criteria_name` | text | "거주기간", "신청자격(기존거주자)" 등 |
-| `criteria_type` | text | `binary`/`graduated` |
-| `threshold_value` | text | 기준값 |
-| `point_value` | integer, nullable | 점수제만 |
+| `criteria_type` | text | `binary` 고정. 구간별 배점(graduated/점수제)은 이 테이블이 아니라 `scoring_items.csv`가 다룬다 — 아래 "`scoring_items.csv`와의 경계" 참고 |
+| `value_numeric` | numeric, nullable | 숫자로 비교 가능한 값("2년 이상", "60세 미만"의 2/60). SQL에서 `operator`와 함께 바로 비교하기 위한 필드 — 숫자로 못 뽑아내는 조건(재량판단 서술형 등)이면 비워두고 `value_text`만 채운다 |
+| `operator` | text, nullable | `value_numeric`에 대한 비교연산자(`>=`/`>`/`<=`/`<`/`==`). 두 방향 범위("6세 이상 19세 미만")는 한 행에 담지 않고 하한·상한을 별도 행 2개로 분리해 각각 단일 연산자로 표현한다(묶이지 않은 두 행은 기본 AND) — "복합 조건" 절 참고 |
+| `unit` | text, nullable | `value_numeric`의 단위(`년`/`세`/`회`/`만원` 등) |
+| `value_text` | text, nullable | 조건 원문 설명. `value_numeric`이 있어도 맥락(어떤 신분·어떤 절차인지 등) 보존을 위해 항상 채운다 |
+| `measurement_window_value`/`measurement_window_unit` | numeric/text, nullable | "최근 N년간" 같은 평가 범위. `B_E-7-4R/current_requirements.csv`와 동일한 필드 |
 | `condition_group` | text, nullable | 서로 대체 가능한(OR) 조건 묶음 ID(`G1`, `G2`… 임의 라벨, 의미 없음). 유일성은 같은 `visa_id` 안에서만 보장하면 되고, 다른 비자유형 행과 번호가 겹쳐도 무방하다. 묶이지 않은 행은 다른 모든 criteria 행과 기본적으로 AND로 결합된다 |
 | `condition_operator` | text, nullable | `condition_group`이 있는 행에만 채움. 현재는 `OR`만 쓴다(AND는 그룹 없이 표현되므로) |
 | `special_case_note` | text, nullable | 예외조건 설명, 재량판단 단서 등 — 논리 연산 자체는 여기 적지 않고 `condition_group`/`condition_operator`로 표현 |
 | `valid_from`/`valid_to`/`source_document`/`source_page`/`last_verified_at` | — | 표준 버전관리 |
 
+`threshold_value`(자유텍스트) + `point_value`(정수 하나)였던 이전 스키마는 폐기했다. 텍스트만으로는 SQL에서 값을 비교할 수 없었다 — `B_E-7-4R/current_requirements.csv`에 이미 검증된 숫자 비교 패턴(`value_numeric`/`operator`/`unit`/`measurement_window_*`)을 그대로 재사용해 위 필드로 대체했다.
+
 **이 테이블에 넣을지 판단하는 기준**은 아래 "판단 기준 5단계 질문"을 그대로 따른다 — 트래커가 자동으로 충족/미충족을 판정할 수 있는 조건만 행으로 만든다. "인정되는 경우"·"부득이한 경우" 같은 재량 판단 표현이 들어간 조건은 절대 여기 넣지 않는다(`admin_guide_corpus`로).
+
+**`scoring_items.csv`와의 경계**: 둘 다 "구간별로 값이 달라진다"는 점은 비슷해 보이지만 판정 방식이 다르다.
+
+| | `visa_requirement_criteria.csv`(이 파일) | `scoring_items.csv`(예: `B_E-7-4R/scoring_items.csv`) |
+|---|---|---|
+| 판정 방식 | 행마다 참/거짓, 전체를 **AND/OR 불리언**으로 결합 | 행마다 점수, 전체를 **합산(SUM)**해 `total_score_threshold`와 비교 |
+| 다루는 질문 | 신청 자격이 있는가 (충족/미충족) | 자격을 충족한 사람 중 몇 점인가 (순위/합격선) |
+| 구간이 있을 때 | 구간 자체가 하나의 참/거짓 조건(예: "6세 이상 19세 미만") — `value_numeric`/`operator` | 구간마다 다른 점수가 붙는 배점표(예: "2,500만원~2,999만원=50점, 3,000만원~=65점") — `min_value`/`max_value`/`points` |
+| 예시 | F-4-R 거주지 유지의무, 나이 요건 | E-7-4R K-POINT 평균소득·한국어능력·나이 배점 |
+
+새 조건을 만났을 때 "이게 합격여부를 AND/OR로 가르는가, 점수 합산에 기여하는가"로 구분한다 — 후자면 `visa_requirement_criteria.csv`에 억지로 `min_value`/`max_value`/`point_value` 컬럼을 추가하지 않고 `scoring_items.csv` 쪽에 행을 추가한다. 지금은 E-7-4R만 점수제를 쓰므로 `scoring_items.csv`는 `B_E-7-4R/` 폴더 전용으로 둔다 — 두 번째 비자유형이 점수제 심사를 쓰게 되면 그때 `D_visa_requirements/visa_scoring_items.csv`(공유 `visa_id` FK)로 승격을 검토한다. 아직 소비자가 하나뿐인 상태에서 공유 테이블부터 만들지 않는다.
 
 **OR 조건 처리**: `B_E-7-4R/current_requirements.csv`와 같은 구조를 그대로 쓴다 — 한 문장에 여러 조건이 섞여 있으면 개별 행으로 분리하고, `condition_group`은 서로 관련된(대체 가능한) 조건들의 묶음만 나타낸다. 논리적 결합 관계는 자동으로 정하지 않고 원문을 직접 읽고 `condition_operator`에 사람이 입력한다. F-4-R의 "기존거주자/국내전입자/해외전입자" 3갈래처럼 "이 중 하나만 충족하면 됨"은 세 행 모두 같은 `condition_group`(예: `G1`)과 `condition_operator=OR`을 준다. `condition_group`이 없는 행은 같은 `visa_id`의 다른 모든 행과 AND로 결합된다고 간주한다.
 
-**복합 조건("A AND (B OR C)") 처리**: 하나의 필수 조건(A)과 그 조건을 만족하는 두 가지 대체 경로(B/C)가 섞인 경우, A는 `condition_group` 없이 독립 행으로 두고(전체와 AND), B·C만 같은 `condition_group`을 줘서 OR로 묶는다. 예: F-4-R "동반자녀 추가요건"은 "만 6~19세(연령, AND)" + "① 재학중/입학예정 OR ② 질병·장애로 재학 곤란"이므로, 연령요건은 그룹 없이 1행, ①·②는 같은 그룹(`condition_operator=OR`)으로 2행 — 총 3행으로 분리한다. 하나의 행에 AND와 OR를 텍스트로 섞어 넣지 않는다(자동판정이 불가능해지므로).
+**복합 조건("A AND (B OR C)") 처리**: 하나의 필수 조건(A)과 그 조건을 만족하는 두 가지 대체 경로(B/C)가 섞인 경우, A는 `condition_group` 없이 독립 행으로 두고(전체와 AND), B·C만 같은 `condition_group`을 줘서 OR로 묶는다. 예: F-4-R "동반자녀 추가요건"은 "만 6세 이상 19세 미만(연령, AND)" + "① 재학중/입학예정 OR ② 질병·장애로 재학 곤란"이므로, 연령요건은 그룹 없이 하한·상한 2행("동반자녀 연령요건(하한)" `value_numeric=6,operator=>=` / "동반자녀 연령요건(상한)" `value_numeric=19,operator=<`), ①·②는 같은 그룹(`condition_operator=OR`)으로 2행 — 총 4행으로 분리한다. 하나의 행에 AND와 OR를 텍스트로 섞어 넣지 않는다(자동판정이 불가능해지므로).
+
+**지원하지 않는 논리식**: 이 스키마는 "그룹 없는 행끼리 AND" + "같은 그룹 안에서만 OR" 두 가지만 표현한다. `(A AND B) OR C`처럼 AND로 묶인 덩어리끼리 OR로 결합하는 조건이나, 서로 다른 `condition_group` 두 개를 OR로 잇는 조건(`G1 OR G2`)은 이 스키마로 표현할 수 없다 — 지금까지 확인된 공고문 조건 중 그런 사례는 없었고, 나오면 억지로 행을 쪼개 넣지 말고 원문 그대로 `special_case_note`에 남긴 뒤 `admin_guide_corpus`로 보내거나 수동 검토로 넘긴다.
 
 ### `visa_process_stages.csv`
 
