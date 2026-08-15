@@ -25,6 +25,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([3cc6d63](https://github.com/team-hansori/visa-data/commit/3cc6d630ab0646a5314260a8c5f56e4ea2b45fd6))
 - CHANGELOG 자동 업데이트 [skip ci] ([09d7fbc](https://github.com/team-hansori/visa-data/commit/09d7fbc9eefac4907922072b41cd730773bbd3ba))
 - 벌금 감점 기준 300만원/100만원 불일치를 notes에 기록 ([bae3ef5](https://github.com/team-hansori/visa-data/commit/bae3ef5a35806844ce77cc1885f50e61a3943c7a))
 - 한국어능력 이수/사전평가 단계 차이가 오타 아님을 확인해 notes에 기록 ([c414fe2](https://github.com/team-hansori/visa-data/commit/c414fe2933385367c4dab6584b44d642ebb41e9e))
@@ -62,6 +63,7 @@
 
 ### 새 기능
 
+- Risk_routing_table 신설 및 agency_contacts url 컬럼 추가 ([444a333](https://github.com/team-hansori/visa-data/commit/444a33341a25ab5ff16c34b6070ce8299510d30e))
 - Scoring_items.csv에 source_document 컬럼 추가 ([67f70b7](https://github.com/team-hansori/visa-data/commit/67f70b7541ca9f07b2eaaf4fdd1d7468a02c694a))
 - 8차 공고 document_forms.csv 채우기 (서식1~9) ([046664d](https://github.com/team-hansori/visa-data/commit/046664d8826dc8f7a53a07255a6dba731e46e83c))
 - 점수제 심사 섹션에서 발견된 계약 연봉 자격요건 2행 추가 ([1be4227](https://github.com/team-hansori/visa-data/commit/1be422707ab58f7f70ddd45b69ec2c0cdee4af12))
