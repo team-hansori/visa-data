@@ -2966,6 +2966,7 @@ version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "lightgbm" },
+    { name = "lxml" },
     { name = "matplotlib" },
     { name = "numpy" },
     { name = "pandas" },
@@ -3004,6 +3005,7 @@ requires-dist = [
     { name = "geopandas", marker = "extra == 'gis'", specifier = ">=0.14" },
     { name = "ipykernel", marker = "extra == 'dev'", specifier = ">=6.28" },
     { name = "lightgbm", specifier = ">=4.0" },
+    { name = "lxml", specifier = ">=5.0" },
     { name = "matplotlib", specifier = ">=3.8" },
     { name = "nbconvert", marker = "extra == 'dev'", specifier = ">=7.14" },
     { name = "numpy", specifier = ">=1.26" },
