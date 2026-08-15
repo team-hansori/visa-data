@@ -6,8 +6,8 @@
 
 | 파일 | 내용 |
 |------|------|
-| `current_requirements.csv` | 8차 공고 기준 현재 적용 요건 (복합 조건은 행으로 분리) |
-| `scoring_items.csv` | K-POINT 점수 항목과 구간별 배점 |
+| `current_requirements.csv` | 8차 공고 기준 현재 적용 요건 (복합 조건은 행으로 분리) — 신청 자격을 AND/OR 불리언으로 가르는 조건만 |
+| `scoring_items.csv` | K-POINT 점수 항목과 구간별 배점 — 자격을 충족한 사람 중 합격선(총점 임계치)을 가르는 합산 점수만. `current_requirements.csv`와의 경계 기준은 `D_visa_requirements/README.md`의 "`scoring_items.csv`와의 경계" 참고 |
 | `document_forms.csv` | 서식 메타데이터 (작성자/제출자/제출처/서명자 등, 자격요건 아님) |
 | `change_history.csv` | 1~7차 대비 8차의 변경 사항만 기록 |
 

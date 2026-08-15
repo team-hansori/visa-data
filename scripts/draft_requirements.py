@@ -1,6 +1,16 @@
 """
 추출된 원문 텍스트를 문서 기호 기준으로 쪼개 근거표 초안을 만든다.
 사용법: uv run python scripts/draft_requirements.py <텍스트파일> <기준CSV경로>
+
+condition_group 자동 생성 규칙과 그 한계: 이 스크립트는 ❍(GROUP_START_MARKER) 하나를 만날 때마다
+새 G번호를 발급하고, 그 아래 ※/- 하위 조각(subcondition)을 전부 같은 그룹으로 묶는다. 이건 "같은
+❍ 아래 있다"는 사실만 반영할 뿐 실제 OR(대체 가능) 관계를 판별하지 않는다 — condition_operator는
+항상 비워서 사람이 채우게 한다. B_E-7-4R/current_requirements.csv에 이렇게 생성된 G1~G8 중
+실제로 condition_operator=OR인 건 일부뿐이고 나머지는 그냥 같은 ❍의 보충설명·하위조건이다.
+extraction/D_visa_requirements/(공유 criteria 테이블)용으로 초안을 뽑을 때는 이 G번호를 그대로
+condition_group으로 확정하지 말 것 — `--candidate-groups` 플래그로 실행하면 G번호에
+`CANDIDATE_` 접두어가 붙어 "사람이 원문을 보고 실제 OR 여부를 확인하기 전까지는 미확정"임을
+표시한다. 확인 후 진짜 OR 대체조건이면 접두어를 떼고 `G1`처럼 남기고, 아니면 통째로 비운다.
 """
 
 from __future__ import annotations
@@ -119,8 +129,14 @@ def build_draft_rows(
     source_documnet: str,
     fieldnames: list[str],
     top_section_pattern: re.Pattern[str],
+    group_prefix: str = "G",
 ) -> list[dict]:
-    """분류된 조각들을 근거표 초안 행(dict) 리스트로 변환한다. fieldnames에 없는 컬럼은 빈 값으로 채운다."""
+    """분류된 조각들을 근거표 초안 행(dict) 리스트로 변환한다. fieldnames에 없는 컬럼은 빈 값으로 채운다.
+
+    group_prefix: condition_group 라벨 접두어. 기본값 "G"는 확정된 그룹을 뜻하는 기존 B_E-7-4R
+    관례를 유지한다. "CANDIDATE_G"처럼 넘기면 사람이 실제 OR 여부를 검토하기 전임을 라벨에서부터
+    드러낸다 (`--candidate-groups` CLI 플래그) — 실제 OR/AND 판정 로직 자체는 바뀌지 않는다.
+    """
     rows = []
     current_section = ""
     current_top_section = ""
@@ -162,7 +178,7 @@ def build_draft_rows(
 
         if kind == "requirement":
             group_count += 1
-            current_group = f"G{group_count}"
+            current_group = f"{group_prefix}{group_count}"
             condition_group = current_group
         elif kind == "subcondition":
             condition_group = current_group
@@ -222,6 +238,16 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="원문 텍스트를 근거표 초안 CSV로 반환 ")
     parser.add_argument("text_path", type=Path, help="조각낼 텍스트 파일 경로")
     parser.add_argument("template_csv", type=Path, help="컬럼 구조를 따라갈 기존 근거표 csv 경로")
+    parser.add_argument(
+        "--candidate-groups",
+        action="store_true",
+        help=(
+            "condition_group에 CANDIDATE_ 접두어를 붙여 미확정 상태로 표시한다. "
+            "❍ 단위 자동 그룹은 실제 OR 여부를 판별하지 않으므로, "
+            "extraction/D_visa_requirements/(공유 criteria) 등 condition_group을 "
+            "OR 전용으로 엄격하게 쓰는 테이블용 초안을 뽑을 때 사용한다."
+        ),
+    )
     args = parser.parse_args()
 
     text = args.text_path.read_text(encoding="utf-8")
@@ -230,9 +256,12 @@ def main() -> None:
     split_pattern = build_split_pattern(top_headings)
     top_section_pattern = build_top_section_pattern(top_headings)
 
+    group_prefix = "CANDIDATE_G" if args.candidate_groups else "G"
     chunks = split_into_chunks(text, split_pattern)
     fieldnames = read_fieldnames(args.template_csv)
-    rows = build_draft_rows(chunks, args.text_path.stem, fieldnames, top_section_pattern)
+    rows = build_draft_rows(
+        chunks, args.text_path.stem, fieldnames, top_section_pattern, group_prefix=group_prefix
+    )
     detect_short_numbered_items(rows)
 
     output_path = args.template_csv.with_name(f"_draft_{args.template_csv.name}")
