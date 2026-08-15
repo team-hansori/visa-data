@@ -15,6 +15,14 @@ from pathlib import Path
 
 D_DIR = Path("extraction/D_visa_requirements")
 STAGE_STATUS_COLUMN = "document_requirements_status"
+# 허용값 추가
+ALLOWED_DOCUMENT_REQUIREMENTS_STATUSES = frozenset(
+    {
+        "not_checked",
+        "present",
+        "explicitly_none",
+    }  # 통과, 문서 존재 여부 추가 검사, 문서 미존재 여부 추가 검사
+)
 
 
 @dataclass(frozen=True)
@@ -169,9 +177,24 @@ def check_document_requirements_status(
 
     errors: list[str] = []
     for i, row in enumerate(stage_rows, start=2):
-        status = row.get(STAGE_STATUS_COLUMN, "")
-        stage_id = row.get("stage_id", "")
-        has_documents = stage_id in stage_ids_with_documents
+        status = row.get(
+            STAGE_STATUS_COLUMN, ""
+        )  # 현재 단계의 제출서류 상태를 읽고, 값이 없으면 빈 문자열로 처리
+        stage_id = row.get("stage_id", "")  # 현재 절차 단계의 ID를 읽음 -> 제출서류 테이블 조회용
+
+        if (
+            status not in ALLOWED_DOCUMENT_REQUIREMENTS_STATUSES
+        ):  # 상태값이 허용된 3가지 중 하나인지 확인
+            errors.append(  # 잘못된 상태값 error 목록에 추가
+                f"{stages_path}:{i} - 허용되지 않은 {STAGE_STATUS_COLUMN} 값: {status!r}"
+            )
+            continue  # 잘못된 상태값은 더 이상 검사하지 않고 다음 단계 행으로 넘어감
+
+        has_documents = (
+            stage_id in stage_ids_with_documents
+        )  # 현재 단계에 제출서류가 연결되어 있는지 확인
+
+        # 상태와 실제 데이터가 일치하는지 검사 (not_checked는 확인하지 않은 상태이므로 오류를 내지 않음)
         if status == "present" and not has_documents:
             errors.append(
                 f"{stages_path}:{i} - {STAGE_STATUS_COLUMN}=present이지만 "

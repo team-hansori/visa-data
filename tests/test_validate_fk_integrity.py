@@ -112,8 +112,14 @@ class TestValidateEndToEnd:
         write_csv(visa_requirements, ["visa_id"], [{"visa_id": "V1"}])
         write_csv(
             visa_process_stages,
-            ["stage_id", "visa_id"],
-            [{"stage_id": "S1", "visa_id": "V1"}],
+            ["stage_id", "visa_id", "document_requirements_status"],
+            [
+                {
+                    "stage_id": "S1",
+                    "visa_id": "V1",
+                    "document_requirements_status": "not_checked",
+                }
+            ],
         )
         write_csv(
             document_requirements,
@@ -316,6 +322,36 @@ class TestCheckDocumentRequirementsStatus:
             [{"document_requirement_id": "D1", "stage_id": "S1"}],
         )
         assert check_document_requirements_status(stages_path, documents_path) == []
+
+    def test_error_when_status_is_unknown(self, tmp_path: Path):
+        stages_path = tmp_path / "visa_process_stages.csv"
+        documents_path = tmp_path / "document_requirements.csv"
+        write_csv(
+            stages_path,
+            ["stage_id", "document_requirements_status"],
+            [{"stage_id": "S1", "document_requirements_status": "unknown"}],
+        )
+        write_csv(documents_path, ["document_requirement_id", "stage_id"], [])
+
+        errors = check_document_requirements_status(stages_path, documents_path)
+
+        assert len(errors) == 1
+        assert "unknown" in errors[0]
+
+    def test_error_when_status_is_blank(self, tmp_path: Path):
+        stages_path = tmp_path / "visa_process_stages.csv"
+        documents_path = tmp_path / "document_requirements.csv"
+        write_csv(
+            stages_path,
+            ["stage_id", "document_requirements_status"],
+            [{"stage_id": "S1", "document_requirements_status": ""}],
+        )
+        write_csv(documents_path, ["document_requirement_id", "stage_id"], [])
+
+        errors = check_document_requirements_status(stages_path, documents_path)
+
+        assert len(errors) == 1
+        assert "허용되지 않은" in errors[0]
 
     def test_validate_wires_status_check_in_when_both_tables_present(self, tmp_path: Path):
         stages_path = tmp_path / "visa_process_stages.csv"
