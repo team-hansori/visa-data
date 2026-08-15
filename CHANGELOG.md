@@ -25,6 +25,8 @@
 
 ### 문서
 
+- B_E-7-4R 스키마 정리 및 작업 내역 문서 추가 ([84a31b8](https://github.com/team-hansori/visa-data/commit/84a31b8a59ca17a7f1f7d72b8f1660d660b15b8d))
+- CHANGELOG 자동 업데이트 [skip ci] ([2fb48b1](https://github.com/team-hansori/visa-data/commit/2fb48b1dfc34f1f4d99418524e52837bca2fa496))
 - CHANGELOG 자동 업데이트 [skip ci] ([9a7a0f7](https://github.com/team-hansori/visa-data/commit/9a7a0f73bf94e62056dc9167b3d8e06177983e12))
 - CHANGELOG 자동 업데이트 [skip ci] ([02886c5](https://github.com/team-hansori/visa-data/commit/02886c55ce46862bd596f65fa6cd660c626d494d))
 - CHANGELOG 자동 업데이트 [skip ci] ([3cc6d63](https://github.com/team-hansori/visa-data/commit/3cc6d630ab0646a5314260a8c5f56e4ea2b45fd6))
@@ -49,6 +51,8 @@
 
 ### 버그 수정
 
+- CodeRabbit 리뷰 반영 - lxml 직접 의존성 추가, notes/description 표기 정정 ([acc6a29](https://github.com/team-hansori/visa-data/commit/acc6a29ef433bf5a7d5c9138069bba0de46ea6b2))
+- Current_requirements.csv 조건 그룹 관계 설명 보강 및 REQ-102 그룹 정정 ([5bbf27e](https://github.com/team-hansori/visa-data/commit/5bbf27ec36a8b841bde889c7981d96fc9d07ee10))
 - ASSAULT 행 notes의 external_region_scope 오기 수정 (NULL→NATIONWIDE) ([ab349bc](https://github.com/team-hansori/visa-data/commit/ab349bc445dbb0fc15f92454e05d923d86905f1f))
 - Condition_group을 OR 전용으로 명확히 하고 B의 G번호 재사용 금지 규칙 추가 ([50933f9](https://github.com/team-hansori/visa-data/commit/50933f9d6a863145f390eff22e2f01068552774d))
 - Visa_requirement_criteria.csv threshold_value 구조화 및 scoring_items.csv 경계 정리 ([0e2fe49](https://github.com/team-hansori/visa-data/commit/0e2fe49b52c235b10bbfc69e1d06d33f676d4acf))
@@ -70,6 +74,7 @@
 
 ### 새 기능
 
+- 1~8차 공고문 비교로 change_history.csv 채우기 ([bb0b711](https://github.com/team-hansori/visa-data/commit/bb0b71112fd4f58a7ecd21d7fb67a6ae1abd02eb))
 - F-4-R 12차 공고문 데이터 반영 및 change_history 공유 테이블 신설 ([7796a81](https://github.com/team-hansori/visa-data/commit/7796a811aacbd634921a61e5bd7f14e1e73efd01))
 - D_visa_requirements 공유 마스터 테이블 스키마 신설 ([a746d67](https://github.com/team-hansori/visa-data/commit/a746d67a10605baba2da12df26844df6e24632b9))
 - Risk_routing_table 신설 및 agency_contacts url 컬럼 추가 ([444a333](https://github.com/team-hansori/visa-data/commit/444a33341a25ab5ff16c34b6070ce8299510d30e))
