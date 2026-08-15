@@ -159,9 +159,7 @@ def check_document_requirements_status(
     if not stage_rows:
         return []
     document_rows = read_rows(document_requirements_path)
-    stage_ids_with_documents = {
-        row["stage_id"] for row in document_rows if row.get("stage_id")
-    }
+    stage_ids_with_documents = {row["stage_id"] for row in document_rows if row.get("stage_id")}
 
     errors: list[str] = []
     for i, row in enumerate(stage_rows, start=2):
@@ -206,16 +204,12 @@ def validate(tables: list[TableSpec]) -> list[str]:
         errors.extend(check_pk_uniqueness(table, rows))
         errors.extend(check_fk_integrity(table, rows, pk_sets))
 
-    stages_table = next(
-        (t for t in checkable_tables if t.path.name == STAGES_FILENAME), None
-    )
+    stages_table = next((t for t in checkable_tables if t.path.name == STAGES_FILENAME), None)
     documents_table = next(
         (t for t in checkable_tables if t.path.name == DOCUMENT_REQUIREMENTS_FILENAME), None
     )
     if stages_table is not None and documents_table is not None:
-        errors.extend(
-            check_document_requirements_status(stages_table.path, documents_table.path)
-        )
+        errors.extend(check_document_requirements_status(stages_table.path, documents_table.path))
 
     return errors
 

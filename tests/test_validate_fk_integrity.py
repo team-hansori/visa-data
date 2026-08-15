@@ -58,18 +58,14 @@ class TestCheckPkUniqueness:
 class TestCheckFkIntegrity:
     def test_no_errors_when_fk_resolves(self, tmp_path: Path):
         parent_path = tmp_path / "parent.csv"
-        child = TableSpec(
-            tmp_path / "child.csv", pk="child_id", fks={"parent_id": parent_path}
-        )
+        child = TableSpec(tmp_path / "child.csv", pk="child_id", fks={"parent_id": parent_path})
         rows = [{"child_id": "c1", "parent_id": "p1"}]
         pk_sets = {parent_path: {"p1"}}
         assert check_fk_integrity(child, rows, pk_sets) == []
 
     def test_flags_fk_pointing_to_missing_parent(self, tmp_path: Path):
         parent_path = tmp_path / "parent.csv"
-        child = TableSpec(
-            tmp_path / "child.csv", pk="child_id", fks={"parent_id": parent_path}
-        )
+        child = TableSpec(tmp_path / "child.csv", pk="child_id", fks={"parent_id": parent_path})
         rows = [{"child_id": "c1", "parent_id": "does-not-exist"}]
         pk_sets = {parent_path: {"p1"}}
         errors = check_fk_integrity(child, rows, pk_sets)
@@ -79,9 +75,7 @@ class TestCheckFkIntegrity:
 
     def test_flags_empty_fk(self, tmp_path: Path):
         parent_path = tmp_path / "parent.csv"
-        child = TableSpec(
-            tmp_path / "child.csv", pk="child_id", fks={"parent_id": parent_path}
-        )
+        child = TableSpec(tmp_path / "child.csv", pk="child_id", fks={"parent_id": parent_path})
         rows = [{"child_id": "c1", "parent_id": ""}]
         pk_sets = {parent_path: {"p1"}}
         errors = check_fk_integrity(child, rows, pk_sets)
@@ -129,9 +123,7 @@ class TestValidateEndToEnd:
         return visa_requirements, visa_process_stages, document_requirements
 
     def test_clean_chain_has_no_errors(self, tmp_path: Path):
-        visa_requirements, visa_process_stages, document_requirements = self._build_chain(
-            tmp_path
-        )
+        visa_requirements, visa_process_stages, document_requirements = self._build_chain(tmp_path)
         tables = [
             TableSpec(visa_requirements, pk="visa_id"),
             TableSpec(visa_process_stages, pk="stage_id", fks={"visa_id": visa_requirements}),
@@ -144,9 +136,7 @@ class TestValidateEndToEnd:
         assert validate(tables) == []
 
     def test_dangling_stage_id_is_caught(self, tmp_path: Path):
-        visa_requirements, visa_process_stages, document_requirements = self._build_chain(
-            tmp_path
-        )
+        visa_requirements, visa_process_stages, document_requirements = self._build_chain(tmp_path)
         # document_requirements가 존재하지 않는 stage_id를 가리키도록 덮어쓴다.
         write_csv(
             document_requirements,
