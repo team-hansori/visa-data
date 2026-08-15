@@ -147,6 +147,26 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 
 **FK 설계: `visa_id`를 중복 저장하지 않는 이유**: 이 테이블은 다른 D 테이블과 달리 `visa_id` 컬럼을 두지 않고 `stage_id` 하나로만 `visa_process_stages`(→ `visa_requirements`)를 참조한다. 다른 D 테이블들은 조회 편의를 위해 `visa_id`를 직접 갖고 있지만, CSV는 FK 제약이 없는 평문 파일이라 같은 값을 두 곳(`document_requirements.visa_id`와, `stage_id`로 조인했을 때 나오는 `visa_process_stages.visa_id`)에 저장하면 둘이 어긋나도 아무것도 막아주지 않는다 — 여러 담당자가 나눠서 편집하는 구조에서 실제로 발생할 수 있는 리스크다. `visa_id`가 필요하면 `stage_id`로 `visa_process_stages`를 조인해서 구한다. `scripts/validate_fk_integrity.py`가 이 폴더 전체의 PK 유일성과 FK 참조 무결성(이 테이블의 `stage_id`가 실제 `visa_process_stages.stage_id`를 가리키는지 포함)을 검사한다 — PR 올리기 전에 실행한다.
 
+### 제출서류 상태값 및 무결성 검증
+
+CSV는 데이터베이스처럼 enum·PK·FK 제약을 자동으로 강제하지 않으므로, D 데이터 변경 후 PR을 올리기 전에 다음 검증을 실행한다.
+
+```bash
+uv run python scripts/validate_fk_integrity.py
+```
+
+검증 스크립트는 각 테이블의 PK 공백·중복, FK 미참조, `stage_id` 연결, 그리고 `document_requirements_status`와 실제 제출서류 행의 일관성을 확인한다. `stage_id`는 전체 `visa_process_stages.csv`에서 유일한 UUID(PK)이며, `stage_order`와 달리 비자별로만 유일하면 되는 값이 아니다. `document_requirements.csv`는 이 전역적으로 유일한 `stage_id`를 FK로 사용한다.
+
+`document_requirements_status`의 허용값은 다음 세 가지뿐이다.
+
+| 값 | 의미 | 검증 기준 |
+| --- | --- | --- |
+| `not_checked` | 제출서류 존재 여부를 아직 확인하지 않음 | 제출서류 행의 유무와 관계없이 통과 |
+| `present` | 제출서류가 있음 | 같은 `stage_id`의 `document_requirements.csv` 행이 1개 이상이어야 함 |
+| `explicitly_none` | 공고문에 제출서류가 없다고 명시됨 | 같은 `stage_id`의 제출서류 행이 없어야 함 |
+
+빈 값, 오타, `unknown` 등 허용 목록에 없는 값은 오류다. 검증 성공 시 종료 코드 0, 오류가 있으면 종료 코드 1을 반환한다.
+
 ### `visa_quota_status.csv`
 
 | 필드 | 타입 | 설명 |
