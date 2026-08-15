@@ -1,0 +1,17 @@
+﻿group_id,visa_id,parent_group_id,group_key,group_name_kr,boolean_operator,group_scope,applicability_note,display_order
+0b7e2589-f914-5c1f-b263-d4c6e1f7d095,78dca2d7-f771-553a-b788-46c9ff56d633,,root,전체 필수요건,AND,eligibility,,1
+2e0d717c-ad6e-518c-8f00-b1159b80616c,78dca2d7-f771-553a-b788-46c9ff56d633,0b7e2589-f914-5c1f-b263-d4c6e1f7d095,applicant_status,공고에 명시된 신청 대상 경로,OR,eligibility,전체 체류자격 목록이 아니라 공고가 별도로 명시한 E-7-4/E-7-4R 경로,10
+959362ca-66e2-5f16-b643-549019cd0a47,78dca2d7-f771-553a-b788-46c9ff56d633,0b7e2589-f914-5c1f-b263-d4c6e1f7d095,education_or_income,학력 또는 소득,OR,eligibility,,20
+9ba1bf6d-1136-51af-9801-ec9a72182d23,78dca2d7-f771-553a-b788-46c9ff56d633,0b7e2589-f914-5c1f-b263-d4c6e1f7d095,language,기본소양,OR,eligibility,,30
+3641ad2c-2523-5aa4-ac30-59af0786c6f5,78dca2d7-f771-553a-b788-46c9ff56d633,0b7e2589-f914-5c1f-b263-d4c6e1f7d095,residence,거주 요건,AND,eligibility,,40
+587f2058-bf9b-5137-bca1-a7ce1d387e13,78dca2d7-f771-553a-b788-46c9ff56d633,0b7e2589-f914-5c1f-b263-d4c6e1f7d095,economic_activity,취업 또는 창업,OR,eligibility,,50
+9696027e-21c2-5549-97e5-1fd1a873b5a7,78dca2d7-f771-553a-b788-46c9ff56d633,587f2058-bf9b-5137-bca1-a7ce1d387e13,employment,취업 요건,AND,eligibility,,51
+e2a2a9e8-b1a4-56dc-aa49-0282832056f7,78dca2d7-f771-553a-b788-46c9ff56d633,9696027e-21c2-5549-97e5-1fd1a873b5a7,restricted_industries,취업 제한 분야,AND,eligibility,열거된 업종에 취업하지 않아야 함,52
+c8ee0ba2-23cf-5d30-8125-a72e57fa041a,78dca2d7-f771-553a-b788-46c9ff56d633,9696027e-21c2-5549-97e5-1fd1a873b5a7,employer,고용주·고용기업 요건,AND,eligibility,,53
+00039d5b-eac5-5456-8e2a-34f15b545d95,78dca2d7-f771-553a-b788-46c9ff56d633,c8ee0ba2-23cf-5d30-8125-a72e57fa041a,small_business_exception,지역활력 소상공인 고용특례,AND,exception,내국인 고용인원이 없는 기업이 특례를 이용할 때만 적용,54
+095770ae-5970-5239-b762-5677b5ff93bc,78dca2d7-f771-553a-b788-46c9ff56d633,587f2058-bf9b-5137-bca1-a7ce1d387e13,entrepreneurship,창업 요건,AND,eligibility,,55
+a086c0af-93b6-55fa-be8c-20ba5f1d8f80,78dca2d7-f771-553a-b788-46c9ff56d633,0b7e2589-f914-5c1f-b263-d4c6e1f7d095,conduct,품행 요건,AND,eligibility,,60
+17228741-5362-528a-b6de-73371309e000,78dca2d7-f771-553a-b788-46c9ff56d633,0b7e2589-f914-5c1f-b263-d4c6e1f7d095,excluded_applicants,접수·추천 제한,AND,eligibility,제공 자료에서 확인되는 제한만 수록,65
+d4902204-0a49-57fb-a1e5-35722ade0b97,78dca2d7-f771-553a-b788-46c9ff56d633,,recommendation,추천 절차,AND,procedure,,70
+126daa99-c5ff-5ced-8ac1-4cc198a9f33d,78dca2d7-f771-553a-b788-46c9ff56d633,,post_approval,허가 후 유지 조건,AND,post_approval,,80
+2303a152-e2a2-50c5-b3b6-5f12ab63bf2a,78dca2d7-f771-553a-b788-46c9ff56d633,,dependent_family,동반가족 허가조건,AND,dependent_family,F-3-1R·F-3-2R·F-3-3R에 관한 별도 조건,90

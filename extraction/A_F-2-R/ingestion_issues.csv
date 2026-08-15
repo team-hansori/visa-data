@@ -1,0 +1,7 @@
+﻿issue_id,issue_type,severity,document_id,related_document_id,message,created_at
+540dc600-6c87-5d86-83a2-4facbf4240a6,duplicate_content,info,r17_attachment_2026_07f157ee,r16_attachment_2026_07f157ee,서로 다른 파일의 SHA-256이 같습니다. 회차별 붙임을 보존하는 자료이므로 오류가 아니라 동일본 안내입니다.,2026-08-15T03:40:11+00:00
+347e455f-227a-5151-a53c-d062f975667e,cross_document_conflict,warning,r17_attachment_2026_07f157ee,r17_announcement_2026_df1fdde9,"17차 붙임12는 KIIP 4단계·사전평가 5단계·TOPIK 4급으로 남아 있으나, 17차 공고문과 개정사항은 2026-08-03부터 3·4·3으로 완화했습니다. 현재 요건은 공고문·개정사항의 3·4·3을 사용했습니다.",2026-08-15T03:40:11+00:00
+cd0f384a-a972-5803-81c9-f45e16de9340,source_typo,info,r17_announcement_2026_df1fdde9,,공고문 제출서류의 '지방세납세증며서'는 문맥상 '지방세 납세증명서'로 정규화했습니다.,2026-08-15T03:40:11+00:00
+a6c01bf6-9516-5b46-99ed-ced05958f20c,equivalent_extracted_text,info,r15_attachment_2026_973ff358,r14_attachment_2026_d5a5992f,14차와 15차 붙임의 추출 텍스트가 같습니다. 회차별 원본 보존을 위해 중복 제거하지 않았습니다.,2026-08-15T03:40:11+00:00
+4aa5b63c-210e-563c-9cdc-436c1d232bdf,equivalent_extracted_text,info,r16_attachment_2026_07f157ee,r14_attachment_2026_d5a5992f,14차와 16차 붙임의 추출 텍스트가 같습니다. 회차별 원본 보존을 위해 중복 제거하지 않았습니다.,2026-08-15T03:40:11+00:00
+6f2c8085-13a7-5254-b75e-579bfbe5702c,equivalent_extracted_text,info,r17_attachment_2026_07f157ee,r14_attachment_2026_d5a5992f,14차와 17차 붙임의 추출 텍스트가 같습니다. 회차별 원본 보존을 위해 중복 제거하지 않았습니다.,2026-08-15T03:40:11+00:00
