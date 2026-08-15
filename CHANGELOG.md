@@ -25,6 +25,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([02886c5](https://github.com/team-hansori/visa-data/commit/02886c55ce46862bd596f65fa6cd660c626d494d))
 - CHANGELOG 자동 업데이트 [skip ci] ([3cc6d63](https://github.com/team-hansori/visa-data/commit/3cc6d630ab0646a5314260a8c5f56e4ea2b45fd6))
 - CHANGELOG 자동 업데이트 [skip ci] ([09d7fbc](https://github.com/team-hansori/visa-data/commit/09d7fbc9eefac4907922072b41cd730773bbd3ba))
 - 벌금 감점 기준 300만원/100만원 불일치를 notes에 기록 ([bae3ef5](https://github.com/team-hansori/visa-data/commit/bae3ef5a35806844ce77cc1885f50e61a3943c7a))
@@ -47,6 +48,10 @@
 
 ### 버그 수정
 
+- Condition_group을 OR 전용으로 명확히 하고 B의 G번호 재사용 금지 규칙 추가 ([50933f9](https://github.com/team-hansori/visa-data/commit/50933f9d6a863145f390eff22e2f01068552774d))
+- Visa_requirement_criteria.csv threshold_value 구조화 및 scoring_items.csv 경계 정리 ([0e2fe49](https://github.com/team-hansori/visa-data/commit/0e2fe49b52c235b10bbfc69e1d06d33f676d4acf))
+- Visa_id 수명주기 명시, 쿼터 무제한/미확인 구분, 문서 정리 ([1f13f43](https://github.com/team-hansori/visa-data/commit/1f13f434c5613ec76424adfe81dd7e706137bac0))
+- OR조건 구조화 및 배열 필드 CSV 이스케이프 규칙 문서화 ([d790136](https://github.com/team-hansori/visa-data/commit/d79013671c2be8baf3d84312c1d25aa1c28729b0))
 - SCORE-000의 빠졌던 raw_text 채움 ([38f3cc9](https://github.com/team-hansori/visa-data/commit/38f3cc9c585c772de2df951a1e1e4c031a6bc887))
 - Current_requirements.csv, scoring_items.csv source_page를 HWPX 기준으로 정정 ([9e92cd3](https://github.com/team-hansori/visa-data/commit/9e92cd38d51dcac3f6c8d276f890fe08c7d5620e))
 - Document_forms.csv source_page를 HWPX 기준으로 정정 ([f1f549c](https://github.com/team-hansori/visa-data/commit/f1f549cddd2afb3f89784bbd30039dd4471ff4e8))
@@ -63,6 +68,8 @@
 
 ### 새 기능
 
+- F-4-R 12차 공고문 데이터 반영 및 change_history 공유 테이블 신설 ([7796a81](https://github.com/team-hansori/visa-data/commit/7796a811aacbd634921a61e5bd7f14e1e73efd01))
+- D_visa_requirements 공유 마스터 테이블 스키마 신설 ([a746d67](https://github.com/team-hansori/visa-data/commit/a746d67a10605baba2da12df26844df6e24632b9))
 - Risk_routing_table 신설 및 agency_contacts url 컬럼 추가 ([444a333](https://github.com/team-hansori/visa-data/commit/444a33341a25ab5ff16c34b6070ce8299510d30e))
 - Scoring_items.csv에 source_document 컬럼 추가 ([67f70b7](https://github.com/team-hansori/visa-data/commit/67f70b7541ca9f07b2eaaf4fdd1d7468a02c694a))
 - 8차 공고 document_forms.csv 채우기 (서식1~9) ([046664d](https://github.com/team-hansori/visa-data/commit/046664d8826dc8f7a53a07255a6dba731e46e83c))
