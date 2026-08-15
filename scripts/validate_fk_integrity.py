@@ -67,8 +67,35 @@ def read_rows(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(f))
 
 
+def read_fieldnames(path: Path) -> list[str] | None:
+    """CSV 헤더를 읽어 컬럼명 리스트를 반환한다. 파일이 없으면 None, 빈 파일이면 빈 리스트."""
+    if not path.exists():
+        return None
+    with path.open(newline="", encoding="utf-8") as f:
+        return next(csv.reader(f), [])
+
+
+def check_required_columns(table: TableSpec, fieldnames: list[str]) -> list[str]:
+    """PK/FK로 쓰는 컬럼이 실제 헤더에 있는지 검사한다.
+
+    여기서 걸러내지 않으면 이후 row[column] 접근에서 KeyError가 나거나,
+    row.get(column)이 조용히 빈 값으로 처리돼 "값이 비어 있음"이라는 오해를
+    주는 대량의 행별 에러로 원인이 묻힌다 — 컬럼 자체가 없다는 걸 파일당
+    하나의 명확한 에러로 먼저 보고한다.
+    """
+    required = ([table.pk] if table.pk else []) + list(table.fks.keys())
+    return [
+        f"{table.path} - 필수 컬럼 '{column}'이 헤더에 없음"
+        for column in required
+        if column not in fieldnames
+    ]
+
+
 def collect_pk_sets(tables: list[TableSpec]) -> dict[Path, set[str]]:
-    """각 테이블의 PK 값 집합을 미리 모아둔다 (다른 테이블의 FK 검사에서 참조용으로 씀)."""
+    """각 테이블의 PK 값 집합을 미리 모아둔다 (다른 테이블의 FK 검사에서 참조용으로 씀).
+
+    호출 전에 check_required_columns로 PK 컬럼 존재가 확인된 테이블만 넘겨야 한다.
+    """
     pk_sets: dict[Path, set[str]] = {}
     for table in tables:
         if table.pk is None:
@@ -115,16 +142,81 @@ def check_fk_integrity(
     return errors
 
 
-def validate(tables: list[TableSpec]) -> list[str]:
-    """모든 테이블에 대해 PK 유일성과 FK 참조 무결성을 검사하고 에러 목록을 반환한다."""
-    pk_sets = collect_pk_sets(tables)
+STAGES_FILENAME = "visa_process_stages.csv"
+DOCUMENT_REQUIREMENTS_FILENAME = "document_requirements.csv"
+STAGE_STATUS_COLUMN = "document_requirements_status"
+
+
+def check_document_requirements_status(
+    stages_path: Path, document_requirements_path: Path
+) -> list[str]:
+    """visa_process_stages.document_requirements_status가 document_requirements의
+    실제 행 존재 여부와 맞는지 검사한다: `present`는 해당 stage_id 행이 1개 이상,
+    `explicitly_none`은 0개여야 한다 ("이 단계엔 서류가 없다"고 명시했는데 실제로
+    행이 있으면 모순이므로).
+    """
+    stage_rows = read_rows(stages_path)
+    if not stage_rows:
+        return []
+    document_rows = read_rows(document_requirements_path)
+    stage_ids_with_documents = {
+        row["stage_id"] for row in document_rows if row.get("stage_id")
+    }
+
     errors: list[str] = []
+    for i, row in enumerate(stage_rows, start=2):
+        status = row.get(STAGE_STATUS_COLUMN, "")
+        stage_id = row.get("stage_id", "")
+        has_documents = stage_id in stage_ids_with_documents
+        if status == "present" and not has_documents:
+            errors.append(
+                f"{stages_path}:{i} - {STAGE_STATUS_COLUMN}=present이지만 "
+                f"{document_requirements_path}에 stage_id={stage_id}인 행이 없음"
+            )
+        elif status == "explicitly_none" and has_documents:
+            errors.append(
+                f"{stages_path}:{i} - {STAGE_STATUS_COLUMN}=explicitly_none이지만 "
+                f"{document_requirements_path}에 stage_id={stage_id}인 행이 있음"
+            )
+    return errors
+
+
+def validate(tables: list[TableSpec]) -> list[str]:
+    """모든 테이블에 대해 필수 컬럼 존재, PK 유일성, FK 참조 무결성을 검사하고 에러 목록을 반환한다."""
+    errors: list[str] = []
+
+    # 헤더에 PK/FK로 쓰는 컬럼이 있는지 먼저 확인한다 — 없는 테이블은 이후 단계에서
+    # KeyError로 죽거나 row.get()이 조용히 빈 값 처리하는 걸 막기 위해 여기서 걸러낸다.
+    checkable_tables: list[TableSpec] = []
     for table in tables:
+        fieldnames = read_fieldnames(table.path)
+        if fieldnames is None:  # 파일 자체가 없음 - 기존 동작대로 조용히 건너뜀
+            continue
+        column_errors = check_required_columns(table, fieldnames)
+        if column_errors:
+            errors.extend(column_errors)
+            continue
+        checkable_tables.append(table)
+
+    pk_sets = collect_pk_sets(checkable_tables)
+    for table in checkable_tables:
         rows = read_rows(table.path)
         if not rows:
             continue
         errors.extend(check_pk_uniqueness(table, rows))
         errors.extend(check_fk_integrity(table, rows, pk_sets))
+
+    stages_table = next(
+        (t for t in checkable_tables if t.path.name == STAGES_FILENAME), None
+    )
+    documents_table = next(
+        (t for t in checkable_tables if t.path.name == DOCUMENT_REQUIREMENTS_FILENAME), None
+    )
+    if stages_table is not None and documents_table is not None:
+        errors.extend(
+            check_document_requirements_status(stages_table.path, documents_table.path)
+        )
+
     return errors
 
 

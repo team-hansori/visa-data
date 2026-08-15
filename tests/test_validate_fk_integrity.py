@@ -7,9 +7,12 @@ from pathlib import Path
 
 from scripts.validate_fk_integrity import (
     TableSpec,
+    check_document_requirements_status,
     check_fk_integrity,
     check_pk_uniqueness,
+    check_required_columns,
     collect_pk_sets,
+    read_fieldnames,
     read_rows,
     validate,
 )
@@ -166,3 +169,153 @@ class TestValidateEndToEnd:
     def test_missing_files_are_skipped_without_crashing(self, tmp_path: Path):
         tables = [TableSpec(tmp_path / "missing.csv", pk="id")]
         assert validate(tables) == []
+
+
+class TestCheckRequiredColumns:
+    def test_no_errors_when_pk_and_fk_columns_present(self):
+        table = TableSpec(Path("child.csv"), pk="child_id", fks={"parent_id": Path("p.csv")})
+        assert check_required_columns(table, ["child_id", "parent_id"]) == []
+
+    def test_flags_missing_pk_column(self):
+        table = TableSpec(Path("child.csv"), pk="child_id")
+        errors = check_required_columns(table, ["other_column"])
+        assert len(errors) == 1
+        assert "child_id" in errors[0]
+        assert "child.csv" in errors[0]
+
+    def test_flags_missing_fk_column(self):
+        table = TableSpec(Path("child.csv"), pk="child_id", fks={"parent_id": Path("p.csv")})
+        errors = check_required_columns(table, ["child_id"])
+        assert len(errors) == 1
+        assert "parent_id" in errors[0]
+
+
+class TestReadFieldnames:
+    def test_returns_none_for_missing_file(self, tmp_path: Path):
+        assert read_fieldnames(tmp_path / "missing.csv") is None
+
+    def test_returns_header_for_existing_file(self, tmp_path: Path):
+        path = tmp_path / "t.csv"
+        write_csv(path, ["a", "b"], [{"a": "1", "b": "2"}])
+        assert read_fieldnames(path) == ["a", "b"]
+
+
+class TestValidateCatchesMissingColumns:
+    def test_reports_clear_error_instead_of_crashing(self, tmp_path: Path):
+        """PK 컬럼 자체가 헤더에 없는 비어있지 않은 CSV는 KeyError로 죽지 않고
+        컬럼 누락을 정확히 짚는 에러 하나만 보고해야 한다(행별 '비어 있음' 에러가
+        아니라)."""
+        path = tmp_path / "broken.csv"
+        write_csv(path, ["not_the_pk_column"], [{"not_the_pk_column": "x"}])
+        table = TableSpec(path, pk="id")
+
+        errors = validate([table])
+
+        assert len(errors) == 1
+        assert "id" in errors[0]
+        assert "헤더에 없음" in errors[0]
+
+    def test_reports_clear_error_for_missing_fk_column(self, tmp_path: Path):
+        parent_path = tmp_path / "parent.csv"
+        write_csv(parent_path, ["id"], [{"id": "p1"}])
+        child_path = tmp_path / "child.csv"
+        write_csv(child_path, ["child_id"], [{"child_id": "c1"}])  # parent_id 컬럼 없음
+
+        tables = [
+            TableSpec(parent_path, pk="id"),
+            TableSpec(child_path, pk="child_id", fks={"parent_id": parent_path}),
+        ]
+        errors = validate(tables)
+
+        assert len(errors) == 1
+        assert "parent_id" in errors[0]
+        assert "헤더에 없음" in errors[0]
+
+
+class TestCheckDocumentRequirementsStatus:
+    def test_no_error_when_present_has_matching_document(self, tmp_path: Path):
+        stages_path = tmp_path / "visa_process_stages.csv"
+        documents_path = tmp_path / "document_requirements.csv"
+        write_csv(
+            stages_path,
+            ["stage_id", "document_requirements_status"],
+            [{"stage_id": "S1", "document_requirements_status": "present"}],
+        )
+        write_csv(
+            documents_path,
+            ["document_requirement_id", "stage_id"],
+            [{"document_requirement_id": "D1", "stage_id": "S1"}],
+        )
+        assert check_document_requirements_status(stages_path, documents_path) == []
+
+    def test_error_when_present_has_no_matching_document(self, tmp_path: Path):
+        stages_path = tmp_path / "visa_process_stages.csv"
+        documents_path = tmp_path / "document_requirements.csv"
+        write_csv(
+            stages_path,
+            ["stage_id", "document_requirements_status"],
+            [{"stage_id": "S1", "document_requirements_status": "present"}],
+        )
+        write_csv(documents_path, ["document_requirement_id", "stage_id"], [])
+
+        errors = check_document_requirements_status(stages_path, documents_path)
+        assert len(errors) == 1
+        assert "present" in errors[0]
+
+    def test_no_error_when_explicitly_none_has_no_document(self, tmp_path: Path):
+        stages_path = tmp_path / "visa_process_stages.csv"
+        documents_path = tmp_path / "document_requirements.csv"
+        write_csv(
+            stages_path,
+            ["stage_id", "document_requirements_status"],
+            [{"stage_id": "S1", "document_requirements_status": "explicitly_none"}],
+        )
+        write_csv(documents_path, ["document_requirement_id", "stage_id"], [])
+        assert check_document_requirements_status(stages_path, documents_path) == []
+
+    def test_error_when_explicitly_none_has_matching_document(self, tmp_path: Path):
+        stages_path = tmp_path / "visa_process_stages.csv"
+        documents_path = tmp_path / "document_requirements.csv"
+        write_csv(
+            stages_path,
+            ["stage_id", "document_requirements_status"],
+            [{"stage_id": "S1", "document_requirements_status": "explicitly_none"}],
+        )
+        write_csv(
+            documents_path,
+            ["document_requirement_id", "stage_id"],
+            [{"document_requirement_id": "D1", "stage_id": "S1"}],
+        )
+
+        errors = check_document_requirements_status(stages_path, documents_path)
+        assert len(errors) == 1
+        assert "explicitly_none" in errors[0]
+
+    def test_no_error_when_not_checked(self, tmp_path: Path):
+        stages_path = tmp_path / "visa_process_stages.csv"
+        documents_path = tmp_path / "document_requirements.csv"
+        write_csv(
+            stages_path,
+            ["stage_id", "document_requirements_status"],
+            [{"stage_id": "S1", "document_requirements_status": "not_checked"}],
+        )
+        write_csv(documents_path, ["document_requirement_id", "stage_id"], [])
+        assert check_document_requirements_status(stages_path, documents_path) == []
+
+    def test_validate_wires_status_check_in_when_both_tables_present(self, tmp_path: Path):
+        stages_path = tmp_path / "visa_process_stages.csv"
+        documents_path = tmp_path / "document_requirements.csv"
+        write_csv(
+            stages_path,
+            ["stage_id", "document_requirements_status"],
+            [{"stage_id": "S1", "document_requirements_status": "present"}],
+        )
+        write_csv(documents_path, ["document_requirement_id", "stage_id"], [])
+
+        tables = [
+            TableSpec(stages_path, pk="stage_id"),
+            TableSpec(documents_path, pk="document_requirement_id"),
+        ]
+        errors = validate(tables)
+        assert len(errors) == 1
+        assert "present" in errors[0]
