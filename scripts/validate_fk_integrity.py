@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 D_DIR = Path("extraction/D_visa_requirements")
+STAGE_STATUS_COLUMN = "document_requirements_status"
 
 
 @dataclass(frozen=True)
@@ -23,6 +24,7 @@ class TableSpec:
     path: Path
     pk: str | None  # PK 컬럼명. 없으면 None(PK 유일성 검사를 건너뜀)
     fks: dict[str, Path] = field(default_factory=dict)  # {FK 컬럼명: 참조할 부모 테이블 경로}
+    required_columns: tuple[str, ...] = ()  # 필수 컬럼 추가
 
 
 def default_tables(base_dir: Path = D_DIR) -> list[TableSpec]:
@@ -40,6 +42,7 @@ def default_tables(base_dir: Path = D_DIR) -> list[TableSpec]:
             visa_process_stages,
             pk="stage_id",
             fks={"visa_id": visa_requirements},
+            required_columns=(STAGE_STATUS_COLUMN,),  # visa_process_stages에 상태 컬럼 지정
         ),
         TableSpec(
             base_dir / "document_requirements.csv",
@@ -83,7 +86,11 @@ def check_required_columns(table: TableSpec, fieldnames: list[str]) -> list[str]
     주는 대량의 행별 에러로 원인이 묻힌다 — 컬럼 자체가 없다는 걸 파일당
     하나의 명확한 에러로 먼저 보고한다.
     """
-    required = ([table.pk] if table.pk else []) + list(table.fks.keys())
+    required = (
+        ([table.pk] if table.pk else [])
+        + list(table.fks.keys())
+        + list(table.required_columns)  # PK, FK뿐 아니라 테이블별 추가 필수 컬럼도 검사
+    )
     return [
         f"{table.path} - 필수 컬럼 '{column}'이 헤더에 없음"
         for column in required
@@ -144,7 +151,6 @@ def check_fk_integrity(
 
 STAGES_FILENAME = "visa_process_stages.csv"
 DOCUMENT_REQUIREMENTS_FILENAME = "document_requirements.csv"
-STAGE_STATUS_COLUMN = "document_requirements_status"
 
 
 def check_document_requirements_status(

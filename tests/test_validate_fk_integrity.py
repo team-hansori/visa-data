@@ -179,6 +179,16 @@ class TestCheckRequiredColumns:
         assert len(errors) == 1
         assert "parent_id" in errors[0]
 
+    def test_flags_missing_additional_required_column(self):
+        table = TableSpec(
+            Path("visa_process_stages.csv"),
+            pk="stage_id",
+            required_columns=("document_requirements_status",),
+        )
+        errors = check_required_columns(table, ["stage_id"])
+        assert len(errors) == 1
+        assert "document_requirements_status" in errors[0]
+
 
 class TestReadFieldnames:
     def test_returns_none_for_missing_file(self, tmp_path: Path):
@@ -290,6 +300,21 @@ class TestCheckDocumentRequirementsStatus:
             [{"stage_id": "S1", "document_requirements_status": "not_checked"}],
         )
         write_csv(documents_path, ["document_requirement_id", "stage_id"], [])
+        assert check_document_requirements_status(stages_path, documents_path) == []
+
+    def test_no_error_when_not_checked_has_matching_document(self, tmp_path: Path):
+        stages_path = tmp_path / "visa_process_stages.csv"
+        documents_path = tmp_path / "document_requirements.csv"
+        write_csv(
+            stages_path,
+            ["stage_id", "document_requirements_status"],
+            [{"stage_id": "S1", "document_requirements_status": "not_checked"}],
+        )
+        write_csv(
+            documents_path,
+            ["document_requirement_id", "stage_id"],
+            [{"document_requirement_id": "D1", "stage_id": "S1"}],
+        )
         assert check_document_requirements_status(stages_path, documents_path) == []
 
     def test_validate_wires_status_check_in_when_both_tables_present(self, tmp_path: Path):
