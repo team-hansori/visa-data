@@ -1,18 +1,19 @@
 # D_visa_requirements — 비자 요건·절차·쿼터·변경이력 공유 마스터 테이블
 
-`A_F-2-R`/`B_E-7-4R`/`C_D-2-common`이 비자유형별 전용 폴더인 것과 달리, 이 폴더의 5개 테이블은 `visa_code`(F-2-R/E-7-4R/F-4-R/F-5-6R/E-7-4-GENERAL/D-2-GWANGYEOK 등)를 하나의 파일에 함께 담는 공유 마스터 테이블이다. 여러 비자 담당자가 같은 CSV에 각자 비자의 행을 추가하는 구조이므로, PR을 올릴 때 다른 비자유형의 행을 건드리지 않았는지 diff를 확인한다.
+`A_F-2-R`/`B_E-7-4R`/`C_D-2-common`이 비자유형별 전용 폴더인 것과 달리, 이 폴더의 6개 테이블은 `visa_code`(F-2-R/E-7-4R/F-4-R/F-5-6R/E-7-4-GENERAL/D-2-GWANGYEOK 등)를 하나의 파일에 함께 담는 공유 마스터 테이블이다. 여러 비자 담당자가 같은 CSV에 각자 비자의 행을 추가하는 구조이므로, PR을 올릴 때 다른 비자유형의 행을 건드리지 않았는지 diff를 확인한다.
 
 F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 확정된 설계 원칙이며, F-2-R·E-7-4R 등 다른 비자유형에도 그대로 적용되는지는 실제 공고문 확인 시 재검증이 필요하다.
 
-## 왜 5개 테이블로 나눴는가
+## 왜 6개 테이블로 나눴는가
 
-비자 하나를 둘러싼 정보는 변경 빈도가 서로 다른 다섯 가지로 나뉜다. 하나의 테이블에 담으면 "거의 안 바뀌는 값"과 "매달 바뀌는 값"이 섞여서, 갱신할 때마다 안 바뀐 값까지 같이 손대야 하는 문제가 생긴다.
+비자 하나를 둘러싼 정보는 변경 빈도가 서로 다른 여섯 가지로 나뉜다. 하나의 테이블에 담으면 "거의 안 바뀌는 값"과 "매달 바뀌는 값"이 섞여서, 갱신할 때마다 안 바뀐 값까지 같이 손대야 하는 문제가 생긴다.
 
 | 파일 | 담는 정보 | 변경 빈도 | 성격 |
 |------|-----------|-----------|------|
 | `visa_requirements.csv` | 비자의 기본 정체성(요건 범위, 총 모집인원 등) | 거의 안 바뀜 | 마스터 |
 | `visa_requirement_criteria.csv` | 합격 여부를 가르는 개별 조건 | 연 1회 내외(요건 개정 시) | 마스터(정규화) |
 | `visa_process_stages.csv` | 신청 절차의 각 단계(누가·누구에게·언제까지) | 회차마다 재확인 필요 | 마스터(회차별 이력, 회차마다 새 행 추가) |
+| `document_requirements.csv` | 특정 절차 단계에서 제출해야 하는 서류 목록 | 회차마다 재확인 필요 | 마스터(`visa_process_stages`에 종속) |
 | `visa_quota_status.csv` | 잔여 인원 스냅샷 | 매달 | 로그(시계열) |
 | `change_history.csv` | `visa_requirements`·`visa_requirement_criteria` 값이 회차 간 어떻게 바뀌었는지 | 값이 바뀔 때마다 | 로그(변경 diff) |
 
@@ -26,7 +27,7 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 - **`visa_requirements.csv`는 `visa_code`당 정확히 1행만 유지한다.** 새 회차 값으로 갱신할 때는 해당 행을 그 자리에서 덮어쓴다(필드 값 + `valid_from`/`valid_to`를 이번 회차 기준으로 갱신). 이전 회차 값은 이 테이블에 별도 행으로 남기지 않고 `change_history.csv`에 diff로만 보존한다.
 - **`visa_requirement_criteria.csv`도 같은 원칙**을 요건 단위로 적용한다: 요건이 없어지면(`change_type=removed`) 해당 `criteria_id` 행을 삭제하고, 새로 생기면(`added`) 새 `criteria_id` 행을 추가하고, 값만 바뀌면(`value_changed`) 기존 `criteria_id` 행을 그 자리에서 갱신한다. 세 경우 모두 `change_history.csv`에 대응하는 diff 행을 반드시 같이 남긴다.
 - **`visa_process_stages.csv`·`visa_quota_status.csv`는 반대로 append-only 로그다.** 회차마다 새 행을 추가하고 과거 행은 절대 지우거나 덮어쓰지 않는다 — `notice_round`/`as_of_date`가 사실상 버전 축 역할을 한다.
-- **하위 테이블은 모두 `visa_id` 단일 컬럼 FK로 마스터를 참조한다.** `visa_requirements`가 회차별로 여러 버전 행을 갖지 않고 항상 "현재 값 1개"만 유지하므로, 특정 회차의 마스터 버전을 가리키는 복합 키(`visa_id`+`notice_round` 등)는 필요 없다 — `visa_id` 하나로 항상 최신 마스터 행을 가리킨다. 과거 회차 값이 필요하면 `change_history.csv`를 조회한다.
+- **하위 테이블은 모두 `visa_id` 단일 컬럼 FK로 마스터를 참조한다.** `visa_requirements`가 회차별로 여러 버전 행을 갖지 않고 항상 "현재 값 1개"만 유지하므로, 특정 회차의 마스터 버전을 가리키는 복합 키(`visa_id`+`notice_round` 등)는 필요 없다 — `visa_id` 하나로 항상 최신 마스터 행을 가리킨다. 과거 회차 값이 필요하면 `change_history.csv`를 조회한다. (`document_requirements.csv`는 예외로 `visa_id`를 두지 않고 `stage_id` 하나로만 `visa_process_stages`를 참조한다 — 이유는 해당 절 참고.)
 
 ## 파일별 스펙
 
@@ -120,9 +121,31 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 | `stage_end_date` | date | 마감일(단일 발표일이면 시작일과 동일) |
 | `notes` | text, nullable | 반복 주기 등 추가 설명 |
 | `notice_round` | integer | 몇 차 공고 기준 |
+| `document_requirements_status` | text | `present`(이 단계에 필요한 서류 목록이 `document_requirements.csv`에 이 `stage_id`로 연결돼 있음)/`explicitly_none`(공고문이 이 단계엔 제출서류가 없다고 명시)/`not_checked`(아직 확인 안 함) |
 | `valid_from`/`valid_to`/`source_document`/`source_page`/`last_verified_at` | — | 표준 버전관리 |
 
 비자마다 절차 단계 개수 자체가 다르므로(F-4-R 4단계, D-2-GWANGYEOK 5단계) 고정 컬럼이 아니라 행으로 관리한다. `actor_from`이 신청자 유형(재외동포·외국인 등)인 단계만 리마인더가 사용자에게 알림을 준다 — 행정기관끼리 처리하는 단계는 "지금은 기다리는 중"이라고만 안내한다. 매달 새 공고(회차↑)가 나오면 기존 행을 덮어쓰지 않고 새 행을 추가한다.
+
+### `document_requirements.csv`
+
+| 필드 | 타입 | 설명 |
+|------|------|------|
+| `document_requirement_id` | uuid (PK) | |
+| `stage_id` | uuid (FK → `visa_process_stages.stage_id`) | 이 서류가 필요한 절차 단계 |
+| `document_name` | text | 서류명 원문 |
+| `document_category` | text | `FORM`(공고문 붙임 번호가 있는 공식 양식)/`EVIDENCE`(정해진 양식 없는 증빙서류, 예: 여권사본·소득금액증명원) |
+| `filled_by` | text, nullable | `FORM`일 때만 채움: 누가 작성하는지 |
+| `submitted_by` | text, nullable | 누가 제출하는지 |
+| `submission_target` | text, nullable | 제출처 |
+| `signer` | text, nullable | `FORM`일 때만 채움: 서명자 |
+| `required_attachments` | text[], nullable | 이 서류 자체에 딸린 첨부. 배열 직렬화 규칙은 "배열 필드 표기" 참고 |
+| `is_mandatory` | text | `TRUE`/`FALSE`/`조건부`(조건은 `notes`에 서술) |
+| `valid_from`/`valid_to`/`source_document`/`source_page`/`last_verified_at` | — | 표준 버전관리 |
+| `notes` | text, nullable | 조건부 사유, 특이사항 |
+
+`B_E-7-4R/document_forms.csv`(서식 전용, E-7-4R 단일 비자용)의 컬럼 어휘를 재사용하되, 공식 서식뿐 아니라 일반 증빙서류까지 다루도록(`document_category`) 넓히고, 특정 절차 단계에 연결되도록(`stage_id`) 확장했다. `visa_process_stages.document_requirements_status=present`인 단계는 이 테이블에 같은 `stage_id`로 연결된 행이 최소 1개 있어야 한다.
+
+**FK 설계: `visa_id`를 중복 저장하지 않는 이유**: 이 테이블은 다른 D 테이블과 달리 `visa_id` 컬럼을 두지 않고 `stage_id` 하나로만 `visa_process_stages`(→ `visa_requirements`)를 참조한다. 다른 D 테이블들은 조회 편의를 위해 `visa_id`를 직접 갖고 있지만, CSV는 FK 제약이 없는 평문 파일이라 같은 값을 두 곳(`document_requirements.visa_id`와, `stage_id`로 조인했을 때 나오는 `visa_process_stages.visa_id`)에 저장하면 둘이 어긋나도 아무것도 막아주지 않는다 — 여러 담당자가 나눠서 편집하는 구조에서 실제로 발생할 수 있는 리스크다. `visa_id`가 필요하면 `stage_id`로 `visa_process_stages`를 조인해서 구한다. `scripts/validate_fk_integrity.py`가 이 폴더 전체의 PK 유일성과 FK 참조 무결성(이 테이블의 `stage_id`가 실제 `visa_process_stages.stage_id`를 가리키는지 포함)을 검사한다 — PR 올리기 전에 실행한다.
 
 ### `visa_quota_status.csv`
 
@@ -218,3 +241,4 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 4. `visa_process_stages.csv`에 12차 공고 기준 절차 단계를 채운다.
 5. `visa_quota_status.csv`는 F-4-R처럼 `quota_type=UNLIMITED`로 확정된 비자면 행을 만들지 않는다.
 6. F-2-R·E-7-4R 등 다른 비자유형 담당자가 공고문을 확인할 때 이 설계 원칙이 그대로 적용되는지 재검증한다.
+7. `document_requirements.csv`는 아직 헤더만 있다 — 12차 공고문 p.4(신청 접수 단계 제출서류 목록) 등 실제 내용이 확인되는 대로 채우고, 해당 `visa_process_stages` 행의 `document_requirements_status`를 `not_checked`에서 `present`로 갱신한다.
