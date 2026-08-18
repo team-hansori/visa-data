@@ -167,18 +167,29 @@ uv run python scripts/validate_fk_integrity.py
 
 빈 값, 오타, `unknown` 등 허용 목록에 없는 값은 오류다. 검증 성공 시 종료 코드 0, 오류가 있으면 종료 코드 1을 반환한다.
 
-### 공용 UUID 생성 (`scripts/generate_uuids.py`)
+### 공용 UUID 유틸리티 (`scripts/uuid_utils.py`)
 
-이슈 #29의 UUID 규칙에 따라 신규 행을 추가할 때 공용 생성기를 사용한다. 기본값은 미리보기라서 CSV를 수정하지 않으며, 실제로 추가할 때만 `--write`를 붙인다.
+이슈 #29의 UUID 규칙은 CSV를 직접 수정하는 별도 CLI가 아니라, extraction 스크립트가 신규 행을 만든 뒤 공용 유틸리티를 호출하는 방식으로 적용한다. 유틸리티는 CSV를 읽거나 쓰지 않고 ID만 생성·재사용·검증한다.
 
-```bash
-uv run python scripts/generate_uuids.py \
-  --table visa_process_stages \
-  --row-json '{"visa_id":"<기존 visa_id>","stage_order":1,"stage_name":"신청 접수"}' \
-  --write
+```python
+from scripts.uuid_utils import assign_new_id, get_or_create_visa_id
+
+# visa_id: 같은 visa_code가 있으면 기존 ID를 재사용하고, 없으면 새 UUID v4 발급
+visa_row = get_or_create_visa_id(
+    {"visa_code": "F-2-R", "visa_name_kr": "지역특화형 우수인재"},
+    existing_visa_rows,
+    existing_ids,
+)
+
+# stage_id/document_requirement_id: 신규 행의 빈 ID에만 UUID v4 발급
+stage_row = assign_new_id(
+    {"stage_id": "", "visa_id": visa_row["visa_id"], "stage_name": "신청 접수"},
+    "stage_id",
+    existing_ids,
+)
 ```
 
-지원 대상은 `visa_requirements`, `visa_process_stages`, `document_requirements`다. `visa_id`는 같은 `visa_code`가 이미 있으면 기존 값을 재사용하고, `stage_id`와 `document_requirement_id`는 신규 행마다 UUID v4를 발급한다. 기존 ID를 덮어쓰지 않으며, D 공통 테이블의 기존 PK와 중복되는 값은 오류로 처리한다. 행 추가 후에는 반드시 `uv run python scripts/validate_fk_integrity.py`로 FK 연결을 확인한다.
+기존 ID는 보존하고, 신규 ID가 전체 공통 테이블의 기존 PK와 중복되면 오류다. 행 생성과 CSV 저장은 호출한 extraction 스크립트가 담당하며, 저장 후에는 반드시 `uv run python scripts/validate_fk_integrity.py`로 FK 연결을 확인한다.
 
 ### `visa_quota_status.csv`
 
