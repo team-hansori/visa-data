@@ -64,19 +64,19 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 | `operator` | text, nullable | `value_numeric`에 대한 비교연산자(`>=`/`>`/`<=`/`<`/`==`). 두 방향 범위("6세 이상 19세 미만")는 한 행에 담지 않고 하한·상한을 별도 행 2개로 분리해 각각 단일 연산자로 표현한다(묶이지 않은 두 행은 기본 AND) — "복합 조건" 절 참고 |
 | `unit` | text, nullable | `value_numeric`의 단위(`년`/`세`/`회`/`만원` 등) |
 | `value_text` | text, nullable | 조건 원문 설명. `value_numeric`이 있어도 맥락(어떤 신분·어떤 절차인지 등) 보존을 위해 항상 채운다 |
-| `measurement_window_value`/`measurement_window_unit` | numeric/text, nullable | "최근 N년간" 같은 평가 범위. `B_E-7-4R/current_requirements.csv`와 동일한 필드 |
+| `measurement_window_value`/`measurement_window_unit` | numeric/text, nullable | "최근 N년간" 같은 평가 범위. `B_E-7-4R/requirements/current_requirements.csv`와 동일한 필드 |
 | `condition_group` | text, nullable | 서로 대체 가능한(OR) 조건 묶음 ID(`G1`, `G2`… 임의 라벨, 의미 없음). 유일성은 같은 `visa_id` 안에서만 보장하면 되고, 다른 비자유형 행과 번호가 겹쳐도 무방하다. 묶이지 않은 행은 다른 모든 criteria 행과 기본적으로 AND로 결합된다 |
 | `condition_operator` | text, nullable | `condition_group`이 있는 행에만 채움. 현재는 `OR`만 쓴다(AND는 그룹 없이 표현되므로) |
 | `special_case_note` | text, nullable | 예외조건 설명, 재량판단 단서 등 — 논리 연산 자체는 여기 적지 않고 `condition_group`/`condition_operator`로 표현 |
 | `valid_from`/`valid_to`/`source_document`/`source_page`/`last_verified_at` | — | 표준 버전관리 |
 
-`threshold_value`(자유텍스트) + `point_value`(정수 하나)였던 이전 스키마는 폐기했다. 텍스트만으로는 SQL에서 값을 비교할 수 없었다 — `B_E-7-4R/current_requirements.csv`에 이미 검증된 숫자 비교 패턴(`value_numeric`/`operator`/`unit`/`measurement_window_*`)을 그대로 재사용해 위 필드로 대체했다.
+`threshold_value`(자유텍스트) + `point_value`(정수 하나)였던 이전 스키마는 폐기했다. 텍스트만으로는 SQL에서 값을 비교할 수 없었다 — `B_E-7-4R/requirements/current_requirements.csv`에 이미 검증된 숫자 비교 패턴(`value_numeric`/`operator`/`unit`/`measurement_window_*`)을 그대로 재사용해 위 필드로 대체했다.
 
 **이 테이블에 넣을지 판단하는 기준**은 아래 "판단 기준 5단계 질문"을 그대로 따른다 — 트래커가 자동으로 충족/미충족을 판정할 수 있는 조건만 행으로 만든다. "인정되는 경우"·"부득이한 경우" 같은 재량 판단 표현이 들어간 조건은 절대 여기 넣지 않는다(`admin_guide_corpus`로).
 
 **`scoring_items.csv`와의 경계**: 둘 다 "구간별로 값이 달라진다"는 점은 비슷해 보이지만 판정 방식이 다르다.
 
-| | `visa_requirement_criteria.csv`(이 파일) | `scoring_items.csv`(예: `B_E-7-4R/scoring_items.csv`) |
+| | `visa_requirement_criteria.csv`(이 파일) | `scoring_items.csv`(예: `B_E-7-4R/scoring/scoring_items.csv`) |
 |---|---|---|
 | 판정 방식 | 행마다 참/거짓, 전체를 **AND/OR 불리언**으로 결합 | 행마다 점수, 전체를 **합산(SUM)**해 `total_score_threshold`와 비교 |
 | 다루는 질문 | 신청 자격이 있는가 (충족/미충족) | 자격을 충족한 사람 중 몇 점인가 (순위/합격선) |
@@ -85,9 +85,9 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 
 새 조건을 만났을 때 "이게 합격여부를 AND/OR로 가르는가, 점수 합산에 기여하는가"로 구분한다 — 후자면 `visa_requirement_criteria.csv`에 억지로 `min_value`/`max_value`/`point_value` 컬럼을 추가하지 않고 `scoring_items.csv` 쪽에 행을 추가한다. 지금은 E-7-4R만 점수제를 쓰므로 `scoring_items.csv`는 `B_E-7-4R/` 폴더 전용으로 둔다 — 두 번째 비자유형이 점수제 심사를 쓰게 되면 그때 `D_visa_requirements/visa_scoring_items.csv`(공유 `visa_id` FK)로 승격을 검토한다. 아직 소비자가 하나뿐인 상태에서 공유 테이블부터 만들지 않는다.
 
-**OR 조건 처리**: `B_E-7-4R/current_requirements.csv`와 같은 구조를 그대로 쓴다 — 한 문장에 여러 조건이 섞여 있으면 개별 행으로 분리하고, `condition_group`은 서로 관련된(대체 가능한) 조건들의 묶음만 나타낸다. 논리적 결합 관계는 자동으로 정하지 않고 원문을 직접 읽고 `condition_operator`에 사람이 입력한다. F-4-R의 "기존거주자/국내전입자/해외전입자" 3갈래처럼 "이 중 하나만 충족하면 됨"은 세 행 모두 같은 `condition_group`(예: `G1`)과 `condition_operator=OR`을 준다. `condition_group`이 없는 행은 같은 `visa_id`의 다른 모든 행과 AND로 결합된다고 간주한다.
+**OR 조건 처리**: `B_E-7-4R/requirements/current_requirements.csv`와 같은 구조를 그대로 쓴다 — 한 문장에 여러 조건이 섞여 있으면 개별 행으로 분리하고, `condition_group`은 서로 관련된(대체 가능한) 조건들의 묶음만 나타낸다. 논리적 결합 관계는 자동으로 정하지 않고 원문을 직접 읽고 `condition_operator`에 사람이 입력한다. F-4-R의 "기존거주자/국내전입자/해외전입자" 3갈래처럼 "이 중 하나만 충족하면 됨"은 세 행 모두 같은 `condition_group`(예: `G1`)과 `condition_operator=OR`을 준다. `condition_group`이 없는 행은 같은 `visa_id`의 다른 모든 행과 AND로 결합된다고 간주한다.
 
-**`condition_group`은 OR 전용이다 — B_E-7-4R의 G번호를 그대로 복사하지 않는다**: `B_E-7-4R/current_requirements.csv`의 `condition_group`(G1~G8 등)은 "서로 관련된 조건들의 묶음"이라는 더 느슨한 정의로 쓰여서, 실제 대체조건(OR)뿐 아니라 하나의 `❍` 아래 딸린 하위조건·보충설명(`※`/`-`로 시작하는 문장)까지 같은 G번호로 묶여 있다 — 그 그룹들 대부분은 `condition_operator`가 비어 있고(AND 취급), OR로 확정된 건 일부뿐이다(`G32` 등). D 공통 스키마의 `condition_group`은 정의상 OR 전용이므로, B의 G번호를 그대로 복사해 오면 원래 AND였던 관계가 OR로 오해될 수 있다. 규칙:
+**`condition_group`은 OR 전용이다 — B_E-7-4R의 G번호를 그대로 복사하지 않는다**: `B_E-7-4R/requirements/current_requirements.csv`의 `condition_group`(G1~G8 등)은 "서로 관련된 조건들의 묶음"이라는 더 느슨한 정의로 쓰여서, 실제 대체조건(OR)뿐 아니라 하나의 `❍` 아래 딸린 하위조건·보충설명(`※`/`-`로 시작하는 문장)까지 같은 G번호로 묶여 있다 — 그 그룹들 대부분은 `condition_operator`가 비어 있고(AND 취급), OR로 확정된 건 일부뿐이다(`G32` 등). D 공통 스키마의 `condition_group`은 정의상 OR 전용이므로, B의 G번호를 그대로 복사해 오면 원래 AND였던 관계가 OR로 오해될 수 있다. 규칙:
 - `condition_group`은 실제로 서로 대체 가능한(OR) 조건에만 부여한다. 하나의 `❍` 아래에 있다는 사실만으로 같은 그룹을 부여하지 않는다.
 - B의 기존 데이터를 D로 옮길 때 G번호를 그대로 복사하지 말고, 공고 원문을 다시 읽고 실제 OR 관계만 새로 식별해서 그룹을 매긴다.
 - 하위 설명·예외·보충 문장(원문의 `※`/`-` 등)은 논리 그룹으로 만들지 않고 `value_text` 또는 `special_case_note`에 서술로 남긴다.
@@ -143,7 +143,7 @@ F-4-R 12차 공고문(충청북도 공고 제2026-1158호) 분석 과정에서 �
 | `valid_from`/`valid_to`/`source_document`/`source_page`/`last_verified_at` | — | 표준 버전관리 |
 | `notes` | text, nullable | 조건부 사유, 특이사항 |
 
-`B_E-7-4R/document_forms.csv`(서식 전용, E-7-4R 단일 비자용)의 컬럼 어휘를 재사용하되, 공식 서식뿐 아니라 일반 증빙서류까지 다루도록(`document_category`) 넓히고, 특정 절차 단계에 연결되도록(`stage_id`) 확장했다. `visa_process_stages.document_requirements_status=present`인 단계는 이 테이블에 같은 `stage_id`로 연결된 행이 최소 1개 있어야 한다.
+`B_E-7-4R/documents/document_forms.csv`(서식 전용, E-7-4R 단일 비자용)의 컬럼 어휘를 재사용하되, 공식 서식뿐 아니라 일반 증빙서류까지 다루도록(`document_category`) 넓히고, 특정 절차 단계에 연결되도록(`stage_id`) 확장했다. `visa_process_stages.document_requirements_status=present`인 단계는 이 테이블에 같은 `stage_id`로 연결된 행이 최소 1개 있어야 한다.
 
 **FK 설계: `visa_id`를 중복 저장하지 않는 이유**: 이 테이블은 다른 D 테이블과 달리 `visa_id` 컬럼을 두지 않고 `stage_id` 하나로만 `visa_process_stages`(→ `visa_requirements`)를 참조한다. 다른 D 테이블들은 조회 편의를 위해 `visa_id`를 직접 갖고 있지만, CSV는 FK 제약이 없는 평문 파일이라 같은 값을 두 곳(`document_requirements.visa_id`와, `stage_id`로 조인했을 때 나오는 `visa_process_stages.visa_id`)에 저장하면 둘이 어긋나도 아무것도 막아주지 않는다 — 여러 담당자가 나눠서 편집하는 구조에서 실제로 발생할 수 있는 리스크다. `visa_id`가 필요하면 `stage_id`로 `visa_process_stages`를 조인해서 구한다. `scripts/validate_fk_integrity.py`가 이 폴더 전체의 PK 유일성과 FK 참조 무결성(이 테이블의 `stage_id`가 실제 `visa_process_stages.stage_id`를 가리키는지 포함)을 검사한다 — PR 올리기 전에 실행한다.
 
@@ -200,7 +200,7 @@ uv run python scripts/validate_fk_integrity.py
 | `new_source_page` | text | |
 | `description` | text | 무엇이 왜 바뀌었는지 서술 |
 
-`B_E-7-4R/change_history.csv`와 같은 패턴이되, 이 폴더는 여러 비자유형·테이블이 한 파일을 공유하므로 `visa_id`와 `table_name`으로 어느 비자의 어느 테이블 변경인지 구분한다. `visa_requirements`·`visa_requirement_criteria`는 "마스터 레코드 수명주기"에서 설명한 대로 스냅샷이라 옛 값이 테이블 안에 남지 않으므로, 새 회차 값으로 그 자리에서 갱신할 때마다 이 테이블에 diff 행을 반드시 같이 남긴다 — 그래야 이전 값을 조회할 유일한 경로가 생긴다.
+`B_E-7-4R/history/change_history.csv`와 같은 패턴이되, 이 폴더는 여러 비자유형·테이블이 한 파일을 공유하므로 `visa_id`와 `table_name`으로 어느 비자의 어느 테이블 변경인지 구분한다. `visa_requirements`·`visa_requirement_criteria`는 "마스터 레코드 수명주기"에서 설명한 대로 스냅샷이라 옛 값이 테이블 안에 남지 않으므로, 새 회차 값으로 그 자리에서 갱신할 때마다 이 테이블에 diff 행을 반드시 같이 남긴다 — 그래야 이전 값을 조회할 유일한 경로가 생긴다.
 
 ## 판단 기준 5단계 질문
 
