@@ -167,6 +167,19 @@ uv run python scripts/validate_fk_integrity.py
 
 빈 값, 오타, `unknown` 등 허용 목록에 없는 값은 오류다. 검증 성공 시 종료 코드 0, 오류가 있으면 종료 코드 1을 반환한다.
 
+### 공용 UUID 생성 (`scripts/generate_uuids.py`)
+
+이슈 #29의 UUID 규칙에 따라 신규 행을 추가할 때 공용 생성기를 사용한다. 기본값은 미리보기라서 CSV를 수정하지 않으며, 실제로 추가할 때만 `--write`를 붙인다.
+
+```bash
+uv run python scripts/generate_uuids.py \
+  --table visa_process_stages \
+  --row-json '{"visa_id":"<기존 visa_id>","stage_order":1,"stage_name":"신청 접수"}' \
+  --write
+```
+
+지원 대상은 `visa_requirements`, `visa_process_stages`, `document_requirements`다. `visa_id`는 같은 `visa_code`가 이미 있으면 기존 값을 재사용하고, `stage_id`와 `document_requirement_id`는 신규 행마다 UUID v4를 발급한다. 기존 ID를 덮어쓰지 않으며, D 공통 테이블의 기존 PK와 중복되는 값은 오류로 처리한다. 행 추가 후에는 반드시 `uv run python scripts/validate_fk_integrity.py`로 FK 연결을 확인한다.
+
 ### `visa_quota_status.csv`
 
 | 필드 | 타입 | 설명 |
