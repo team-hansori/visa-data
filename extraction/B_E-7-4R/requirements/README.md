@@ -43,6 +43,9 @@ uv run python scripts/normalize_review_requirements.py \
   대표 행으로 병합한다. 현재 `REQ-030~REQ-033`은 `REQ-030`에
   `* ①, ③, ④는 최근 10년 이내 사항만 해당`을 복원하고 나머지 조각 행은
   `excluded/none`으로 보존한다. 조각이 다르면 자동 병합하지 않는다.
+- 행 분리 후 의미가 확정된 절차 행(`REQ-116~REQ-119`)은
+  `reclassified/visa_process_stages`로 정규화한다. `REQ-120`, `REQ-124~REQ-126`,
+  `REQ-128`처럼 추가 분리나 논의가 필요한 행은 `needs_review/none`으로 유지한다.
 
 ## 검수 규칙
 

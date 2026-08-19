@@ -6,6 +6,7 @@ from scripts.normalize_review_requirements import (
     find_page_range_rows,
     normalize_source_sections,
     normalize_fragment_merges,
+    normalize_target_tables,
 )
 
 
@@ -200,3 +201,21 @@ def test_fragment_merge_is_idempotent():
     assert applied_again == []
     assert skipped_again == []
     assert second == first
+
+
+def test_target_table_rules_reclassify_confirmed_rows_only():
+    rows = [
+        row("REQ-048-01", decision="excluded", target="none"),
+        row("REQ-116", decision="needs_review", target="none"),
+        row("REQ-120", decision="needs_review", target="none"),
+    ]
+
+    fields, normalized, changes = normalize_target_tables(FIELDNAMES, rows)
+
+    assert normalized[0]["review_decision"] == "reclassified"
+    assert normalized[0]["target_table"] == "scoring_items"
+    assert normalized[1]["review_decision"] == "reclassified"
+    assert normalized[1]["target_table"] == "visa_process_stages"
+    assert normalized[2]["review_decision"] == "needs_review"
+    assert normalized[2]["target_table"] == "none"
+    assert [change[0] for change in changes] == ["REQ-048-01", "REQ-116"]

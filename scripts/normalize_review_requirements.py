@@ -148,6 +148,8 @@ SPLIT_SPECS = (
             child(
                 "③ 출입국관리법 3회 이하 위반자로 행정처분을 받은 자(과태료 미포함) (최대 15점) | 5 | 10 | 15",
                 "3",
+                "reclassified",
+                "scoring_items",
             ),
             child("< 기본항목 >가. 소 득", "4", "excluded", "none"),
         ),
@@ -159,6 +161,8 @@ SPLIT_SPECS = (
             child(
                 "* 현재 연도에서 출생 연도를 뺀 다음 계산 시점에 생일이 지났으면 그 수치 그대로 쓰고, 생일이 지나지 않았으면 1년을 뺀 수치를 사용",
                 "4",
+                "reclassified",
+                "scoring_items",
             ),
             child("< 가점항목 >가. 고용주 및 지자체 추천(필수항목)", "5", "excluded", "none"),
         ),
@@ -170,6 +174,8 @@ SPLIT_SPECS = (
             child(
                 "※ 직전 근무처 휴‧폐업, 폭언‧폭행‧임금체불과 같은 부당행위 등 근로자 귀책 없는 사유로 근무처 변경을 한 사실이 객관적 증빙자료로 입증될 시, 직전 근무처와 현 근무처의 근무기간을 합산하여 1년 이상이 될 경우 추천 가능",
                 "5",
+                "reclassified",
+                "scoring_items",
             ),
             child("다. 인구감소지역 등 근무경력", "6", "excluded", "none"),
         ),
@@ -181,6 +187,8 @@ SPLIT_SPECS = (
             child(
                 "- (E-7-4와 E-7-4R 동시 고용) 숙련기능인력(E-7-4)과 지역특화형 숙련기능인력(E-7-4R)을 동시에 고용하고 있는 기업은 본 지침의 ‘고용가능인원’ 기준을 적용하되, 인구감소지역 소재 기업 또는 뿌리기업, 농림축산어업체에서 내국인 고용인원이 71명을 초과하는 경우 또는 인구감소(관심)지역에서 내국인 고용인원이 135명 이상인 경우 등 ｢숙련기능인력(E-7-4) 체류관리 지침｣ 적용이 사업장에게 더 유리한 경우 숙련기능인력(E-7-4) 허용인원 기준(내국인 고용인원의 50% 이내) 적용",
                 "7",
+                "approved",
+                "visa_requirement_criteria",
             ),
             child("나. 고용주 요건(법무부 조회사항)", "8", "excluded", "none"),
         ),
@@ -211,6 +219,20 @@ MERGE_SPECS = (
         "한 줄의 보충 설명이 네 개의 추출 행으로 분리됨",
     ),
 )
+
+
+# 분리된 행 또는 원문 의미가 확정된 행만 대상 테이블을 보정한다. 행 분리·원문
+# 복원이 필요한 needs_review 행은 자동으로 확정하지 않는다.
+TARGET_TABLE_RULES: dict[str, tuple[str, str]] = {
+    "REQ-048-01": ("reclassified", "scoring_items"),
+    "REQ-060-01": ("reclassified", "scoring_items"),
+    "REQ-077-01": ("reclassified", "scoring_items"),
+    "REQ-103-01": ("approved", "visa_requirement_criteria"),
+    **dict.fromkeys(
+        (f"REQ-{number:03d}" for number in range(116, 120)),
+        ("reclassified", "visa_process_stages"),
+    ),
+}
 
 
 def _ids(first: int, last: int) -> tuple[str, ...]:
@@ -440,6 +462,30 @@ def normalize_fragment_merges(
     return fieldnames, rows, applied, skipped
 
 
+def normalize_target_tables(
+    fieldnames: list[str],
+    rows: list[dict[str, str]],
+    rules: dict[str, tuple[str, str]] = TARGET_TABLE_RULES,
+) -> tuple[list[str], list[dict[str, str]], list[tuple[str, str, str, str, str]]]:
+    """확정된 행의 검수 판정과 대상 테이블을 보정한다."""
+
+    changes: list[tuple[str, str, str, str, str]] = []
+    for row in rows:
+        record_id = row.get("record_id", "")
+        rule = rules.get(record_id)
+        if rule is None:
+            continue
+        new_decision, new_target = rule
+        old_decision = row.get("review_decision", "")
+        old_target = row.get("target_table", "")
+        if old_decision == new_decision and old_target == new_target:
+            continue
+        row["review_decision"] = new_decision
+        row["target_table"] = new_target
+        changes.append((record_id, old_decision, old_target, new_decision, new_target))
+    return fieldnames, rows, changes
+
+
 def normalize_source_sections(
     fieldnames: list[str],
     rows: list[dict[str, str]],
@@ -502,6 +548,7 @@ def main() -> None:
     fieldnames, split_result, merged_ids, skipped_merge_ids = normalize_fragment_merges(
         fieldnames, split_result
     )
+    fieldnames, split_result, target_changes = normalize_target_tables(fieldnames, split_result)
     fieldnames, split_result, section_changes = normalize_source_sections(fieldnames, split_result)
     resolved_parent_ids = {spec.parent_record_id for spec in SPLIT_SPECS}
     page_range_rows = find_page_range_rows(rows, resolved_parent_ids)
@@ -514,6 +561,11 @@ def main() -> None:
         print("병합 완료: " + ", ".join(merged_ids))
     if skipped_merge_ids:
         print("원문 확인 필요(자동 병합 보류): " + ", ".join(skipped_merge_ids))
+    print(f"target_table 변경: {len(target_changes)}행")
+    for record_id, old_decision, old_target, new_decision, new_target in target_changes:
+        print(
+            f"- {record_id}: {old_decision}/{old_target or 'none'} -> {new_decision}/{new_target}"
+        )
     print(f"source_section 변경: {len(section_changes)}행")
     for record_id, old_section, new_section in section_changes:
         print(f"- {record_id}: {old_section or '(비어 있음)'} -> {new_section}")
