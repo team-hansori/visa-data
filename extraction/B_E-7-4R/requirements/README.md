@@ -20,11 +20,11 @@ E-7-4R의 자격요건 원천 데이터와 수동검수 결과를 보관한다.
 `source_section` 정규화 과정에서 변경하지 않는다.
 
 ```bash
-uv run python scripts/normalize_review_requirements.py \
+uv run python scripts/review_requirements.py normalize \
   extraction/B_E-7-4R/requirements/_review_current_requirements.csv \
   --dry-run
 
-uv run python scripts/normalize_review_requirements.py \
+uv run python scripts/review_requirements.py normalize \
   extraction/B_E-7-4R/requirements/_review_current_requirements.csv \
   --in-place
 ```
@@ -41,7 +41,7 @@ HWPX 추출 로직을 수정한 뒤에는 원본을 다시 추출하고 draft를
 uv run python scripts/extract_hwpx.py <원본.hwpx> --output-dir <임시추출폴더>
 uv run python scripts/draft_requirements.py <임시추출폴더>/<section0.txt> \
   extraction/B_E-7-4R/requirements/_draft_current_requirements.csv
-uv run python scripts/merge_reextracted_review.py \
+uv run python scripts/review_requirements.py merge \
   extraction/B_E-7-4R/requirements/_review_current_requirements.csv \
   <새로생성한_draft.csv> \
   extraction/B_E-7-4R/requirements/_draft_current_requirements.csv
@@ -50,6 +50,16 @@ uv run python scripts/merge_reextracted_review.py \
 이 병합은 `review_decision`, `target_table`, `review_note`, `reviewer`, `reviewed_at`,
 `status`를 덮어쓰지 않는다. 사람이 이미 `raw_text`를 수정한 행도 보존하고, 새로 추출된
 행만 검수 필드를 빈 값으로 추가한다.
+
+재추출로 행이 새로 분리된 경우에는 대응 관계를 확인한 뒤 하위 행을 추가하고 정렬한다.
+
+```bash
+uv run python scripts/review_requirements.py add-children \
+  extraction/B_E-7-4R/requirements/_review_current_requirements.csv \
+  <새로생성한_draft.csv>
+uv run python scripts/review_requirements.py sort \
+  extraction/B_E-7-4R/requirements/_review_current_requirements.csv
+```
 
 분리된 행은 `REQ-018-01`처럼 하위 ID를 가지며, `parent_record_id`로 원본 행을 추적한다.
 하위 행은 실제 원문 위치에 맞는 개별 `source_page`를 갖고, 부모 행에 있던 페이지 범위를

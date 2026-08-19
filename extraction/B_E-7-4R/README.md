@@ -67,14 +67,14 @@
 다음 명령으로 원본 review CSV를 덮어쓰지 않고 자동 분류 제안 파일을 생성한다.
 
 ```bash
-uv run python scripts/classify_review_rows.py \
+uv run python scripts/review_requirements.py classify \
   extraction/B_E-7-4R/requirements/_review_current_requirements.csv
 ```
 
 기존 `review_decision`과 `target_table`에 확신도 높은 제안만 반영하려면 다음처럼 실행한다. `status`, 출처, 메모, 검토자 정보는 유지하고, 애매한 행은 `needs_review/none`으로 남긴다.
 
 ```bash
-uv run python scripts/classify_review_rows.py \
+uv run python scripts/review_requirements.py classify \
   extraction/B_E-7-4R/requirements/_review_current_requirements.csv \
   --in-place
 ```
