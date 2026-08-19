@@ -21,10 +21,49 @@
 | 필드 | 허용값·의미 |
 |---|---|
 | `review_decision` | `approved`, `reclassified`, `excluded`, `needs_review` |
-| `target_table` | `visa_requirement_criteria`, `visa_process_stages`, `visa_quota_status`, `document_requirements`, `visa_requirements`, `change_history`, `none` |
+| `target_table` | `visa_requirement_criteria`, `visa_process_stages`, `visa_quota_status`, `document_requirements`, `visa_requirements`, `change_history`, `scoring_items`, `none` |
 | `review_note` | 원문 대조 결과와 판정 사유 |
 | `reviewer` | 검토자 |
 | `reviewed_at` | 검토일 |
+
+## `target_table` 검토 기준
+
+`target_table`은 원문 행을 최종적으로 어느 공통·전용 테이블에 저장할지 나타낸다. 제목이나
+상위 섹션만 보고 결정하지 말고, 해당 행의 실제 의미와 판정 방식을 기준으로 분류한다.
+
+### 판정 순서
+
+1. 원문 행이 섹션 제목·표 제목·문의처·단순 안내인지 확인한다. 이에 해당하고 공통 마스터에
+   저장할 구조화된 값이 없으면 `excluded/none`으로 둔다.
+2. 한 행에 서로 다른 의미가 섞여 있는지 확인한다. 절차와 쿼터, 자격요건과 점수처럼 의미가
+   섞여 있으면 임의로 한 테이블에 넣지 말고 행을 분리하거나 `needs_review/none`으로 둔다.
+3. 남은 행의 의미와 판정 방식을 아래 표에 대조한다.
+4. 원문만으로 확정할 수 없으면 `needs_review/none`으로 남기고 `review_note`에 확인할 내용을
+   기록한다.
+
+| 원문 행의 의미 | `review_decision` | `target_table` |
+|---|---|---|
+| 신청 자격·필수 조건(나이, 학력, 경력, 소득, 거주·체류 요건 등) | `approved` | `visa_requirement_criteria` |
+| 가점·감점·점수 구간·총점·합격선 등 점수 계산 항목 | `reclassified` | `scoring_items` |
+| 신청·추천·접수·심사·결과 통보 등 진행 단계 | `reclassified` | `visa_process_stages` |
+| 모집 규모·지역별 배정·잔여 인원·쿼터 소진 상태 | `reclassified` | `visa_quota_status` |
+| 신청자가 실제로 제출할 증빙서류 목록 | `reclassified` | `document_requirements` |
+| 비자 제도 자체의 요약·현재 적용 정보 | `reclassified` | `visa_requirements` |
+| 차수 간 요건·절차·쿼터의 추가·삭제·변경 내역 | `reclassified` | `change_history` |
+| 제목·문의처·단순 안내·판정 불가 행 | `excluded` 또는 `needs_review` | `none` |
+
+### 경계 사례
+
+- `자격 요건` 섹션에 있어도 점수 합산이나 감점 기준이면 `visa_requirement_criteria`가
+  아니라 `scoring_items`로 분류한다.
+- 신청 방법에 제출서류가 함께 있으면 절차 설명은 `visa_process_stages`, 실제 서류 목록은
+  `document_requirements`로 분리한다.
+- 서식의 파일명·작성자·서명란 같은 메타데이터는 `document_requirements`로 자동 해석하지
+  않는다. 실제 제출 증빙서류인지 불명확하면 `needs_review/none`으로 둔다.
+- 쿼터 범위 내 추천처럼 절차와 쿼터가 한 행에 섞이면 행을 분리하거나 수동 검토로 보류한다.
+- `approved`는 일반적으로 `visa_requirement_criteria`에, `reclassified`는 다른 대상 테이블에
+  매핑한다. `excluded`와 `needs_review`는 공통 마스터로 이관하지 않고 `target_table=none`으로
+  둔다.
 
 ## 매핑 기준
 

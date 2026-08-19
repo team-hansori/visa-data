@@ -53,7 +53,7 @@
 1. `requirements/_draft_current_requirements.csv`의 각 행을 원본 문서와 대조한다.
 2. `requirements/_review_current_requirements.csv`에 다음 판정 필드를 작성한다.
    - `review_decision`: `approved`, `reclassified`, `excluded`, `needs_review` 중 하나
-   - `target_table`: `visa_requirement_criteria`, `visa_process_stages`, `visa_quota_status`, `document_requirements`, `visa_requirements`, `change_history`, `none` 중 하나
+   - `target_table`: `visa_requirement_criteria`, `visa_process_stages`, `visa_quota_status`, `document_requirements`, `visa_requirements`, `change_history`, `scoring_items`, `none` 중 하나
    - `review_note`: 판정 근거와 원문 대조 결과
    - `reviewer`, `reviewed_at`: 검토자와 검토일
 3. `unclassified` 조각은 자동 삭제하지 않고 자격요건·절차·쿼터·서류·공고 메타데이터 중 어디에 해당하는지 판정한다.
@@ -61,6 +61,25 @@
 5. 검수 완료 행만 `requirements/current_requirements.csv` 또는 공통 마스터의 해당 테이블로 이관한다.
 
 공통 `visa_requirement_criteria.csv`에는 현재 `status` 컬럼이 없으므로, 상태 컬럼을 공통 스키마에 추가할지는 별도 팀 설계 이슈에서 결정한다. 그 전까지 상태와 검수 이력은 이 폴더의 원천·검토 파일에서 보존한다.
+
+## 자동 1차 분류 제안
+
+다음 명령으로 원본 review CSV를 덮어쓰지 않고 자동 분류 제안 파일을 생성한다.
+
+```bash
+uv run python scripts/classify_review_rows.py \
+  extraction/B_E-7-4R/requirements/_review_current_requirements.csv
+```
+
+기존 `review_decision`과 `target_table`에 확신도 높은 제안만 반영하려면 다음처럼 실행한다. `status`, 출처, 메모, 검토자 정보는 유지하고, 애매한 행은 `needs_review/none`으로 남긴다.
+
+```bash
+uv run python scripts/classify_review_rows.py \
+  extraction/B_E-7-4R/requirements/_review_current_requirements.csv \
+  --in-place
+```
+
+출력 파일은 `_review_current_requirements_proposed.csv`이며 `auto_review_decision`, `auto_target_table`, `auto_confidence`, `auto_reason` 컬럼을 추가한다. 제안값은 키워드와 섹션 기반의 1차 결과이므로, 원본 review CSV의 `review_decision`·`target_table`에 바로 복사하지 않고 사람이 확인한다. 원문 복원이 필요한 행과 한 행에 여러 의미가 섞인 행은 자동으로 `needs_review`로 남긴다. `scoring_items`는 E-7-4R 전용 점수표 대상이며 공통 criteria와 구분한다.
 
 ## 변경 유형 (`history/change_history.csv`의 `change_type`)
 
