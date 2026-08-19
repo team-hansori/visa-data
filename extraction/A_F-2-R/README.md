@@ -68,14 +68,42 @@ education_or_income (OR)
 - 페이지를 확정하지 못한 행은 공통 마스터에 넣지 않고 `extraction_review_queue.csv`의 `common_source_page_mapping` 항목으로 관리한다.
 - 공통 이관 전 `visa_id`, 새 `criteria_id`, `condition_group`, `condition_operator`, `source_page`, `valid_from`, `valid_to`를 함께 검수한다.
 
+### 문서 범위 페이지 키
+
+`source_page`는 전체 저장소에서 단독으로 식별자로 사용하지 않는다. 같은 페이지 번호가 공고문·붙임자료·개정자료에서 반복될 수 있으므로 근거 페이지는 반드시 다음 복합 키로 식별한다.
+
+```text
+(source_document_id, source_page)
+```
+
+- `source_document_id`는 `r09_announcement_2025~2026_a483f5df`처럼 공고 차수, 문서 유형, 기준 연도, SHA-256 앞 8자리를 포함한다.
+- 공통 이관 시에도 문서명만 남기지 않고 원천 `source_document_id`, 문서 유형, 차수, 공고일·개정일 또는 해시를 추적할 수 있게 보존한다.
+- HWPX 페이지, PDF 페이지처럼 페이지 번호 체계가 다를 수 있으므로 `source_page_basis`에 사용한 체계를 기록한다.
+- 페이지를 확정하지 못한 행은 빈 페이지를 임의로 채우지 않고 `common_source_page_mapping` 검토 상태를 유지한다.
+- 현재 9차 보완 점수표의 근거 키는 `(r09_announcement_2025~2026_a483f5df, 6)`이며, `source_page_basis`에 HWPX 레이아웃 페이지임을 기록했다.
+
 ## 점수표 상태
 
 `visa_scoring_models.csv`와 `visa_scoring_items.csv`는 최신 17차 공고에 완전한 배점표가 없어 9차 자료에서 보완한 잠정 데이터다.
 
 - `fill_strategy=backfilled`
 - `review_status=needs_review`
+- `source_round=9`, `assumed_target_round=17`
+- `source_page=6`이며 문서 범위 키는 `(r09_announcement_2025~2026_a483f5df, 6)`
+- `valid_from=2025-03-07`, `valid_to=2026-09-18`은 9차 공고문에 반복 기재된 **사업 전체 접수기간**이다. 이 기간 자체가 9차 점수표의 17차 현행성을 입증하지는 않는다.
+- 상속 범위는 9차의 배점 항목·구간·배점·최대점수·동점기준으로 제한한다. 9차의 자격요건과 유효기간은 17차에 상속하지 않는다.
+- 대조 원문 목록은 9차 공고문과 17차 공고문·붙임자료·개정사항이며 `related_source_document_ids_json`에 저장한다.
+- `applicability_assumption`에는 “9차의 완전한 배점표가 17차에도 유지된다”는 미검증 가정을 명시한다.
+- `consumption_gate=blocked_while_needs_review`인 행은 서비스와 scoring engine이 소비하면 안 된다.
 
-수동 검수로 17차에도 같은 점수표가 유효하다고 확인되기 전에는 공통 마스터나 scoring engine에 반영하지 않는다. 검수 항목은 `extraction_review_queue.csv`의 `scoring_model` 행으로 관리한다.
+점수 소비 조건은 다음 두 조건을 모두 만족하는 경우로 제한한다.
+
+```text
+review_status == "reviewed"
+AND consumption_gate == "allowed"
+```
+
+수동 검수로 17차에도 같은 점수표가 유효하다고 확인되기 전에는 공통 마스터나 scoring engine에 반영하지 않는다. 검수 완료 시 17차 공고문·붙임자료·개정사항과 담당기관 확인으로 동일 배점표의 현행성 및 적용기간을 확정하고, 모델 1행과 항목 12행을 모두 `review_status=reviewed`, `consumption_gate=allowed`로 전환한다. 이 조건은 `extraction_review_queue.csv`의 `scoring_model` 행에도 기록한다.
 
 ## 작업·PR 경계
 
@@ -83,11 +111,21 @@ education_or_income (OR)
 - 공통 마스터 PR: 검수 완료된 원천 행만 `extraction/D_visa_requirements/` 스키마로 별도 매핑
 - 여러 담당자가 D 공통 마스터를 동시에 수정하지 않도록 통합 PR은 순차적으로 진행한다.
 
-## 검수 체크
+## 검수 체크 및 PR 완료 기준
 
-- [ ] 모든 `parent_group_id`가 같은 `visa_id`의 존재하는 그룹을 참조한다.
-- [ ] OR 그룹에는 실제 대체조건이 두 개 이상 있다.
-- [ ] 경로별 필수 AND 조건이 상위 OR 그룹에 직접 평탄화되지 않았다.
-- [ ] 원천 `group_id`를 공통 `condition_group`으로 복사하지 않았다.
-- [ ] 공통 이관 대상 행의 `source_page`와 유효기간을 원문으로 확인했다.
-- [ ] 9차 보완 점수표의 현행성을 수동 검수했다.
+다음 자동 검사는 `python scripts/validate_f2r_extraction.py`로 재현한다. 성공 시 JSON의 `result`가 `PASS`이고 종료코드가 0이어야 한다.
+
+- [x] **논리그룹 무결성** — 예상 결과: 모든 `parent_group_id`가 같은 `visa_id`의 존재하는 그룹을 참조하고, 모든 OR 그룹에 실제 대체조건이 2개 이상 있으며, 상위 OR 그룹에 경로별 AND 조건이 직접 평탄화되지 않는다.
+- [x] **14종 CSV 파일·스키마 완전성** — 예상 결과: 정확히 14개 CSV가 존재하고, 중복 헤더·열 수 불일치·필수 컬럼 누락이 없으며 총 934행을 읽을 수 있다.
+- [x] **원천 위치 완전성** — 예상 결과: 원천 근거를 직접 저장하는 776행에 `source_document_id`, `source_section`, 블록 또는 표 위치, `source_text`/`raw_text`가 있고 변경 이력 93행은 모두 `source_block_index`를 가진다.
+- [x] **검토 큐 완전성** — 예상 결과: 6개 검토 대상마다 `status`, 대조 원문 목록, `blocking_scope`, `completion_criteria`가 존재한다. 현재 예상 상태는 6개 모두 `open`이며 각 범위의 소비가 차단된다.
+- [x] **수집 오류 기록** — 예상 결과: `ingestion_issues.csv` 6행이 유효한 심각도와 유형을 사용하고, 잘못 수정된 `suspicious_filename` 오류는 남아 있지 않는다.
+- [x] **공고문·안내자료 불일치 보존** — 예상 결과: 17차 붙임의 언어기준과 공고문·개정사항의 완화 기준 불일치가 `cross_document_conflict`로 남고 현재값 선택 근거가 메시지에 기록된다.
+- [x] **인접 차수 변경 이력** — 예상 결과: 변경 이력 93행은 모두 `to_round-from_round=1`이며 15→16, 16→17 비교는 존재하고 15→17 직접 비교는 존재하지 않는다.
+- [x] **잠정 점수표 소비 차단** — 예상 결과: 9차 모델 1행과 항목 12행은 `needs_review` 및 `blocked_while_needs_review`이고 소비 가능한 행은 0개다.
+
+다음 항목은 사람 검수가 끝나야 체크할 수 있으며, 완료 전에는 해당 범위를 PR 완료 또는 서비스 사용 가능 상태로 표시하지 않는다.
+
+- [ ] **공통 마스터 페이지·유효기간 검수** — 완료 결과: 이관 대상마다 `(source_document_id, source_page)`와 페이지 체계 및 `valid_from`/`valid_to`를 원문으로 확인하고 `common_source_page_mapping`을 `resolved`로 변경한다.
+- [ ] **9차 보완 점수표의 17차 현행성 검수** — 완료 결과: 담당기관 또는 공식 17차 자료로 적용 범위와 시작·종료일을 확정하고 모델·항목 전체를 `reviewed`/`allowed`로 변경한 뒤 `scoring_model` 검토를 `resolved`로 변경한다.
+- [ ] **신청대상·고용규모·제외대상 검수** — 완료 결과: 관련 운영지침과 표·도형을 확인하여 `applicant_status`, `employer_capacity`, `excluded_applicants` 검토 항목을 모두 `resolved`로 변경한다.
