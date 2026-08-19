@@ -6,7 +6,39 @@ E-7-4R의 자격요건 원천 데이터와 수동검수 결과를 보관한다.
 
 - `current_requirements.csv`: 검토가 끝난 현재 요건 데이터.
 - `_draft_current_requirements.csv`: 원문에서 자동 분리한 초안. `not_checked`와 `unclassified` 행이 포함될 수 있다.
-- `_review_current_requirements.csv`: 초안 행별 검수 판정 큐. 현재 135개 행이 수동검수 대상이다.
+- `_review_current_requirements.csv`: 초안 행별 검수 판정 큐. 복합 행을 분리한 하위 행도 함께 보관한다.
+
+## 복합 행 분리
+
+`scripts/normalize_review_requirements.py`는 표나 복합 문장처럼 한 행에 여러 의미가 붙은
+경우, 분리 기준이 확정된 행만 하위 행으로 추가한다. 기본 실행은 분리 결과를 별도 파일로
+생성하고, 검토 결과를 원본 review CSV에 반영할 때만 `--in-place`를 사용한다.
+
+행 분리 후에는 검수 메모에서 경로가 확정된 `record_id`에 한해 `source_section`도
+정규화한다. 규칙에 등록되지 않은 행은 자동 추론하지 않고 기존 값을 보존한다.
+`raw_text`, `source_page`, `review_note`, `review_decision`, `target_table`은
+`source_section` 정규화 과정에서 변경하지 않는다.
+
+```bash
+uv run python scripts/normalize_review_requirements.py \
+  extraction/B_E-7-4R/requirements/_review_current_requirements.csv \
+  --dry-run
+
+uv run python scripts/normalize_review_requirements.py \
+  extraction/B_E-7-4R/requirements/_review_current_requirements.csv \
+  --in-place
+```
+
+`--dry-run`에서는 추가되는 하위 행과 변경되는 `source_section`의 기존·신규 경로를
+출력한다.
+
+분리된 행은 `REQ-018-01`처럼 하위 ID를 가지며, `parent_record_id`로 원본 행을 추적한다.
+하위 행은 실제 원문 위치에 맞는 개별 `source_page`를 갖고, 부모 행에 있던 페이지 범위를
+그대로 복사하지 않는다. 부모 행의 원문은 삭제하지 않고 `excluded/none`으로 남겨 중복
+이관을 방지한다. 구조가 애매하거나 `extraction_failed`인 행은 자동 분리하지 않고 수동
+검토 대상으로 유지한다.
+- `source_section`은 검수 메모로 확정된 ID별 규칙만 적용한다. 미확정 행은 수동 검토
+  대상으로 남긴다.
 
 ## 검수 규칙
 
