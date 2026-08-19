@@ -4,6 +4,7 @@
 
 ### style
 
+- Ruff format 적용 (CI lint 실패 수정) ([2144163](https://github.com/team-hansori/visa-data/commit/214416392ff42478ec2bbd08bc99f6ad72d1d2a4))
 - 테스트 코드 ruff 포맷 적용 ([00ca0d1](https://github.com/team-hansori/visa-data/commit/00ca0d1a8137ec7a8c83932008cd4e5bc42cdb83))
 
 ### 기타
@@ -25,6 +26,8 @@
 
 ### 문서
 
+- 제출서류 검증 규칙 문서화 ([df1630a](https://github.com/team-hansori/visa-data/commit/df1630a1d628b3d68d5bc3e85b61cd09f66c8fc4))
+- CHANGELOG 자동 업데이트 [skip ci] ([cf68d4c](https://github.com/team-hansori/visa-data/commit/cf68d4c1b289b2170ed3e01e56853d1ece1f6f20))
 - B_E-7-4R 스키마 정리 및 작업 내역 문서 추가 ([84a31b8](https://github.com/team-hansori/visa-data/commit/84a31b8a59ca17a7f1f7d72b8f1660d660b15b8d))
 - CHANGELOG 자동 업데이트 [skip ci] ([2fb48b1](https://github.com/team-hansori/visa-data/commit/2fb48b1dfc34f1f4d99418524e52837bca2fa496))
 - CHANGELOG 자동 업데이트 [skip ci] ([9a7a0f7](https://github.com/team-hansori/visa-data/commit/9a7a0f73bf94e62056dc9167b3d8e06177983e12))
@@ -51,6 +54,9 @@
 
 ### 버그 수정
 
+- 제출서류 상태값 검증 강화 ([318fec0](https://github.com/team-hansori/visa-data/commit/318fec0cf4cb78b6a7fd743d3209e973d5e3df05))
+- Enforce stage document status schema ([121b8f5](https://github.com/team-hansori/visa-data/commit/121b8f5f68b6b876cdece21a202c3627fe5bb8df))
+- FK 검증기의 헤더 누락 처리와 document_requirements_status 정합성 검사 추가 ([2c61be3](https://github.com/team-hansori/visa-data/commit/2c61be3b3ec5b19bab8013e62a8c003a259e2bd3))
 - CodeRabbit 리뷰 반영 - lxml 직접 의존성 추가, notes/description 표기 정정 ([acc6a29](https://github.com/team-hansori/visa-data/commit/acc6a29ef433bf5a7d5c9138069bba0de46ea6b2))
 - Current_requirements.csv 조건 그룹 관계 설명 보강 및 REQ-102 그룹 정정 ([5bbf27e](https://github.com/team-hansori/visa-data/commit/5bbf27ec36a8b841bde889c7981d96fc9d07ee10))
 - ASSAULT 행 notes의 external_region_scope 오기 수정 (NULL→NATIONWIDE) ([ab349bc](https://github.com/team-hansori/visa-data/commit/ab349bc445dbb0fc15f92454e05d923d86905f1f))
@@ -74,6 +80,7 @@
 
 ### 새 기능
 
+- 절차 단계별 제출서류 스키마와 FK 무결성 검증 스크립트 추가 ([50e831a](https://github.com/team-hansori/visa-data/commit/50e831a2a48a9151f070aef680b94c4c2d9ed548))
 - 1~8차 공고문 비교로 change_history.csv 채우기 ([bb0b711](https://github.com/team-hansori/visa-data/commit/bb0b71112fd4f58a7ecd21d7fb67a6ae1abd02eb))
 - F-4-R 12차 공고문 데이터 반영 및 change_history 공유 테이블 신설 ([7796a81](https://github.com/team-hansori/visa-data/commit/7796a811aacbd634921a61e5bd7f14e1e73efd01))
 - D_visa_requirements 공유 마스터 테이블 스키마 신설 ([a746d67](https://github.com/team-hansori/visa-data/commit/a746d67a10605baba2da12df26844df6e24632b9))
