@@ -20,6 +20,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / "extraction" / "A_F-2-R"
 F2R_VISA_ID = "78dca2d7-f771-553a-b788-46c9ff56d633"
+SCORING_SOURCE_DOCUMENT_ID = "r09_announcement_2025~2026_a483f5df"
 
 EXPECTED_FILES = {
     "extraction_review_queue.csv",
@@ -194,6 +195,17 @@ for row in groups:
     parent = row["parent_group_id"]
     if parent and parent not in group_by_id:
         fail(f"missing parent group: {row['group_key']} -> {parent}")
+for row in groups:
+    ancestry: list[str] = []
+    current_group_id = row["group_id"]
+    while current_group_id:
+        if current_group_id in ancestry:
+            cycle_start = ancestry.index(current_group_id)
+            cycle_ids = ancestry[cycle_start:] + [current_group_id]
+            cycle_keys = [group_by_id[group_id]["group_key"] for group_id in cycle_ids]
+            fail(f"criterion group parent cycle: {' -> '.join(cycle_keys)}")
+        ancestry.append(current_group_id)
+        current_group_id = group_by_id[current_group_id]["parent_group_id"]
 for row in criteria:
     if row["visa_id"] != F2R_VISA_ID or row["group_id"] not in group_by_id:
         fail(f"invalid criterion foreign key: {row['criteria_id']}")
@@ -215,26 +227,41 @@ if len(models) != 1 or len(items) != 12:
     fail(f"unexpected scoring rows: models={len(models)} items={len(items)}")
 model_id = models[0]["score_model_id"]
 required_scoring_sources = {
-    "r09_announcement_2025~2026_a483f5df",
+    SCORING_SOURCE_DOCUMENT_ID,
     "r17_announcement_2026_df1fdde9",
     "r17_attachment_2026_07f157ee",
     "r17_amendment_2026_4407bdfe",
 }
-for row in models + items:
+scoring_rows = models + items
+allowed_scoring_states = {
+    ("needs_review", "blocked_while_needs_review"),
+    ("reviewed", "allowed"),
+}
+scoring_states = {
+    (row["review_status"], row["consumption_gate"])
+    for row in scoring_rows
+}
+if len(scoring_states) != 1:
+    fail(f"mixed scoring review states: {sorted(scoring_states)}")
+scoring_state = next(iter(scoring_states))
+if scoring_state not in allowed_scoring_states:
+    fail(f"invalid scoring review state: {scoring_state}")
+
+for row in scoring_rows:
     if row["visa_id"] != F2R_VISA_ID:
         fail("unexpected scoring visa_id")
     if row.get("score_model_id") != model_id:
         fail("scoring item points to another model")
     if row["source_round"] != "9" or row["assumed_target_round"] != "17":
         fail("scoring source/target round mismatch")
+    if row["source_document_id"] != SCORING_SOURCE_DOCUMENT_ID:
+        fail("scoring primary source must be the round-9 announcement")
     if row["source_page"] != "6" or not row["source_page_basis"]:
         fail("scoring source page is not document-scoped and verified")
     if (row["valid_from"], row["valid_to"]) != ("2025-03-07", "2026-09-18"):
         fail("scoring program period mismatch")
-    if row["fill_strategy"] != "backfilled" or row["review_status"] != "needs_review":
-        fail("backfilled scoring data must remain needs_review")
-    if row["consumption_gate"] != "blocked_while_needs_review":
-        fail("needs_review scoring data is not blocked from consumption")
+    if row["fill_strategy"] != "backfilled":
+        fail("round-9 scoring data must retain its backfilled provenance")
     sources = set(json.loads(row["related_source_document_ids_json"]))
     if sources != required_scoring_sources:
         fail("scoring source-document list mismatch")
@@ -248,11 +275,9 @@ for row in models + items:
         fail("scoring review metadata is incomplete")
 
 consumable_scores = [
-    row for row in models + items
+    row for row in scoring_rows
     if row["review_status"] == "reviewed" and row["consumption_gate"] == "allowed"
 ]
-if consumable_scores:
-    fail("provisional round-9 scoring rows must not be consumable")
 
 reviews = tables["extraction_review_queue.csv"]
 if len(reviews) != 6:
@@ -313,7 +338,8 @@ result = {
         "assumed_target_round": 17,
         "source_page_key": [models[0]["source_document_id"], models[0]["source_page"]],
         "consumable_rows": len(consumable_scores),
-        "gate": "blocked_while_needs_review",
+        "review_status": scoring_state[0],
+        "gate": scoring_state[1],
     },
 }
 print(json.dumps(result, ensure_ascii=False, indent=2))
