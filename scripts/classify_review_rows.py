@@ -33,7 +33,31 @@ AUTO_FIELDS = (
 )
 
 HEADING_PATTERN = re.compile(r"^(?:\d+\s*\|\s*\||<[^>]+>)")
-STRUCTURAL_MARKERS = ("❍", "※", "-", "①", "②", "③", "④", "⑤", "⑥", "⑦", "⑧", "⑨", "⑩")
+STRUCTURAL_MARKERS = (
+    "❍",
+    "※",
+    "-",
+    "①",
+    "②",
+    "③",
+    "④",
+    "⑤",
+    "⑥",
+    "⑦",
+    "⑧",
+    "⑨",
+    "⑩",
+    "Ⓐ",
+    "Ⓑ",
+    "Ⓒ",
+    "Ⓓ",
+    "Ⓔ",
+    "Ⓕ",
+    "Ⓖ",
+    "Ⓗ",
+    "Ⓘ",
+    "Ⓙ",
+)
 
 
 @dataclass(frozen=True)
@@ -76,8 +100,12 @@ def classify_row(row: dict[str, str]) -> Classification:
             "K-POINT 점수표 영역으로 분류",
         )
 
-    has_quota_signal = any(keyword in combined for keyword in ("쿼터", "기추천", "잔여", "모집규모"))
-    has_process_signal = any(keyword in combined for keyword in ("추진 체계", "신청방법", "접수", "결과안내"))
+    has_quota_signal = any(
+        keyword in combined for keyword in ("쿼터", "기추천", "잔여", "모집규모")
+    )
+    has_process_signal = any(
+        keyword in combined for keyword in ("추진 체계", "신청방법", "접수", "결과안내")
+    )
 
     if has_quota_signal and has_process_signal:
         return Classification(
@@ -157,9 +185,7 @@ def proposed_output_path(input_path: Path) -> Path:
     return input_path.with_name(f"{marker}_proposed{input_path.suffix}")
 
 
-def write_proposals(
-    fieldnames: list[str], rows: list[dict[str, str]], output_path: Path
-) -> int:
+def write_proposals(fieldnames: list[str], rows: list[dict[str, str]], output_path: Path) -> int:
     """분류 제안 컬럼을 추가해 별도 CSV로 저장한다."""
 
     output_fieldnames = [*fieldnames, *AUTO_FIELDS]
@@ -168,12 +194,15 @@ def write_proposals(
         writer.writeheader()
         for row in rows:
             proposal = asdict(classify_row(row))
-            row = {**row, **{
-                "auto_review_decision": proposal["review_decision"],
-                "auto_target_table": proposal["target_table"],
-                "auto_confidence": proposal["confidence"],
-                "auto_reason": proposal["reason"],
-            }}
+            row = {
+                **row,
+                **{
+                    "auto_review_decision": proposal["review_decision"],
+                    "auto_target_table": proposal["target_table"],
+                    "auto_confidence": proposal["confidence"],
+                    "auto_reason": proposal["reason"],
+                },
+            }
             writer.writerow(row)
     return len(rows)
 

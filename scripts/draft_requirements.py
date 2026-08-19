@@ -28,6 +28,7 @@ SECTION_MARKER = "□"
 GROUP_START_MARKER = "❍"
 SUBCONDITION_MARKERS = ("※", "-")
 NUMBERED_MARKERS = "①②③④⑤⑥⑦⑧⑨⑩"
+CIRCLED_ALPHABET_MARKERS = "ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿ"
 FOOTNOTE_MARKER = "*"
 
 # 최상위 챕터 제목은 원문에서 항상 '<숫자> |  | <제목>\n' 형태(헤딩 번호박스 표)로만 등장한다.
@@ -39,6 +40,7 @@ HEADING_DISCOVERY_PATTERN = re.compile(r"(?<!\S)\d+\s*\|\s*\|\s*([가-힣][가-�
 BASE_SPLIT_PATTERN = (
     r"(?=[□❍※])"  # 바로 다음 글자가 이 기호들 중 하나면 여기서 자름
     r"|(?<!<)(?=[①②③④⑤⑥⑦⑧⑨⑩])"  # 번호 앞에서 자르되, 바로 앞이 '<'면 자르지 않음 (다이어그램 라벨 보호)
+    r"|(?<!<)(?=[ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿ])"  # 점수표 알파벳 표식도 원문 행 경계로 보존
     r"|(?<=\s)(?=-\s)"  # 바로 앞 공백이 2개 이상 + 바로 다음이 (하이픈+공백) 이면 여기서 자름 -> 공백 없이 붙은 하이픈은 건드리지 않음.
     r"|(?<=\s)(?=\*\s)"  # 바로 앞에 공백이 있고, 다음이 '* '이면 여기서 자름
 )
@@ -93,7 +95,7 @@ def classify_chunk(chunk: str) -> str:
         return "requirement"  # 새로운 요건 시작
     if first in SUBCONDITION_MARKERS:
         return "subcondition"
-    if first in NUMBERED_MARKERS:
+    if first in NUMBERED_MARKERS or first in CIRCLED_ALPHABET_MARKERS:
         return "number"
     if first == FOOTNOTE_MARKER:
         return "footnote"  # 각주

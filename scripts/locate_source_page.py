@@ -19,7 +19,7 @@ from pathlib import Path
 
 import pdfplumber
 
-LEADING_MARKER_PATTERN = re.compile(r"^[□❍※\-*①②③④⑤⑥⑦⑧⑨⑩\s]+")
+LEADING_MARKER_PATTERN = re.compile(r"^[□❍※\-*①②③④⑤⑥⑦⑧⑨⑩ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿ\s]+")
 WHITESPACE_PATTERN = re.compile(r"\s+")
 SEARCH_FRAGMENT_LENGTH = 30
 MIN_FRAGMENT_LENGTH = 8

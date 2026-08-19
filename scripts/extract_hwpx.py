@@ -16,6 +16,8 @@ HWP_TABLE_TAG = f"{{{HWP_PARAGRAPH_NS}}}tbl"  # 표 전체 -> 지금 보고 있�
 HWP_ROW_TAG = f"{{{HWP_PARAGRAPH_NS}}}tr"  # 행 -> 표 하나 안에서 행들을 하나씩 순회할 때 사용
 HWP_CELL_TAG = f"{{{HWP_PARAGRAPH_NS}}}tc"  # 칸 -> 행 하나 안에서 칸들을 하나씩 찾을 때 사용
 HWP_TEXT_TAG = f"{{{HWP_PARAGRAPH_NS}}}t"  # 글자 -> 칸 안의 글자를 찾을 때
+HWP_COMPOSE_TAG = f"{{{HWP_PARAGRAPH_NS}}}compose"
+CIRCLED_LATIN_START = ord("Ⓐ")
 
 DEFAULT_OUTPUT_DIR = Path("data/interim")
 
@@ -45,6 +47,13 @@ def extract_node_text(node: ET.Element) -> str:
         return f"\n{extract_table_text(node)}\n"
     if node.tag == HWP_TEXT_TAG:  # 표가 아닌 글자 태그면 그 안의 글자를 다 모아서 돌려줌
         return "".join(node.itertext())
+    if node.tag == HWP_COMPOSE_TAG:
+        # 한/글은 Ⓐ·Ⓑ 같은 원문자를 composeText="A" 형태로 저장한다.
+        if node.get("circleType") and len(node.get("composeText", "")) == 1:
+            character = node.get("composeText", "")
+            if "A" <= character <= "Z":
+                return chr(CIRCLED_LATIN_START + ord(character) - ord("A"))
+        return node.get("composeText", "")
     return "".join(extract_node_text(child) for child in node)  # 두 경우를 만날 때까지 재귀 호출
 
 

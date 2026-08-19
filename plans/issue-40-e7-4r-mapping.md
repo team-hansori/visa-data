@@ -49,8 +49,15 @@
   `scoring_items`, 고용 조건 행은 `visa_requirement_criteria`, 신청·접수 안내 행은
   `visa_process_stages`로 매핑한다. 서류 목록·복합 추진표·법무부 심사 안내처럼
   추가 분리나 논의가 필요한 행은 `needs_review/none`으로 유지한다.
+- 점수표의 `Ⓐ`~`Ⓙ` 표식은 review CSV에 사후 삽입하지 않고, 원문 초안 추출 단계에서
+  행 경계로 인식하고 `raw_text`에 그대로 보존한다. 페이지 검색 시에는 선행 표식만
+  검색용으로 제거하며 원문 데이터는 변경하지 않는다.
 - `status=extraction_failed` 행은 의미를 추측해 확정하지 않고 원문을 다시 대조한 뒤 복원·재추출한다.
 - 파싱 로직 수정 후 재생성한 결과가 기존 원문·페이지·섹션 정보와 일치하는지 다시 확인한다.
+- 원문 추출 로직을 수정한 뒤에는 HWPX를 재추출하고 draft를 재생성한다. 기존 review CSV에는
+  `scripts/merge_reextracted_review.py`로 병합하며, `review_decision`, `target_table`,
+  `review_note`, 검수자·검수일·status는 보존한다. 사람이 이미 `raw_text`를 수정한 행은
+  자동 덮어쓰지 않고 수동 수정 보존 행으로 출력한다.
 
 정제 단계가 끝나기 전에는 공용 마스터에 UUID를 발급하거나 FK를 연결하지 않는다. 행 경계와
 대상 테이블이 확정된 뒤에만 최종 레코드를 생성한다.
