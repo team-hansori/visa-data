@@ -37,6 +37,15 @@ class SplitSpec:
     reason: str
 
 
+@dataclass(frozen=True)
+class FragmentMergeSpec:
+    canonical_record_id: str
+    fragment_record_ids: tuple[str, ...]
+    expected_fragments: tuple[str, ...]
+    merged_raw_text: str
+    reason: str
+
+
 def child(
     raw_text: str,
     source_page: str | None = None,
@@ -189,6 +198,17 @@ SPLIT_SPECS = (
             child("[서  식]", "12", "excluded", "none"),
         ),
         "기타 안내 문장과 서식 섹션 제목을 분리",
+    ),
+)
+
+
+MERGE_SPECS = (
+    FragmentMergeSpec(
+        "REQ-030",
+        ("REQ-031", "REQ-032", "REQ-033"),
+        ("①,", "③,", "④는 최근 10년 이내 사항만 해당"),
+        "* ①, ③, ④는 최근 10년 이내 사항만 해당",
+        "한 줄의 보충 설명이 네 개의 추출 행으로 분리됨",
     ),
 )
 
@@ -367,6 +387,59 @@ def apply_specs(
     return output_fieldnames, output, added_ids
 
 
+def normalize_fragment_merges(
+    fieldnames: list[str],
+    rows: list[dict[str, str]],
+    specs: tuple[FragmentMergeSpec, ...] = MERGE_SPECS,
+) -> tuple[list[str], list[dict[str, str]], list[str], list[str]]:
+    """확정된 원문 조각 행을 대표 행으로 병합한다.
+
+    모든 조각이 예상값과 일치할 때만 적용한다. 일부 행이 없거나 내용이 다르면
+    추측으로 병합하지 않고 보류 목록에 기록한다.
+    """
+
+    by_id = {row.get("record_id", ""): row for row in rows}
+    applied: list[str] = []
+    skipped: list[str] = []
+
+    for spec in specs:
+        record_ids = (spec.canonical_record_id, *spec.fragment_record_ids)
+        target_rows = [by_id.get(record_id) for record_id in record_ids]
+        if any(target_row is None for target_row in target_rows):
+            skipped.append(spec.canonical_record_id)
+            continue
+
+        canonical = target_rows[0]
+        fragments = target_rows[1:]
+        current_fragments = tuple(row.get("raw_text", "") for row in fragments)
+        already_merged = canonical.get("raw_text", "") == spec.merged_raw_text
+        if not already_merged and current_fragments != spec.expected_fragments:
+            skipped.append(spec.canonical_record_id)
+            continue
+
+        if already_merged and all(
+            row.get("review_decision") == "excluded" and row.get("target_table") == "none"
+            for row in fragments
+        ):
+            continue
+
+        canonical["raw_text"] = spec.merged_raw_text
+        canonical["review_note"] = append_note(
+            canonical.get("review_note", ""),
+            f"{', '.join(record_ids)}를 하나의 원문 행으로 병합함 ({spec.reason})",
+        )
+        for fragment in fragments:
+            fragment["review_decision"] = "excluded"
+            fragment["target_table"] = "none"
+            fragment["review_note"] = append_note(
+                fragment.get("review_note", ""),
+                f"{spec.canonical_record_id} 대표 행에 병합된 원문 조각 ({spec.reason})",
+            )
+        applied.append(spec.canonical_record_id)
+
+    return fieldnames, rows, applied, skipped
+
+
 def normalize_source_sections(
     fieldnames: list[str],
     rows: list[dict[str, str]],
@@ -426,6 +499,9 @@ def main() -> None:
 
     fieldnames, rows = read_csv(args.input_csv)
     fieldnames, split_result, added_ids = apply_specs(fieldnames, rows)
+    fieldnames, split_result, merged_ids, skipped_merge_ids = normalize_fragment_merges(
+        fieldnames, split_result
+    )
     fieldnames, split_result, section_changes = normalize_source_sections(fieldnames, split_result)
     resolved_parent_ids = {spec.parent_record_id for spec in SPLIT_SPECS}
     page_range_rows = find_page_range_rows(rows, resolved_parent_ids)
@@ -433,6 +509,11 @@ def main() -> None:
     print(f"분리 대상: {len(added_ids)}행")
     if added_ids:
         print("추가 예정: " + ", ".join(added_ids))
+    print(f"원문 조각 병합: {len(merged_ids)}건")
+    if merged_ids:
+        print("병합 완료: " + ", ".join(merged_ids))
+    if skipped_merge_ids:
+        print("원문 확인 필요(자동 병합 보류): " + ", ".join(skipped_merge_ids))
     print(f"source_section 변경: {len(section_changes)}행")
     for record_id, old_section, new_section in section_changes:
         print(f"- {record_id}: {old_section or '(비어 있음)'} -> {new_section}")

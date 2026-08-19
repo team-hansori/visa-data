@@ -5,6 +5,7 @@ from scripts.normalize_review_requirements import (
     child,
     find_page_range_rows,
     normalize_source_sections,
+    normalize_fragment_merges,
 )
 
 
@@ -146,4 +147,56 @@ def test_source_section_normalization_is_idempotent():
 
     fields, second, changes_again = normalize_source_sections(fields, first)
     assert changes_again == []
+    assert second == first
+
+
+def test_fragment_merge_reconstructs_one_source_line():
+    rows = [
+        {**row("REQ-030", decision="excluded", target="none"), "raw_text": "*"},
+        {**row("REQ-031"), "raw_text": "①,"},
+        {**row("REQ-032"), "raw_text": "③,"},
+        {**row("REQ-033"), "raw_text": "④는 최근 10년 이내 사항만 해당"},
+    ]
+
+    fields, merged, applied, skipped = normalize_fragment_merges(FIELDNAMES, rows)
+
+    assert applied == ["REQ-030"]
+    assert skipped == []
+    assert merged[0]["raw_text"] == "* ①, ③, ④는 최근 10년 이내 사항만 해당"
+    assert all(item["review_decision"] == "excluded" for item in merged[1:])
+    assert all(item["target_table"] == "none" for item in merged[1:])
+    assert "REQ-030" in merged[0]["review_note"]
+
+
+def test_fragment_merge_skips_unexpected_fragments():
+    rows = [
+        {**row("REQ-030", decision="excluded", target="none"), "raw_text": "*"},
+        {**row("REQ-031"), "raw_text": "예상하지 않은 조각"},
+        {**row("REQ-032"), "raw_text": "③,"},
+        {**row("REQ-033"), "raw_text": "④는 최근 10년 이내 사항만 해당"},
+    ]
+
+    fields, merged, applied, skipped = normalize_fragment_merges(FIELDNAMES, rows)
+
+    assert applied == []
+    assert skipped == ["REQ-030"]
+    assert merged[0]["raw_text"] == "*"
+    assert merged[1]["review_decision"] == "approved"
+
+
+def test_fragment_merge_is_idempotent():
+    rows = [
+        {**row("REQ-030", decision="excluded", target="none"), "raw_text": "*"},
+        {**row("REQ-031"), "raw_text": "①,"},
+        {**row("REQ-032"), "raw_text": "③,"},
+        {**row("REQ-033"), "raw_text": "④는 최근 10년 이내 사항만 해당"},
+    ]
+
+    fields, first, applied, skipped = normalize_fragment_merges(FIELDNAMES, rows)
+    fields, second, applied_again, skipped_again = normalize_fragment_merges(fields, first)
+
+    assert applied == ["REQ-030"]
+    assert skipped == []
+    assert applied_again == []
+    assert skipped_again == []
     assert second == first
