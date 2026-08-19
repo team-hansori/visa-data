@@ -1,7 +1,7 @@
 """Validate the F-2-R source-layer extraction before PR completion.
 
 Run from any directory:
-    python scripts/validate_f2r_extraction.py
+    uv run python scripts/validate_f2r_extraction.py
 
 The script uses only the Python standard library and exits non-zero when a
 source locator, schema, review gate, or adjacent-round history rule is broken.
@@ -13,7 +13,9 @@ import csv
 import json
 import re
 import sys
+import uuid
 from collections import Counter
+from datetime import date
 from pathlib import Path
 
 
@@ -38,6 +40,33 @@ EXPECTED_FILES = {
     "visa_scoring_items.csv",
     "visa_scoring_models.csv",
 }
+SUPPORT_FILES = {"common_master_mapping.csv"}
+
+MAPPING_COLUMNS = [
+    "mapping_id",
+    "visa_id",
+    "source_table",
+    "source_row_id",
+    "source_group_id",
+    "source_group_path",
+    "target_table",
+    "target_row_id",
+    "mapping_action",
+    "target_condition_group",
+    "target_condition_operator",
+    "source_document_id",
+    "source_document_name",
+    "source_page",
+    "source_page_basis",
+    "page_mapping_method",
+    "valid_from",
+    "valid_to",
+    "validity_mapping_method",
+    "mapping_status",
+    "blocking_reason",
+    "recommended_destination",
+    "mapping_note",
+]
 
 REQUIRED_COLUMNS = {
     "extraction_review_queue.csv": {
@@ -151,10 +180,11 @@ def read_csv(name: str) -> tuple[list[str], list[dict[str, str]]]:
 
 
 actual_files = {path.name for path in BASE.glob("*.csv")}
-if actual_files != EXPECTED_FILES:
+allowed_files = EXPECTED_FILES | SUPPORT_FILES
+if not EXPECTED_FILES <= actual_files or actual_files - allowed_files:
     fail(
         f"F-2-R CSV set mismatch: missing={sorted(EXPECTED_FILES - actual_files)} "
-        f"extra={sorted(actual_files - EXPECTED_FILES)}"
+        f"extra={sorted(actual_files - allowed_files)}"
     )
 
 tables: dict[str, list[dict[str, str]]] = {}
@@ -292,6 +322,21 @@ for line_number, row in enumerate(reviews, start=2):
         fail(f"review source list is empty: line {line_number}")
     if row["source_document_id"] not in sources:
         fail(f"primary source is absent from review source list: line {line_number}")
+review_status_by_type = {
+    row["requirement_type"]: row["status"] for row in reviews
+}
+if review_status_by_type.get("common_condition_group_mapping") != "resolved":
+    fail("common condition-group mapping review is not resolved")
+if review_status_by_type.get("common_source_page_mapping") != "resolved":
+    fail("common source-page mapping review is not resolved")
+for requirement_type in (
+    "applicant_status",
+    "employer_capacity",
+    "excluded_applicants",
+    "scoring_model",
+):
+    if review_status_by_type.get(requirement_type) != "open":
+        fail(f"domain review gate changed unexpectedly: {requirement_type}")
 
 issues = tables["ingestion_issues.csv"]
 if any(row["issue_type"] == "suspicious_filename" for row in issues):
@@ -320,6 +365,123 @@ for row in tables["visa_current_facts.csv"]:
     if row["source_fact_id"] not in round_fact_ids:
         fail(f"missing source_fact_id: {row['source_fact_id']}")
 
+mapping_header, mappings = read_csv("common_master_mapping.csv")
+if mapping_header != MAPPING_COLUMNS:
+    fail("common_master_mapping.csv column order/schema mismatch")
+if len(mappings) != 70:
+    fail(f"unexpected common mapping rows: {len(mappings)}")
+
+mapping_ids: set[str] = set()
+source_keys: set[tuple[str, str]] = set()
+ready_target_ids: set[str] = set()
+for line_number, row in enumerate(mappings, start=2):
+    if row["visa_id"] != F2R_VISA_ID:
+        fail(f"unexpected mapping visa_id: line {line_number}")
+    try:
+        parsed_mapping_id = uuid.UUID(row["mapping_id"])
+    except ValueError:
+        fail(f"invalid mapping_id UUID: line {line_number}")
+    if parsed_mapping_id.version != 5:
+        fail(f"mapping_id must be deterministic UUID v5: line {line_number}")
+    if row["mapping_id"] in mapping_ids:
+        fail(f"duplicate mapping_id: line {line_number}")
+    mapping_ids.add(row["mapping_id"])
+
+    source_key = (row["source_table"], row["source_row_id"])
+    if source_key in source_keys:
+        fail(f"duplicate mapping source key: line {line_number}")
+    source_keys.add(source_key)
+
+    if not DOCUMENT_ID_RE.fullmatch(row["source_document_id"]):
+        fail(f"invalid mapping source_document_id: line {line_number}")
+    if not row["source_document_name"] or not row["source_page"].isdigit():
+        fail(f"incomplete document-scoped mapping page: line {line_number}")
+    if row["source_page_basis"] != "converted_pdf_page":
+        fail(f"unexpected mapping page basis: line {line_number}")
+    if not row["page_mapping_method"]:
+        fail(f"missing mapping page method: line {line_number}")
+
+    try:
+        valid_from = date.fromisoformat(row["valid_from"])
+        valid_to = date.fromisoformat(row["valid_to"])
+    except ValueError:
+        fail(f"invalid mapping validity date: line {line_number}")
+    if valid_from > valid_to or not row["validity_mapping_method"]:
+        fail(f"invalid mapping validity interval: line {line_number}")
+
+    status = row["mapping_status"]
+    action = row["mapping_action"]
+    if status == "ready":
+        if not row["target_table"] or not row["target_row_id"]:
+            fail(f"ready mapping lacks target: line {line_number}")
+        if row["blocking_reason"]:
+            fail(f"ready mapping unexpectedly blocked: line {line_number}")
+        if row["source_table"] == "visa_requirement_criteria.csv":
+            try:
+                parsed_target_id = uuid.UUID(row["target_row_id"])
+            except ValueError:
+                fail(f"invalid target criteria UUID: line {line_number}")
+            if parsed_target_id.version != 4:
+                fail(f"new target criteria_id must be UUID v4: line {line_number}")
+            if row["target_row_id"] == row["source_row_id"]:
+                fail(f"source criteria_id copied to common target: line {line_number}")
+            if row["target_row_id"] in ready_target_ids:
+                fail(f"duplicate ready target criteria_id: line {line_number}")
+            ready_target_ids.add(row["target_row_id"])
+    elif status == "blocked":
+        if action != "manual_review" or row["target_row_id"]:
+            fail(f"blocked mapping must not mint a target row: line {line_number}")
+        if not row["blocking_reason"] or not row["recommended_destination"]:
+            fail(f"blocked mapping lacks routing information: line {line_number}")
+    elif status == "not_applicable":
+        if action != "not_applicable" or row["target_table"] or row["target_row_id"]:
+            fail(f"not_applicable mapping has a common target: line {line_number}")
+        if not row["blocking_reason"] or not row["recommended_destination"]:
+            fail(f"not_applicable mapping lacks routing information: line {line_number}")
+    else:
+        fail(f"invalid mapping status: line {line_number}")
+
+    if row["source_table"] == "visa_requirement_criteria.csv":
+        if not row["source_group_id"] or not row["source_group_path"]:
+            fail(f"criterion mapping lacks source group lineage: line {line_number}")
+
+expected_source_keys = {
+    ("visa_requirements.csv", F2R_VISA_ID),
+    *{
+        ("visa_requirement_criteria.csv", row["criteria_id"])
+        for row in criteria
+    },
+}
+if source_keys != expected_source_keys:
+    fail("common mapping does not cover the master row and all source criteria exactly once")
+
+action_counts = Counter(row["mapping_action"] for row in mappings)
+status_counts = Counter(row["mapping_status"] for row in mappings)
+if action_counts != Counter(
+    {"transform": 1, "direct": 14, "manual_review": 44, "not_applicable": 11}
+):
+    fail(f"unexpected mapping actions: {dict(action_counts)}")
+if status_counts != Counter({"ready": 15, "blocked": 44, "not_applicable": 11}):
+    fail(f"unexpected mapping statuses: {dict(status_counts)}")
+
+ready_criteria = [
+    row for row in mappings
+    if row["mapping_status"] == "ready"
+    and row["source_table"] == "visa_requirement_criteria.csv"
+]
+grouped_ready = [row for row in ready_criteria if row["target_condition_group"]]
+if len(grouped_ready) != 3 or {
+    (row["target_condition_group"], row["target_condition_operator"])
+    for row in grouped_ready
+} != {("G1", "OR")}:
+    fail("only the three language alternatives may use common local OR group G1")
+if any(
+    row["target_condition_operator"]
+    for row in ready_criteria
+    if not row["target_condition_group"]
+):
+    fail("ungrouped common criteria must not carry a condition operator")
+
 result = {
     "result": "PASS",
     "csv_files": len(EXPECTED_FILES),
@@ -340,6 +502,13 @@ result = {
         "consumable_rows": len(consumable_scores),
         "review_status": scoring_state[0],
         "gate": scoring_state[1],
+    },
+    "common_mapping": {
+        "rows": len(mappings),
+        "actions": dict(action_counts),
+        "statuses": dict(status_counts),
+        "ready_target_criteria": len(ready_target_ids),
+        "page_basis": "converted_pdf_page",
     },
 }
 print(json.dumps(result, ensure_ascii=False, indent=2))

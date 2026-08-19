@@ -10,6 +10,15 @@
 - 원천 `group_id`는 이 폴더의 중첩 AND/OR 구조를 표현하는 UUID다. 공통 마스터의 `condition_group=G1` 같은 로컬 라벨과 동일한 식별자가 아니다.
 - 공통 마스터로 정규화하는 각 criteria 행에는 원천 `criteria_id`를 복사하지 않고 새 `criteria_id` UUID를 발급한다.
 
+## #39 공통 마스터 매핑 결과
+
+- 상세 규칙: [`COMMON_MASTER_MAPPING.md`](COMMON_MASTER_MAPPING.md)
+- 행 단위 매핑표: [`common_master_mapping.csv`](common_master_mapping.csv)
+- 재생성 코드: [`../../scripts/build_f2r_common_mapping.py`](../../scripts/build_f2r_common_mapping.py)
+- `common_master_mapping.csv`는 원천 14종에 추가된 **지원 파일**이며 원천 추출 행 수 934행에는 포함하지 않는다.
+- 매핑표 70행은 기본정보 1행과 criteria 69행을 정확히 한 번씩 다룬다. 결과는 `ready` 15행, `blocked` 44행, `not_applicable` 11행이다.
+- #39에서는 D 공통 마스터 CSV를 수정하지 않는다. 실제 공통 행 추가는 열린 업무 검토와 통합 순서를 확인한 뒤 별도 PR에서 수행한다.
+
 ## 원천 논리그룹 해석
 
 `visa_criterion_groups.csv`는 `parent_group_id`로 중첩 그룹을 구성한다. 각 그룹은 직접 연결된 criteria와 하위 그룹의 결과를 `boolean_operator`로 결합한다.
@@ -108,24 +117,26 @@ AND consumption_gate == "allowed"
 ## 작업·PR 경계
 
 - 이 폴더의 PR: F-2-R 원문 추출, 정규화, 중첩 논리 보존, 검수 상태 관리
+- #39 매핑 PR: 원천→공통 열·ID·논리·페이지·유효기간 변환 규칙과 매핑표만 A 폴더에 기록
 - 공통 마스터 PR: 검수 완료된 원천 행만 `extraction/D_visa_requirements/` 스키마로 별도 매핑
 - 여러 담당자가 D 공통 마스터를 동시에 수정하지 않도록 통합 PR은 순차적으로 진행한다.
 
 ## 검수 체크 및 PR 완료 기준
 
-다음 자동 검사는 `python scripts/validate_f2r_extraction.py`로 재현한다. 성공 시 JSON의 `result`가 `PASS`이고 종료코드가 0이어야 한다.
+다음 자동 검사는 `uv run python scripts/validate_f2r_extraction.py`로 재현한다. 성공 시 JSON의 `result`가 `PASS`이고 종료코드가 0이어야 한다.
 
 - [x] **논리그룹 무결성** — 예상 결과: 모든 `parent_group_id`가 같은 `visa_id`의 존재하는 그룹을 참조하고, 모든 OR 그룹에 실제 대체조건이 2개 이상 있으며, 상위 OR 그룹에 경로별 AND 조건이 직접 평탄화되지 않는다.
-- [x] **14종 CSV 파일·스키마 완전성** — 예상 결과: 정확히 14개 CSV가 존재하고, 중복 헤더·열 수 불일치·필수 컬럼 누락이 없으며 총 934행을 읽을 수 있다.
+- [x] **14종 원천 CSV 파일·스키마 완전성** — 예상 결과: 원천 CSV 14종은 중복 헤더·열 수 불일치·필수 컬럼 누락 없이 총 934행이며, 별도 지원 파일 `common_master_mapping.csv` 70행이 존재한다.
 - [x] **원천 위치 완전성** — 예상 결과: 원천 근거를 직접 저장하는 776행에 `source_document_id`, `source_section`, 블록 또는 표 위치, `source_text`/`raw_text`가 있고 변경 이력 93행은 모두 `source_block_index`를 가진다.
-- [x] **검토 큐 완전성** — 예상 결과: 6개 검토 대상마다 `status`, 대조 원문 목록, `blocking_scope`, `completion_criteria`가 존재한다. 현재 예상 상태는 6개 모두 `open`이며 각 범위의 소비가 차단된다.
+- [x] **검토 큐 완전성** — 예상 결과: 6개 검토 대상마다 `status`, 대조 원문 목록, `blocking_scope`, `completion_criteria`가 존재한다. #39로 `common_condition_group_mapping`과 `common_source_page_mapping` 2개는 `resolved`, 업무영역 검토 4개는 `open`이다.
 - [x] **수집 오류 기록** — 예상 결과: `ingestion_issues.csv` 6행이 유효한 심각도와 유형을 사용하고, 잘못 수정된 `suspicious_filename` 오류는 남아 있지 않는다.
 - [x] **공고문·안내자료 불일치 보존** — 예상 결과: 17차 붙임의 언어기준과 공고문·개정사항의 완화 기준 불일치가 `cross_document_conflict`로 남고 현재값 선택 근거가 메시지에 기록된다.
 - [x] **인접 차수 변경 이력** — 예상 결과: 변경 이력 93행은 모두 `to_round-from_round=1`이며 15→16, 16→17 비교는 존재하고 15→17 직접 비교는 존재하지 않는다.
 - [x] **잠정 점수표 소비 차단** — 예상 결과: 9차 모델 1행과 항목 12행은 `needs_review` 및 `blocked_while_needs_review`이고 소비 가능한 행은 0개다.
+- [x] **공통 매핑표 무결성** — 예상 결과: 70개 원천 행이 중복 없이 매핑되고, 새 공통 criteria 후보 ID는 UUID v4이며 원천 ID와 다르고, 공통 OR 그룹은 언어요건 3행의 로컬 `G1`만 사용한다.
+- [x] **공통 출처 페이지·유효기간 검수** — 예상 결과: 매핑 70행 모두 `(source_document_id, source_page)`, `converted_pdf_page` 체계, 유효기간과 변환 방식을 가지며 HWPX hash·PDF 페이지 범위 검증을 통과한다.
 
 다음 항목은 사람 검수가 끝나야 체크할 수 있으며, 완료 전에는 해당 범위를 PR 완료 또는 서비스 사용 가능 상태로 표시하지 않는다.
 
-- [ ] **공통 마스터 페이지·유효기간 검수** — 완료 결과: 이관 대상마다 `(source_document_id, source_page)`와 페이지 체계 및 `valid_from`/`valid_to`를 원문으로 확인하고 `common_source_page_mapping`을 `resolved`로 변경한다.
 - [ ] **9차 보완 점수표의 17차 현행성 검수** — 완료 결과: 담당기관 또는 공식 17차 자료로 적용 범위와 시작·종료일을 확정하고 모델·항목 전체를 `reviewed`/`allowed`로 변경한 뒤 `scoring_model` 검토를 `resolved`로 변경한다.
 - [ ] **신청대상·고용규모·제외대상 검수** — 완료 결과: 관련 운영지침과 표·도형을 확인하여 `applicant_status`, `employer_capacity`, `excluded_applicants` 검토 항목을 모두 `resolved`로 변경한다.
