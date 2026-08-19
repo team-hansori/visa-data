@@ -23,6 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 BASE = ROOT / "extraction" / "A_F-2-R"
 F2R_VISA_ID = "78dca2d7-f771-553a-b788-46c9ff56d633"
 SCORING_SOURCE_DOCUMENT_ID = "r09_announcement_2025~2026_a483f5df"
+F2R_TARGET_REGIONS = ("제천시", "보은군", "옥천군", "영동군", "괴산군", "단양군")
 
 EXPECTED_FILES = {
     "extraction_review_queue.csv",
@@ -107,7 +108,7 @@ REQUIRED_COLUMNS = {
         "source_section", "source_block_index", "source_table_index", "source_text",
     },
     "visa_requirements.csv": {
-        "visa_id", "valid_from", "valid_to", "source_document_id",
+        "visa_id", "target_region", "valid_from", "valid_to", "source_document_id",
         "source_section", "source_block_index", "source_text",
     },
     "visa_round_facts.csv": {
@@ -188,14 +189,28 @@ if not EXPECTED_FILES <= actual_files or actual_files - allowed_files:
     )
 
 tables: dict[str, list[dict[str, str]]] = {}
+table_headers: dict[str, list[str]] = {}
 total_rows = 0
 for filename in sorted(EXPECTED_FILES):
     header, rows = read_csv(filename)
     missing = REQUIRED_COLUMNS[filename] - set(header)
     if missing:
         fail(f"missing columns in {filename}: {sorted(missing)}")
+    table_headers[filename] = header
     tables[filename] = rows
     total_rows += len(rows)
+
+requirement_rows = tables["visa_requirements.csv"]
+if len(requirement_rows) != 1:
+    fail(f"unexpected F-2-R requirement master rows: {len(requirement_rows)}")
+if "target_regions_json" in table_headers["visa_requirements.csv"]:
+    fail("legacy target_regions_json column remains in F-2-R requirements")
+target_region = requirement_rows[0]["target_region"]
+target_regions = target_region.split("|") if target_region else []
+if tuple(target_regions) != F2R_TARGET_REGIONS:
+    fail(f"F-2-R target_region content/order mismatch: {target_region!r}")
+if any(region != region.strip() for region in target_regions):
+    fail("F-2-R target_region must not contain spaces around pipe separators")
 
 direct_source_rows = 0
 known_document_ids: set[str] = set()

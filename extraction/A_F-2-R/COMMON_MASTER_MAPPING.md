@@ -55,7 +55,7 @@
 | `visa_code` | `visa_code` | `F-2-R` |
 | `visa_name_kr` | `visa_name_kr` | 원천 현재값 |
 | `program_type` | `program_type` | `REGIONAL_SPECIALIZED` enum으로 정규화 |
-| `target_regions_json` | `target_region` | JSON 배열을 `|` 구분 문자열로 변환 |
+| `target_region` | `target_region` | 파이프 문자로 구분한 공통 배열 문자열을 그대로 사용 |
 | `allowed_industries_json` | `allowed_industries` | JSON 배열을 `|` 구분 문자열로 변환 |
 | 현재 17차 `total_quota` | `quota_type`, `total_quota` | `LIMITED`, `311` |
 | `valid_from`, `valid_to` | 같은 이름 | 공고 게시기간이 아니라 원천에 확정된 신청 접수기간 사용 |

@@ -16,6 +16,7 @@
 - 행 단위 매핑표: [`common_master_mapping.csv`](common_master_mapping.csv)
 - 재생성 코드: [`../../scripts/build_f2r_common_mapping.py`](../../scripts/build_f2r_common_mapping.py)
 - `common_master_mapping.csv`는 원천 14종에 추가된 **지원 파일**이며 원천 추출 행 수 934행에는 포함하지 않는다.
+- `visa_requirements.csv`의 `target_region`은 D 공통 마스터와 같은 파이프 구분 배열 문자열을 사용한다.
 - 매핑표 70행은 기본정보 1행과 criteria 69행을 정확히 한 번씩 다룬다. 결과는 `ready` 15행, `blocked` 44행, `not_applicable` 11행이다.
 - #39에서는 D 공통 마스터 CSV를 수정하지 않는다. 실제 공통 행 추가는 열린 업무 검토와 통합 순서를 확인한 뒤 별도 PR에서 수행한다.
 

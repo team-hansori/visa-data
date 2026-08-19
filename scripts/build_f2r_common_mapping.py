@@ -78,6 +78,14 @@ def normalize_name(value: str) -> str:
     return unicodedata.normalize("NFC", value)
 
 
+def validate_pipe_list(field_name: str, value: str) -> None:
+    parts = value.split("|") if value else []
+    if not parts or any(not part or part != part.strip() for part in parts):
+        raise ValueError(f"{field_name} must be a non-empty pipe-delimited list")
+    if len(parts) != len(set(parts)):
+        raise ValueError(f"{field_name} contains duplicate values")
+
+
 def load_existing(path: Path) -> dict[tuple[str, str], dict[str, str]]:
     if not path.exists():
         return {}
@@ -317,6 +325,7 @@ def build_mapping(
         raise ValueError("F-2-R source master must contain exactly one fixed visa_id row")
 
     current = requirements[0]
+    validate_pipe_list("target_region", current.get("target_region", ""))
     by_group, paths = build_group_paths(groups)
     document_ids = {current["source_document_id"]} | {
         row["source_document_id"] for row in criteria
@@ -357,7 +366,7 @@ def build_mapping(
             "recommended_destination": "visa_requirements.csv",
             "mapping_note": (
                 "visa_id는 재사용한다. program_type은 REGIONAL_SPECIALIZED, "
-                "target_regions_json은 | 구분 target_region, 17차 total_quota=311과 "
+                "target_region은 공통 파이프 구분 형식을 유지하고, 17차 total_quota=311과 "
                 "quota_type=LIMITED로 변환한다."
             ),
         }
