@@ -1,0 +1,16 @@
+record_type,from_round,to_round,round,source_path,source_status,comparison_status,existing_change_ids,notes
+round_source,,,1,data/raw/지역특화_숙련가능인력_E-7-4R/공고_지침/충청북도 지역특화형 비자 사업 숙련기능인력(E74R) 공고(2026년 1차).hwpx,available,,,원본 E-7-4R 공고 확보 여부
+round_source,,,2,data/raw/지역특화_숙련가능인력_E-7-4R/공고_지침/충청북도 지역특화형 비자 사업 숙련기능인력(E74R) 공고(2026년 2차).hwp,available,,,원본 E-7-4R 공고 확보 여부
+round_source,,,3,data/raw/지역특화_숙련가능인력_E-7-4R/공고_지침/충청북도 지역특화형 비자 사업 숙련기능인력(E74R) 공고(2026년 3차).hwp,available,,,원본 E-7-4R 공고 확보 여부
+round_source,,,4,data/raw/지역특화_숙련가능인력_E-7-4R/공고_지침/충청북도 지역특화형 비자 사업 숙련기능인력(E74R) 공고(2026년 4차).hwp,available,,,원본 E-7-4R 공고 확보 여부
+round_source,,,5,data/raw/지역특화_숙련가능인력_E-7-4R/공고_지침/충청북도 지역특화형 비자 사업 숙련기능인력(E74R) 공고(2026년 5차).hwpx,available,,,원본 E-7-4R 공고 확보 여부
+round_source,,,6,data/raw/지역특화_숙련가능인력_E-7-4R/공고_지침/충청북도 지역특화형 비자 사업 숙련기능인력(E74R) 공고(2026년 6차).hwpx,available,,,원본 E-7-4R 공고 확보 여부
+round_source,,,7,data/raw/지역특화_숙련가능인력_E-7-4R/공고_지침/충청북도 지역특화형 비자 사업 숙련기능인력(E74R) 공고(2026년 7차).hwpx,available,,,원본 E-7-4R 공고 확보 여부
+round_source,,,8,data/raw/지역특화_숙련가능인력_E-7-4R/공고_지침/충청북도 지역특화형 비자 사업 숙련기능인력(E74R) 공고(2026년 8차).hwpx,available,,,원본 E-7-4R 공고 확보 여부
+comparison,1,2,,,available,ready_for_comparison,CHG-001|CHG-002|CHG-003|CHG-004|CHG-005|CHG-006,기존 CHG 행 재검증 및 누락 변경 탐색
+comparison,2,3,,,available,ready_for_comparison,,기존 CHG 행 재검증 및 누락 변경 탐색
+comparison,3,4,,,available,ready_for_comparison,,기존 CHG 행 재검증 및 누락 변경 탐색
+comparison,4,5,,,available,ready_for_comparison,CHG-007,기존 CHG 행 재검증 및 누락 변경 탐색
+comparison,5,6,,,available,ready_for_comparison,,기존 CHG 행 재검증 및 누락 변경 탐색
+comparison,6,7,,,available,ready_for_comparison,,기존 CHG 행 재검증 및 누락 변경 탐색
+comparison,7,8,,,available,ready_for_comparison,CHG-008|CHG-009|CHG-010|CHG-011|CHG-012,기존 CHG 행 재검증 및 누락 변경 탐색

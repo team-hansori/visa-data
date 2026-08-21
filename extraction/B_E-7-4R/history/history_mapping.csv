@@ -1,0 +1,18 @@
+local_change_id,target_table,target_record_id,mapping_action,mapping_status,from_round,to_round,source_document_old,source_document_new,old_source_page,new_source_page,source_section,source_text_reference,notes
+CHG-001,change_history,,insert,pending_target_id,1,2,공고(2026년 1차).pdf,공고(2026년 2차).pdf,7,7,3. 자격 요건 > 고용기업 및 고용주 요건 > 고용 가능 인원 산정 기준,change_history.csv:CHG-001 old_value/new_value,UUID/FK 발급 전 의미 매핑 완료
+CHG-002,change_history,,insert,pending_target_id,1,2,공고(2026년 1차).pdf,공고(2026년 2차).pdf,7,7,3. 자격 요건 > 체류허가 사항 > 체류기간,change_history.csv:CHG-002 old_value/new_value,UUID/FK 발급 전 의미 매핑 완료
+CHG-003,change_history,,insert,pending_target_id,1,2,공고(2026년 1차).pdf,공고(2026년 2차).pdf,7,7,3. 자격 요건 > 체류허가 사항 > 허가조건,change_history.csv:CHG-003 old_value/new_value,UUID/FK 발급 전 의미 매핑 완료
+CHG-004,change_history,,insert,pending_target_id,1,2,공고(2026년 1차).pdf,공고(2026년 2차).pdf,7,7,3. 자격 요건 > 고용주 요건,change_history.csv:CHG-004 old_value/new_value,UUID/FK 발급 전 의미 매핑 완료
+CHG-005,change_history,,insert,pending_target_id,1,2,공고(2026년 1차).pdf,공고(2026년 2차).pdf,21,21,서식8 > 광역지자체장 추천서,change_history.csv:CHG-005 old_value/new_value,UUID/FK 발급 전 의미 매핑 완료
+CHG-006,change_history,,insert,pending_target_id,1,2,공고(2026년 1차).pdf,공고(2026년 2차).pdf,,15,서식3 > 점수제 자체 심사표 > 기본요건,change_history.csv:CHG-006 old_value/new_value,UUID/FK 발급 전 의미 매핑 완료
+CHG-007,change_history,,insert,pending_target_id,4,5,공고(2026년 4차).pdf,공고(2026년 5차).pdf,,8,4. 제출서류 > 시군 제출 서류 > 필수 서류,change_history.csv:CHG-007 old_value/new_value,UUID/FK 발급 전 의미 매핑 완료
+CHG-008,change_history,,insert,pending_target_id,7,8,공고(2026년 7차).pdf,공고(2026년 8차).pdf,2,2,3. 자격 요건 > 추천대상 > 제외대상,change_history.csv:CHG-008 old_value/new_value,본문 300만원 기준 적용 및 서식3 잔존 문구 기록
+CHG-009,change_history,,insert,pending_target_id,7,8,공고(2026년 7차).pdf,공고(2026년 8차).pdf,3,3,3. 자격 요건 > 점수제 심사 > 감점 항목,change_history.csv:CHG-009 old_value/new_value,본문 300만원 기준 적용 및 서식3 잔존 문구 기록
+CHG-010,change_history,,insert,pending_target_id,7,8,공고(2026년 7차).pdf,공고(2026년 8차).pdf,3,3,3. 자격 요건 > 점수제 심사 > 감점 항목 및 감점 기준 각주,change_history.csv:CHG-010 old_value/new_value,UUID/FK 발급 전 의미 매핑 완료
+CHG-011,change_history,,insert,pending_target_id,7,8,공고(2026년 7차).pdf,공고(2026년 8차).pdf,7,8,3. 자격 요건 > 고용기업 요건 > 근속자 특례,change_history.csv:CHG-011 old_value/new_value,UUID/FK 발급 전 의미 매핑 완료
+CHG-012,change_history,,insert,pending_target_id,7,8,공고(2026년 7차).pdf,공고(2026년 8차).pdf,,8,3. 자격 요건 > 고용기업 요건 > E-7-4/E-7-4R 동시 고용 특례,change_history.csv:CHG-012 old_value/new_value,UUID/FK 발급 전 의미 매핑 완료
+CHG-013,change_history,,insert,pending_target_id,2,3,공고(2026년 2차).pdf,공고(2026년 3차).pdf,1,1,공고 개요 > 모집규모,change_history.csv:CHG-013 old_value/new_value,UUID/FK 발급 전 의미 매핑 완료
+CHG-014,change_history,,insert,pending_target_id,3,4,공고(2026년 3차).pdf,공고(2026년 4차).pdf,1,1,공고 개요 > 모집규모,change_history.csv:CHG-014 old_value/new_value,UUID/FK 발급 전 의미 매핑 완료
+CHG-015,change_history,,insert,pending_target_id,5,6,공고(2026년 5차).pdf,공고(2026년 6차).pdf,1,1,공고 개요 > 모집규모,change_history.csv:CHG-015 old_value/new_value,UUID/FK 발급 전 의미 매핑 완료
+CHG-016,change_history,,insert,pending_target_id,6,7,공고(2026년 6차).pdf,공고(2026년 7차).pdf,1,1,공고 개요 > 모집규모,change_history.csv:CHG-016 old_value/new_value,UUID/FK 발급 전 의미 매핑 완료
+CHG-017,change_history,,insert,pending_target_id,7,8,공고(2026년 7차).pdf,공고(2026년 8차).pdf,1,1,공고 개요 > 모집규모,change_history.csv:CHG-017 old_value/new_value,UUID/FK 발급 전 의미 매핑 완료
