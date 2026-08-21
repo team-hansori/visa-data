@@ -16,8 +16,9 @@
 8. 수정된 파싱 로직으로 원천 extraction 결과를 재생성하고, 기존 review 결과와 대조한다.
 9. 정제·재검수 완료 행을 `current_requirements.csv` 또는 공통 마스터의 해당 테이블로 이관한다.
 10. 공통 마스터 이관 과정에서 UUID/FK와 `condition_group`/`condition_operator`를 보완한다.
-11. README와 매핑 기준을 갱신한다.
-12. UUID/FK 검증과 원문 근거 검수를 수행한다.
+11. 공통 마스터의 기존 `condition_group` 사용례를 기준으로 E-7-4R 그룹을 재점검한다.
+12. README와 매핑 기준을 갱신한다.
+13. UUID/FK 검증과 원문 근거 검수를 수행한다.
 
 ## 분류 후 파싱·정제 단계
 
@@ -117,12 +118,39 @@
 
 - 자격요건은 새 `criteria_id` UUID를 발급하고 원천 `record_id`는 원천 계층에서만 유지한다.
 - `condition_group`은 실제 OR 대체조건에만 사용한다. 같은 `❍` 아래 있다는 이유만으로 그룹을 복사하지 않는다.
+- 공통 `visa_requirement_criteria.csv`에서는 같은 `visa_id` 안에서 실제 OR 대체조건만 동일한
+  `condition_group`과 `condition_operator=OR`로 묶고, 독립적으로 적용되는 조건은 두 컬럼을
+  비워 둔다. 현재 공통 마스터의 F-4-R 사례도 OR 그룹 2개 외에는 그룹이 비어 있다.
+- E-7-4R 원천의 `G1~G44`는 현재 섹션·추출 묶음에 가까운 로컬 그룹이며 공통 논리 그룹이 아니다.
+  예를 들어 `G8`에는 기본 자격, 보충 설명, 제외조건, 지역 특례가 함께 있고 `G9`에는
+  점수표 부모·소득·한국어·나이 행이 함께 있다. 따라서 E-7-4R의 G번호와 공통 마스터의
+  `condition_group`을 직접 재사용하지 않는다.
+- E-7-4R 이관 전에는 원문 의미를 기준으로 실제 OR 대체조건만 새 그룹 번호를 부여하고,
+  나머지 섹션·표·절차 묶음은 `condition_group`/`condition_operator`를 비워 둔다.
+- 공통 그룹 번호는 비자 유형별로 해석하며, 조인·검증 시 반드시 `visa_id`와 함께 사용한다.
 - 추진 체계는 #30 기준으로 `visa_process_stages.csv`에 매핑한다.
 - 모집 규모·지역별 쿼터는 `visa_quota_status.csv` 매핑 대상으로 검토한다.
 - 제출서류와 서식 메타데이터를 구분하여 `document_requirements.csv` 대상만 선별한다.
 - 변경 이력은 공통 이력용 UUID를 새로 발급한다.
 - `scoring_items.csv`는 #31에 따라 E-7-4R 전용으로 유지한다.
 - 공통 criteria에는 현재 `status`를 추가하지 않는다. 상태와 검수 이력은 B 원천·검토 파일에 보존하고, 공통 마스터 반영은 수동검수 승인 결과를 기준으로 한다.
+
+## history 전체 차수 대조 계획
+
+`history/change_history.csv`의 기존 12건을 전체 변경 이력으로 간주하지 않는다. 1~8차 원본 공고를 확보한 뒤 인접 차수별로 다음 7개 비교 구간을 모두 대조한다.
+
+```text
+1→2, 2→3, 3→4, 4→5, 5→6, 6→7, 7→8
+```
+
+비교는 `REQ-*`/`CHG-*` 번호가 아니라 `requirement_type + criterion_name + source_section`을 우선 키로 사용하고, 필요할 때 원문 핵심 키워드와 사람 검수를 결합한다. 각 항목은 다음 변경 유형 중 하나로 판정한다.
+
+- `added`, `removed`, `value_changed`, `scope_changed`
+- `procedure_changed`, `document_changed`, `editorial_change`
+
+단순 띄어쓰기·줄바꿈·표현 변경은 history 행으로 만들지 않는다. 각 변경에는 변경 전·후 원문, 차수, 이전·이후 페이지, 변경 유형, 설명을 함께 기록한다. 원본이 없는 비교 구간은 `변경 없음`으로 처리하지 않고 `source_missing` 또는 `comparison_pending`으로 남긴다.
+
+1차 구현으로 `history/round_coverage.csv`에 1~8차 원본 목록과 7개 비교 구간의 대조 상태를 기록한다. 이후 원본 추출 결과를 차수별로 정규화하고, 기존 `CHG-001~012`를 재검증한 뒤 누락 변경을 추가한다. 공통 `change_history.csv` 이관은 모든 차수 대조와 `visa_id`/UUID 확정 이후 수행한다.
 
 ## 완료 기준
 
@@ -136,7 +164,10 @@
 - [ ] 검수 메모로 확정된 행의 `source_section`이 공통 경로로 정규화됨
 - [ ] 미확정 `source_section` 행이 자동 변경되지 않고 보류됨
 - [ ] 정제 후 extraction 결과를 재생성하고 review 결과와 대조함
+- [ ] 원문 의미 매핑과 OR 관계 검토가 UUID 발급과 독립적으로 완료됨
 - [ ] 공통 마스터 매핑 대상의 UUID/FK가 검증됨
+- [ ] E-7-4R의 로컬 `G*` 그룹과 공통 논리 `condition_group`을 분리함
+- [ ] 실제 OR 대체조건만 `condition_group`/`condition_operator=OR`로 매핑함
 - [ ] scoring 데이터를 criteria로 잘못 이관하지 않음
 - [ ] `uv run python scripts/validate_fk_integrity.py` 통과
 - [ ] 팀원에게 상태값·수동검수·보류 항목을 공유함

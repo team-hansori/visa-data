@@ -21,6 +21,7 @@
 | `scoring/scoring_items.csv` | K-POINT 점수 항목과 구간별 배점 — 자격을 충족한 사람 중 합격선(총점 임계치)을 가르는 합산 점수만. `current_requirements.csv`와의 경계 기준은 `D_visa_requirements/README.md`의 "`scoring_items.csv`와의 경계" 참고 |
 | `documents/document_forms.csv` | 서식 메타데이터 (작성자/제출자/제출처/서명자 등, 자격요건 아님) |
 | `history/change_history.csv` | 1~7차 대비 8차의 변경 사항만 기록 |
+| `schema_mapping.csv` | 로컬 `REQ-*`/`CHG-*` 행과 공통 마스터 대상 테이블·기존 `SCORE-*`의 매핑 관계 |
 
 ### 초안·수동검수 파일
 
@@ -30,6 +31,12 @@
 | `requirements/_review_current_requirements.csv` | 초안 각 행의 수동 판정 기록. 원문을 대조한 뒤 대상 테이블과 처리 사유를 기록한다. |
 | `documents/_draft_document_forms.csv` | 서식 자동 추출 초안. 제출서류 요구사항과 서식 메타데이터를 사람이 구분한다. |
 | `documents/_draft_document_forms_checklist.txt` | 서식 검토 시 확인할 항목 |
+
+`schema_mapping.csv`는 원천 검수 행과 변경 이력을 공통 마스터로 이관하기 위한 설계표다. `local_record_id`는 비자별 원천 ID로만 사용하며 공통 마스터의 UUID를 대신하지 않는다. `mapping_action`은 `insert`(새 공통 행 생성), `reuse`(기존 공통 행 재사용), `exclude`(공통 마스터 미반영)를 뜻한다. `mapping_status=pending_target_id`인 행은 대상 테이블은 확정했지만 UUID/FK 설계(#29) 이후 `target_record_id`를 채운다. 현재 `history/change_history.csv`의 `CHG-001~012`도 공통 `change_history` 대상으로 매핑되어 있다.
+
+현재 `_review_current_requirements.csv`의 `G1~G44`는 원문 섹션·추출 묶음이므로 공통 논리 그룹으로 사용하지 않는다. 실제 OR 대체조건이 여러 행으로 확정된 경우에만 새 `condition_group`과 `condition_operator=OR`를 부여하며, 그 전까지는 `condition_group`과 `condition_operator`를 비워 둔다.
+
+UUID/FK는 최종 공통 마스터 레코드 생성과 참조 검증에 필요하지만, 원문 의미 분석·OR 관계 판정·`schema_mapping.csv` 작성은 UUID 발급 전에 수행할 수 있다. `pending_target_id`는 의미 매핑이 미완료라는 뜻이 아니라, 공통 ID 발급만 보류된 상태를 나타낸다.
 
 `requirements/_draft_current_requirements.csv`의 `unclassified`는 원문이 무의미하다는 뜻이 아니다. 공고 제목·섹션·쿼터·사업지역처럼 자격요건 외 테이블로 이동해야 하는 조각이거나, 자동 분류기가 의미를 판정하지 못한 조각이다. 모든 행은 수동검수 파일에서 처리 결과를 남긴 뒤 최종 파일 또는 공통 마스터에 반영한다.
 
