@@ -3,7 +3,8 @@ from scripts.merge_reextracted_review import merge_rows
 
 def make_row(record_id, raw_text, **extra):
     return {
-        "record_id": record_id, "raw_text": raw_text,
+        "record_id": record_id,
+        "raw_text": raw_text,
         "status": extra.get("status", "present"),
         "review_decision": extra.get("review_decision", "approved"),
         "target_table": extra.get("target_table", "visa_requirement_criteria"),

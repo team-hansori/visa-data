@@ -17,7 +17,11 @@ def test_places_children_after_parent_and_preserves_other_order():
     sorted_rows = sort_parent_children(rows)
 
     assert [item["record_id"] for item in sorted_rows] == [
-        "REQ-001", "REQ-002", "REQ-034", "REQ-034-01", "REQ-034-02"
+        "REQ-001",
+        "REQ-002",
+        "REQ-034",
+        "REQ-034-01",
+        "REQ-034-02",
     ]
 
 

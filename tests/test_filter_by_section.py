@@ -19,7 +19,9 @@ class TestFilterRowsBySection:
 
 class TestResolveOutputPath:
     def test_replaces_draft_with_review(self):
-        output = resolve_output_path(Path("extraction/B_E-7-4R/requirements/_draft_current_requirements.csv"))
+        output = resolve_output_path(
+            Path("extraction/B_E-7-4R/requirements/_draft_current_requirements.csv")
+        )
         assert output == Path("extraction/B_E-7-4R/requirements/_review_current_requirements.csv")
 
     def test_raises_when_filename_has_no_draft_marker(self):

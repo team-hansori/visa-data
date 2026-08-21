@@ -23,8 +23,12 @@ def test_adds_explicit_children_and_preserves_parent():
     merged, added = add_children(review, draft)
 
     assert added == [
-        "REQ-034-01", "REQ-034-02", "REQ-034-03",
-        "REQ-035-01", "REQ-036-01", "REQ-036-02",
+        "REQ-034-01",
+        "REQ-034-02",
+        "REQ-034-03",
+        "REQ-035-01",
+        "REQ-036-01",
+        "REQ-036-02",
     ]
     assert merged[0]["raw_text"] == "복합 부모"
     child = next(item for item in merged if item["record_id"] == "REQ-034-02")

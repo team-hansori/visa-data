@@ -68,9 +68,10 @@ def test_does_not_auto_approve_ambiguous_notice_metadata():
 
 
 def test_proposed_output_never_overwrites_review_file():
-    assert proposed_output_path(
-        __import__("pathlib").Path("_review_current_requirements.csv")
-    ).name == "_review_current_requirements_proposed.csv"
+    assert (
+        proposed_output_path(__import__("pathlib").Path("_review_current_requirements.csv")).name
+        == "_review_current_requirements_proposed.csv"
+    )
 
 
 def test_in_place_application_preserves_manual_fields_and_skips_ambiguous_rows():
