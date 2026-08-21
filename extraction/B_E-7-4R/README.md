@@ -32,7 +32,107 @@
 | `documents/_draft_document_forms.csv` | 서식 자동 추출 초안. 제출서류 요구사항과 서식 메타데이터를 사람이 구분한다. |
 | `documents/_draft_document_forms_checklist.txt` | 서식 검토 시 확인할 항목 |
 
-`schema_mapping.csv`는 원천 검수 행과 변경 이력을 공통 마스터로 이관하기 위한 단일 설계표다. `local_record_id`는 비자별 원천 ID로만 사용하며 공통 마스터의 UUID를 대신하지 않는다. `mapping_action`은 `insert`(새 공통 행 생성), `reuse`(기존 공통 행 재사용), `exclude`(공통 마스터 미반영)를 뜻한다. `mapping_status=pending_target_id`인 행은 대상 테이블은 확정했지만 UUID/FK 설계(#29) 이후 `target_record_id`를 채운다. 현재 `history/change_history.csv`의 `CHG-001~017`도 실제 source_document·source_page·source_section과 원문 참조를 포함해 공통 `change_history` 대상으로 매핑되어 있다.
+## 데이터 구조와 컬럼 설명
+
+모든 CSV는 UTF-8 인코딩을 사용한다. `raw_text`처럼 줄바꿈을 포함할 수 있는 값은 CSV 인용부호 안에 보존하며, 행의 순서보다 ID와 출처 컬럼을 기준으로 연결한다.
+
+### 자격요건: `requirements/current_requirements.csv`
+
+| 컬럼 | 설명 |
+|---|---|
+| `record_id` | 원천 자격요건 ID (`REQ-*`) |
+| `requirement_type` | 요건 유형: 자격, 거주, 고용, 행위, 절차 등 |
+| `criterion_name` | 요건명 또는 판단 기준명 |
+| `raw_text` | 원문 문장·표·각주 |
+| `value_numeric` | 숫자로 구조화한 값 |
+| `value_text` | 숫자로 바꾸기 어려운 값 또는 원문 값 |
+| `unit` | 금액, 년, 명, 점 등 값의 단위 |
+| `operator` | `>=`, `=`, `within` 등 비교·판정 연산자 |
+| `measurement_window_value` / `measurement_window_unit` | 최근 10년, 2년 등 평가 기간 |
+| `condition_group` / `condition_operator` | 실제 대체조건 그룹과 AND/OR 연산. 불확실하면 공란 |
+| `status` | 원문 확인 상태 (`present`, `not_checked` 등) |
+| `source_document` | 원본 문서 또는 추출 문서 식별자 |
+| `source_page` | 원문 페이지 |
+| `source_section` | 원문 장·절·표 섹션 |
+| `notes` | 추출·검수 시 참고사항 |
+
+### 수동검수: `requirements/_review_current_requirements.csv`
+
+위 자격요건 컬럼을 기본으로 사용하며 다음 검수 컬럼을 추가한다.
+
+| 컬럼 | 설명 |
+|---|---|
+| `review_decision` | `approved`, `reclassified`, `excluded`, `needs_review` |
+| `target_table` | 최종 대상 공통 테이블 또는 `none` |
+| `review_note` | 판정 근거와 추가 검수 메모 |
+| `reviewer` / `reviewed_at` | 검수자와 검수일 |
+| `parent_record_id` | 복합 행에서 파생된 부모 `REQ-*` |
+
+### 점수표: `scoring/scoring_items.csv`
+
+| 컬럼 | 설명 |
+|---|---|
+| `score_id` | 점수 항목 ID (`SCORE-*`) |
+| `score_group` | 평균소득, 한국어능력, 나이 등 점수 그룹 |
+| `category` / `criterion` | 점수 대분류와 세부 기준 |
+| `min_value` / `max_value` | 점수 구간의 최소·최대값 |
+| `unit` | 만원, 급, 점 등 구간 단위 |
+| `points` / `maximum_points` | 해당 구간 배점과 항목 최대점수 |
+| `is_mandatory` | 해당 점수 항목의 필수 여부 |
+| `minimum_required_points` | 자격 판정에 필요한 최소점수 |
+| `evidence_document` | 점수 증빙서류 |
+| `source_document` / `source_page` | 원문 문서와 페이지 |
+| `raw_text` | 점수표 원문 |
+| `notes` | 병합 셀·예외·검수 메모 |
+
+### 서식: `documents/document_forms.csv`
+
+| 컬럼 | 설명 |
+|---|---|
+| `form_id` | 서식 ID |
+| `form_name` | 서식명 |
+| `raw_text` | 서식 관련 원문 |
+| `filled_by` / `submitted_by` | 작성자와 제출자 |
+| `submission_target` | 제출 기관·담당 부서 |
+| `signer` | 서명 또는 직인 주체 |
+| `required_attachments` | 서식에 필요한 첨부서류 |
+| `is_mandatory` | 필수 서식 여부 |
+| `source_document` / `source_page` | 원문 문서와 페이지 |
+| `notes` | 서식 메타데이터 검수 메모 |
+
+### 변경 이력: `history/change_history.csv`
+
+| 컬럼 | 설명 |
+|---|---|
+| `change_id` | 로컬 변경 ID (`CHG-*`). 공통 UUID가 아님 |
+| `from_round` / `to_round` | 변경 전·후 공고 차수 |
+| `requirement_type` | 변경 대상 유형 |
+| `criterion_name` | 변경 기준명 |
+| `old_value` / `new_value` | 변경 전·후 원문 또는 구조화 값 |
+| `change_type` | `added`, `removed`, `value_changed`, `scope_changed` 등 |
+| `old_source_page` / `new_source_page` | 변경 전·후 원문 페이지 |
+| `description` | 변경 요약과 해석 메모 |
+
+`history/manual_validation.csv`는 `change_id`, 검증 상태, 전·후 페이지, 근거, 후속 조치를 기록한다. `history/round_coverage.csv`는 차수 원본 확보(`round_source`)와 인접 차수 비교(`comparison`)의 진행 상태를 기록한다.
+
+### 공통 매핑: `schema_mapping.csv`
+
+| 컬럼 | 설명 |
+|---|---|
+| `source_file` | 매핑 원천 CSV |
+| `local_record_id` | 원천 `REQ-*` 또는 `CHG-*` |
+| `parent_record_id` | 원천 부모 행 ID |
+| `review_decision` / `source_status` | 원천 검수 결정과 확인 상태 |
+| `target_table` | 공통 이관 대상 테이블 |
+| `target_record_id` | 공통 대상 ID. UUID 확정 전에는 공란 가능 |
+| `mapping_action` | `insert`, `reuse`, `exclude` |
+| `mapping_status` | `verified` 또는 `pending_target_id` |
+| `source_document` / `source_page` / `source_section` | 매핑 근거 문서·페이지·섹션 |
+| `notes` | 원문 참조, 매핑 사유, 보류 사유 |
+
+`schema_mapping.csv`는 원천 행과 공통 테이블을 연결하는 단일 매핑표다. 공통 UUID가 발급되기 전에는 `target_record_id`를 임의로 만들지 않고 `mapping_status=pending_target_id`로 둔다.
+
+매핑 상태와 이관 규칙은 위 컬럼 설명을 기준으로 한다. 현재 `history/change_history.csv`의 `CHG-001~017`도 실제 `source_document`·`source_page`·`source_section`과 원문 참조를 포함해 공통 `change_history` 대상으로 매핑되어 있다.
 
 현재 `_review_current_requirements.csv`의 `G1~G44`는 원문 섹션·추출 묶음이므로 공통 논리 그룹으로 사용하지 않는다. 실제 OR 대체조건이 여러 행으로 확정된 경우에만 새 `condition_group`과 `condition_operator=OR`를 부여하며, 그 전까지는 `condition_group`과 `condition_operator`를 비워 둔다.
 
