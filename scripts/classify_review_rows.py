@@ -131,7 +131,14 @@ def classify_row(row: dict[str, str]) -> Classification:
             "신청·접수·추천 절차 정보로 분류",
         )
 
-    if any(keyword in combined for keyword in ("제출서류", "제출 서류", "서식", "첨부서류")):
+    has_submission_signal = any(
+        keyword in combined for keyword in ("제출서류", "제출 서류", "첨부서류")
+    )
+    has_form_context_signal = "서식" in combined and any(
+        context in combined for context in ("제출", "첨부")
+    )
+
+    if has_submission_signal or has_form_context_signal:
         return Classification(
             "reclassified",
             "document_requirements",

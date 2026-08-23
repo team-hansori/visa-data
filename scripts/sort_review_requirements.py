@@ -13,32 +13,51 @@ def read_rows(path: Path) -> tuple[list[dict[str, str]], list[str]]:
         return list(reader), reader.fieldnames or []
 
 
+def _emit_with_descendants(
+    row: dict[str, str],
+    children_by_parent: dict[str, list[dict[str, str]]],
+    output: list[dict[str, str]],
+    emitted: set[str],
+) -> None:
+    """행을 출력에 추가하고, 그 자식·손자 등 모든 하위 행을 재귀적으로 뒤이어 배치한다."""
+    record_id = row["record_id"]
+    if record_id in emitted:
+        return
+    output.append(row)
+    emitted.add(record_id)
+    for child in children_by_parent.get(record_id, []):
+        _emit_with_descendants(child, children_by_parent, output, emitted)
+
+
 def sort_parent_children(rows: list[dict[str, str]]) -> list[dict[str, str]]:
-    """기존 순서를 유지하면서 부모 직후에 연결된 자식 행을 배치한다."""
+    """기존 순서를 유지하면서 조상 행 직후에 모든 자손 행을 재귀적으로 배치한다."""
     children_by_parent: dict[str, list[dict[str, str]]] = {}
     record_ids = {row["record_id"] for row in rows}
     for row in rows:
+        record_id = row["record_id"]
         parent_id = row.get("parent_record_id", "")
-        if parent_id:
+        # 자기 참조 행은 자식 목록에 넣지 않고 최상위 행으로 취급해 무한 재귀를 막는다.
+        if parent_id and parent_id != record_id:
             children_by_parent.setdefault(parent_id, []).append(row)
 
     output: list[dict[str, str]] = []
     emitted: set[str] = set()
     for row in rows:
         record_id = row["record_id"]
-        if record_id in emitted:
-            continue
         parent_id = row.get("parent_record_id", "")
-        if parent_id and parent_id in record_ids and parent_id not in emitted:
-            # 자식이 원본에서 부모보다 먼저 있어도 부모를 만날 때까지 보류한다.
+        # 부모가 존재하고 아직 방출되지 않았다면, 이 행은 부모(또는 그 조상)를 통해
+        # 재귀적으로 방출될 것이므로 여기서는 건너뛴다. 부모가 없거나(최상위) 부모가
+        # rows에 존재하지 않거나(끊어진 참조) 자기 참조인 경우에는 최상위 행으로 방출한다.
+        has_known_parent = bool(parent_id) and parent_id != record_id and parent_id in record_ids
+        if has_known_parent:
             continue
-        output.append(row)
-        emitted.add(record_id)
-        for child in children_by_parent.get(record_id, []):
-            child_id = child["record_id"]
-            if child_id not in emitted:
-                output.append(child)
-                emitted.add(child_id)
+        _emit_with_descendants(row, children_by_parent, output, emitted)
+
+    if len(output) != len(rows):
+        raise ValueError(
+            f"정렬 후 행 수가 일치하지 않습니다 (입력 {len(rows)}행, 출력 {len(output)}행). "
+            "데이터 유실 가능성이 있어 중단합니다."
+        )
     return output
 
 

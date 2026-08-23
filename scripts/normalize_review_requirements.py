@@ -314,10 +314,25 @@ def find_page_range_rows(
     ]
 
 
+def _resolve_child_spec_values(
+    parent: dict[str, str], child_spec: ChildSpec
+) -> dict[str, str]:
+    """분리 사양의 자식 행 필드값을 부모의 보존값으로 보정해 반환한다."""
+
+    return {
+        "raw_text": child_spec.raw_text,
+        "source_page": child_spec.source_page or parent.get("source_page", ""),
+        "review_decision": child_spec.review_decision
+        or parent.get("_original_review_decision", "reclassified"),
+        "target_table": child_spec.target_table
+        or parent.get("_original_target_table", "none"),
+    }
+
+
 def split_rows(
     fieldnames: list[str], rows: list[dict[str, str]], specs: tuple[SplitSpec, ...] = SPLIT_SPECS
-) -> tuple[list[dict[str, str]], list[str]]:
-    """명시된 분리 사양을 적용하고 새 행의 ID 목록을 반환한다."""
+) -> tuple[list[dict[str, str]], list[str], list[str]]:
+    """분리 사양을 적용하고 새 행 ID 목록과 수동 검수 충돌 목록을 반환한다."""
 
     if PARENT_FIELD not in fieldnames:
         fieldnames = [*fieldnames, PARENT_FIELD]
@@ -326,6 +341,7 @@ def split_rows(
     by_id = {row.get("record_id", ""): row for row in output}
     existing_ids = set(by_id)
     added_ids: list[str] = []
+    manually_changed: list[str] = []
 
     for spec in specs:
         parent = by_id.get(spec.parent_record_id)
@@ -339,16 +355,14 @@ def split_rows(
             existing_rows = {row.get("record_id", ""): row for row in output}
             for child_id, child_spec in zip(child_ids, spec.children):
                 existing_child = existing_rows[child_id]
-                existing_child["raw_text"] = child_spec.raw_text
-                existing_child["source_page"] = child_spec.source_page or parent.get(
-                    "source_page", ""
-                )
-                existing_child["review_decision"] = child_spec.review_decision or parent.get(
-                    "_original_review_decision", "reclassified"
-                )
-                existing_child["target_table"] = child_spec.target_table or parent.get(
-                    "_original_target_table", "none"
-                )
+                spec_values = _resolve_child_spec_values(parent, child_spec)
+                for field_name, spec_value in spec_values.items():
+                    current_value = existing_child.get(field_name, "")
+                    if not current_value:
+                        existing_child[field_name] = spec_value
+                    elif current_value != spec_value:
+                        # 검수자가 수동으로 바꿔둔 값은 덮어쓰지 않고 충돌로만 기록한다.
+                        manually_changed.append(f"{child_id}.{field_name}")
             continue
         if any(child_id in existing_ids for child_id in child_ids):
             raise ValueError(f"일부 하위 행만 이미 존재합니다: {spec.parent_record_id}")
@@ -366,12 +380,7 @@ def split_rows(
                 {
                     "record_id": child_id,
                     PARENT_FIELD: spec.parent_record_id,
-                    "raw_text": child_spec.raw_text,
-                    "source_page": child_spec.source_page or parent.get("source_page", ""),
-                    "review_decision": child_spec.review_decision
-                    or parent.get("_original_review_decision", "reclassified"),
-                    "target_table": child_spec.target_table
-                    or parent.get("_original_target_table", "none"),
+                    **_resolve_child_spec_values(parent, child_spec),
                     "review_note": append_note(
                         parent.get("review_note", ""),
                         f"{spec.parent_record_id}에서 파생된 하위 행 ({spec.reason})",
@@ -387,12 +396,12 @@ def split_rows(
     for row in output:
         row.pop("_original_review_decision", None)
         row.pop("_original_target_table", None)
-    return output, added_ids
+    return output, added_ids, manually_changed
 
 
 def apply_specs(
     fieldnames: list[str], rows: list[dict[str, str]], specs: tuple[SplitSpec, ...] = SPLIT_SPECS
-) -> tuple[list[str], list[dict[str, str]], list[str]]:
+) -> tuple[list[str], list[dict[str, str]], list[str], list[str]]:
     """분리 전에 부모의 기존 매핑값을 보존해 자식 행에 전달한다."""
 
     prepared = []
@@ -404,9 +413,9 @@ def apply_specs(
                 "_original_target_table": row.get("target_table", ""),
             }
         )
-    output, added_ids = split_rows(fieldnames, prepared, specs)
+    output, added_ids, manually_changed = split_rows(fieldnames, prepared, specs)
     output_fieldnames = [*fieldnames] if PARENT_FIELD in fieldnames else [*fieldnames, PARENT_FIELD]
-    return output_fieldnames, output, added_ids
+    return output_fieldnames, output, added_ids, manually_changed
 
 
 def normalize_fragment_merges(
@@ -544,7 +553,7 @@ def main() -> None:
     args = parser.parse_args()
 
     fieldnames, rows = read_csv(args.input_csv)
-    fieldnames, split_result, added_ids = apply_specs(fieldnames, rows)
+    fieldnames, split_result, added_ids, manually_changed_ids = apply_specs(fieldnames, rows)
     fieldnames, split_result, merged_ids, skipped_merge_ids = normalize_fragment_merges(
         fieldnames, split_result
     )
@@ -556,6 +565,8 @@ def main() -> None:
     print(f"분리 대상: {len(added_ids)}행")
     if added_ids:
         print("추가 예정: " + ", ".join(added_ids))
+    if manually_changed_ids:
+        print("수동 검수값 보존(자동 갱신 보류): " + ", ".join(manually_changed_ids))
     print(f"원문 조각 병합: {len(merged_ids)}건")
     if merged_ids:
         print("병합 완료: " + ", ".join(merged_ids))

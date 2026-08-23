@@ -21,6 +21,34 @@ def read_rows(path: Path) -> tuple[list[dict[str, str]], list[str]]:
         return list(reader), reader.fieldnames or []
 
 
+def _validate_child_map(
+    existing_ids: set[str], draft_by_id: dict[str, dict[str, str]]
+) -> None:
+    """REEXTRACTED_CHILD_MAP의 parent_id/source_id가 모두 존재하는지 검증한다."""
+    missing_parent_ids = sorted(
+        parent_id for parent_id in REEXTRACTED_CHILD_MAP if parent_id not in existing_ids
+    )
+    if missing_parent_ids:
+        raise ValueError(
+            "review_rows에 존재하지 않는 parent_id가 있습니다: "
+            + ", ".join(missing_parent_ids)
+        )
+
+    missing_source_ids = sorted(
+        {
+            source_id
+            for source_ids in REEXTRACTED_CHILD_MAP.values()
+            for source_id in source_ids
+            if source_id not in draft_by_id
+        }
+    )
+    if missing_source_ids:
+        raise ValueError(
+            "draft_rows에 존재하지 않는 source_id가 있습니다: "
+            + ", ".join(missing_source_ids)
+        )
+
+
 def add_children(
     review_rows: list[dict[str, str]], draft_rows: list[dict[str, str]]
 ) -> tuple[list[dict[str, str]], list[str]]:
@@ -29,6 +57,8 @@ def add_children(
     output = [row.copy() for row in review_rows]
     existing_ids = {row["record_id"] for row in review_rows}
     added: list[str] = []
+
+    _validate_child_map(existing_ids, draft_by_id)
 
     for parent_id, source_ids in REEXTRACTED_CHILD_MAP.items():
         for index, source_id in enumerate(source_ids, start=1):

@@ -46,3 +46,9 @@ def test_appends_new_draft_row_with_empty_review_fields():
     assert [row["record_id"] for row in merged] == ["REQ-001", "REQ-002"]
     assert merged[1]["review_decision"] == ""
     assert merged[1]["reviewer"] == ""
+
+
+def test_all_empty_inputs_does_not_raise():
+    merged, skipped = merge_rows([], [], [])
+    assert merged == []
+    assert skipped == []

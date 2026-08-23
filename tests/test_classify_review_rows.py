@@ -67,6 +67,36 @@ def test_does_not_auto_approve_ambiguous_notice_metadata():
     assert result.confidence == "low"
 
 
+def test_classifies_document_requirement_rows_with_submission_and_form_signal():
+    result = classify_row(row(raw_text="❍ 제출서류: 서식 8호 작성 후 제출"))
+
+    assert result.review_decision == "reclassified"
+    assert result.target_table == "document_requirements"
+    assert result.confidence == "high"
+
+
+def test_classifies_attachment_rows_without_form_word():
+    result = classify_row(row(raw_text="❍ 첨부서류 : 사업자등록증 사본 1부"))
+
+    assert result.review_decision == "reclassified"
+    assert result.target_table == "document_requirements"
+    assert result.confidence == "high"
+
+
+def test_does_not_auto_classify_form_metadata_mentioning_only_form_word():
+    result = classify_row(row(raw_text="서식 8 작성자"))
+
+    assert result.review_decision == "needs_review"
+    assert result.target_table == "none"
+
+
+def test_does_not_auto_classify_signature_field_metadata():
+    result = classify_row(row(raw_text="서명란"))
+
+    assert result.review_decision == "needs_review"
+    assert result.target_table == "none"
+
+
 def test_proposed_output_never_overwrites_review_file():
     assert (
         proposed_output_path(__import__("pathlib").Path("_review_current_requirements.csv")).name

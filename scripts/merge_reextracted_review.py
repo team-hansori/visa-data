@@ -42,7 +42,12 @@ def merge_rows(review_rows, draft_rows, baseline_rows, *, append_new=False):
             continue
         row["raw_text"] = draft.get("raw_text", "")
 
-    fieldnames = list(review_rows[0].keys()) if review_rows else list(draft_rows[0].keys())
+    if review_rows:
+        fieldnames = list(review_rows[0].keys())
+    elif draft_rows:
+        fieldnames = list(draft_rows[0].keys())
+    else:
+        fieldnames = []
     if append_new:
         for draft in draft_rows:
             if draft["record_id"] in review_ids:
