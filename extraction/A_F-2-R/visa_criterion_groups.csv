@@ -1,14 +1,7 @@
 ﻿group_id,visa_id,parent_group_id,group_key,group_name_kr,boolean_operator,group_scope,applicability_note,display_order
 0b7e2589-f914-5c1f-b263-d4c6e1f7d095,78dca2d7-f771-553a-b788-46c9ff56d633,,root,전체 필수요건,AND,eligibility,,1
 2e0d717c-ad6e-518c-8f00-b1159b80616c,78dca2d7-f771-553a-b788-46c9ff56d633,0b7e2589-f914-5c1f-b263-d4c6e1f7d095,applicant_status,공고에 명시된 신청 대상 경로,OR,eligibility,전체 체류자격 목록이 아니라 공고가 별도로 명시한 E-7-4/E-7-4R 경로,10
-b5596868-2ac9-5b69-a226-f99d353ef26b,78dca2d7-f771-553a-b788-46c9ff56d633,2e0d717c-ad6e-518c-8f00-b1159b80616c,e74_path,E-7-4 신청 경로,AND,eligibility,E-7-4 체류기간과 근무·계약종료·D-10 중 하나를 함께 충족,11
-e83cb691-3147-52cc-9d0a-3371e0d57dd4,78dca2d7-f771-553a-b788-46c9ff56d633,b5596868-2ac9-5b69-a226-f99d353ef26b,e74_status_options,E-7-4 근무·구직 상태 대체조건,OR,eligibility,"현 근무 지속, 계약 종료(예정), E-7-4 체류 후 D-10 중 하나",12
-7f3ab7dc-0d1f-5a35-bc0c-8450c8aa79e4,78dca2d7-f771-553a-b788-46c9ff56d633,2e0d717c-ad6e-518c-8f00-b1159b80616c,e74r_path,E-7-4R 신청 경로,AND,eligibility,E-7-4R 체류기간과 인구감소지역 거주를 함께 충족,13
 959362ca-66e2-5f16-b643-549019cd0a47,78dca2d7-f771-553a-b788-46c9ff56d633,0b7e2589-f914-5c1f-b263-d4c6e1f7d095,education_or_income,학력 또는 소득,OR,eligibility,,20
-e255047c-e033-56a3-9109-d86c453dd0b7,78dca2d7-f771-553a-b788-46c9ff56d633,959362ca-66e2-5f16-b643-549019cd0a47,education_path,학력 경로,AND,eligibility,국내 교육과정 체류와 학위 취득·졸업예정 중 하나를 함께 충족,21
-e559bcd4-1e45-5970-9061-05c5bcd44686,78dca2d7-f771-553a-b788-46c9ff56d633,e255047c-e033-56a3-9109-d86c453dd0b7,education_degree_status,학위 취득·졸업예정 대체조건,OR,eligibility,학위 취득자 또는 졸업예정자 경로 중 하나,22
-ccd2a111-2d61-510b-9189-88c826bdc9a4,78dca2d7-f771-553a-b788-46c9ff56d633,e559bcd4-1e45-5970-9061-05c5bcd44686,education_expected_path,졸업예정자 경로,AND,eligibility,졸업예정 사실과 신청일부터 6개월 이내 학위 취득 예정 조건을 함께 충족,23
-d22ad9c0-b472-5c49-a135-67d0b2fc434a,78dca2d7-f771-553a-b788-46c9ff56d633,959362ca-66e2-5f16-b643-549019cd0a47,income_path,소득 경로,AND,eligibility,"생활임금, 소득 주체, 산정기간, 인정 소득 종류를 함께 적용",24
 9ba1bf6d-1136-51af-9801-ec9a72182d23,78dca2d7-f771-553a-b788-46c9ff56d633,0b7e2589-f914-5c1f-b263-d4c6e1f7d095,language,기본소양,OR,eligibility,,30
 3641ad2c-2523-5aa4-ac30-59af0786c6f5,78dca2d7-f771-553a-b788-46c9ff56d633,0b7e2589-f914-5c1f-b263-d4c6e1f7d095,residence,거주 요건,AND,eligibility,,40
 587f2058-bf9b-5137-bca1-a7ce1d387e13,78dca2d7-f771-553a-b788-46c9ff56d633,0b7e2589-f914-5c1f-b263-d4c6e1f7d095,economic_activity,취업 또는 창업,OR,eligibility,,50
