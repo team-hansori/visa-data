@@ -154,20 +154,26 @@
 
 ## 완료 기준
 
-- [ ] 원본 문서가 작업 환경에 연결됨
-- [ ] draft 135행 전체에 수동검수 판정이 기록됨
-- [ ] 모든 `unclassified` 행의 처리 결과가 기록됨
-- [ ] 원본 문서·페이지·논리관계가 확인됨
-- [ ] 분류 결과에 따라 파싱 로직의 누락·오류가 보완됨
-- [ ] 추출 실패·혼합 행이 원문 기준으로 복원되거나 수동 보류 사유가 기록됨
-- [ ] 분리된 하위 행의 `source_page`가 실제 원문 페이지와 일치함
-- [ ] 검수 메모로 확정된 행의 `source_section`이 공통 경로로 정규화됨
-- [ ] 미확정 `source_section` 행이 자동 변경되지 않고 보류됨
-- [ ] 정제 후 extraction 결과를 재생성하고 review 결과와 대조함
-- [ ] 원문 의미 매핑과 OR 관계 검토가 UUID 발급과 독립적으로 완료됨
-- [ ] 공통 마스터 매핑 대상의 UUID/FK가 검증됨
-- [ ] E-7-4R의 로컬 `G*` 그룹과 공통 논리 `condition_group`을 분리함
-- [ ] 실제 OR 대체조건만 `condition_group`/`condition_operator=OR`로 매핑함
-- [ ] scoring 데이터를 criteria로 잘못 이관하지 않음
-- [ ] `uv run python scripts/validate_fk_integrity.py` 통과
-- [ ] 팀원에게 상태값·수동검수·보류 항목을 공유함
+- [x] 원본 문서가 작업 환경에 연결됨
+- [x] draft 135행 전체와 분리된 파생 행에 수동검수 판정이 기록됨
+- [x] 모든 `unclassified` 행의 처리 결과가 기록됨
+- [x] 원본 문서·페이지·논리관계가 확인됨
+- [x] 분류 결과에 따라 파싱 로직의 누락·오류가 보완됨
+- [x] 추출 실패·혼합 행이 원문 기준으로 복원되거나 판정 사유가 기록됨
+- [x] 분리된 하위 행의 `source_page`가 실제 원문 페이지와 일치함
+- [x] 검수 메모로 확정된 행의 `source_section`이 공통 경로로 정규화됨
+- [x] 미확정 `source_section` 행이 자동 변경되지 않고 보류됨
+- [x] 정제 후 extraction 결과를 재생성하고 review 결과와 대조함
+- [x] 원문 의미 매핑과 OR 관계 검토가 UUID 발급과 독립적으로 완료됨
+- [x] E-7-4R의 로컬 `G*` 그룹과 공통 논리 `condition_group`을 분리함
+- [x] 실제 OR 대체조건만 `condition_group`/`condition_operator=OR`로 매핑함
+- [x] scoring 데이터를 criteria로 잘못 이관하지 않음
+- [x] `uv run python scripts/validate_fk_integrity.py` 통과
+- [x] 팀원에게 상태값·수동검수·보류 항목을 README와 PR에 공유함
+
+### #44로 이관한 완료 조건
+
+- [ ] 공통 마스터 대상 UUID를 새로 발급하고 FK를 검증함
+- [ ] v1 `scoring_items`와 `visa_quota_status` 의미 매핑을 v2 테이블로 변환함
+- [ ] 공고 적용 근거에 따라 공통 `valid_from`/`valid_to`를 생성함
+- [ ] E-7-4R 전체 이관 후 원천 행 커버리지와 판정 결과를 회귀 검증함

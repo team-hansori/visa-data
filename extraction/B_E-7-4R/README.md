@@ -124,13 +124,44 @@
 | `parent_record_id` | 원천 부모 행 ID |
 | `review_decision` / `source_status` | 원천 검수 결정과 확인 상태 |
 | `target_table` | 공통 이관 대상 테이블 |
-| `target_record_id` | 공통 대상 ID. UUID 확정 전에는 공란 가능 |
+| `target_record_id` | 공통 대상 ID. UUID 확정 전에는 공란 가능. 단, `mapping_action=reuse`인 점수 행의 `SCORE-*`는 아래 예외 규칙을 따른다. |
 | `mapping_action` | `insert`, `reuse`, `exclude` |
 | `mapping_status` | `verified` 또는 `pending_target_id` |
 | `source_document` / `source_page` / `source_section` | 매핑 근거 문서·페이지·섹션 |
 | `notes` | 원문 참조, 매핑 사유, 보류 사유 |
 
 `schema_mapping.csv`는 원천 행과 공통 테이블을 연결하는 단일 매핑표다. 공통 UUID가 발급되기 전에는 `target_record_id`를 임의로 만들지 않고 `mapping_status=pending_target_id`로 둔다.
+
+### 공통 스키마 v2 이관 기준
+
+#44에서 E-7-4R을 이관할 때 사용하는 기준 입력은 다음 두 파일이다.
+
+- `requirements/_review_current_requirements.csv`: 160개 원천·파생 행의 최종 수동검수 판정
+- `schema_mapping.csv`: 검수 행과 변경 이력의 대상 테이블·처리 방식 매핑
+
+`requirements/current_requirements.csv`는 신청 자격으로 정제된 35행 부분집합이다. 이 파일만으로
+E-7-4R 전체를 이관하면 점수·절차·쿼터·제출서류가 누락되므로 #44의 단독 입력으로 사용하지 않는다.
+
+현재 `schema_mapping.csv`의 `target_table`은 공통 스키마 v1 및 E-7-4R 로컬 구조를 기준으로 한
+의미 분류다. #44에서는 원천 판정을 다시 하지 않고 다음과 같이 v2 대상에 변환한다.
+
+| #40 매핑값 | #44 v2 처리 |
+|---|---|
+| `scoring_items` | E-7-4R 점수 모델을 `visa_scoring_models`에 생성하고 항목을 `visa_scoring_items`로 이관 |
+| `visa_quota_status` | 규칙·배정 단위는 `visa_quota_policies`, 차수별 수치·잔여량은 `visa_quota_snapshots`로 분리 |
+| `visa_requirement_criteria` | v2 기준 그룹을 생성한 뒤 새 `group_id`로 연결 |
+| 그 밖의 대상 테이블 | #44의 v2 명세에서 동일 의미의 테이블로 이관 |
+
+`mapping_action=reuse`이고 `target_table=scoring_items`인 행의 `target_record_id=SCORE-*`는 공통
+UUID가 아니라 `scoring/scoring_items.csv`의 기존 E-7-4R 로컬 점수 행을 가리킨다. #44는 이
+로컬 참조를 따라 원천 점수 행을 찾은 뒤 새 공통 UUID를 발급해야 하며, `SCORE-*`를 공통 PK나
+FK로 복사하지 않는다. 그 밖의 `pending_target_id` 146건도 의미 매핑 미완료가 아니라 #44의
+UUID/FK 발급 대기 상태다.
+
+원천에는 공고 차수와 문서·페이지 근거가 있지만 모든 행에 공통 `valid_from`/`valid_to`로 쓸
+달력 날짜가 있는 것은 아니다. #44는 8차 공고의 시행·적용 근거를 확인하여 유효기간을 생성하고,
+근거가 없는 날짜를 추정하지 않는다. 추천서 발급 후 3개월 같은 개별 기한은 공고 전체 유효기간이
+아니므로 해당 절차·서류 조건에 보존한다.
 
 매핑 상태와 이관 규칙은 위 컬럼 설명을 기준으로 한다. 현재 `history/change_history.csv`의 `CHG-001~017`도 실제 `source_document`·`source_page`·`source_section`과 원문 참조를 포함해 공통 `change_history` 대상으로 매핑되어 있다.
 
@@ -203,7 +234,8 @@ uv run python scripts/review_requirements.py classify \
 
 ## 다음 단계
 
-1. 8차 공고 PDF를 페이지 순서대로 읽으며 `requirements/current_requirements.csv`를 채운다.
-2. K-POINT 표는 텍스트 추출 결과만 믿지 말고 페이지 이미지와 대조해 `scoring/scoring_items.csv`를 채운다 (셀 병합으로 점수가 다른 행에 붙는 경우 주의).
-3. 고용기업 추천양식 등에서 기업 자격요건은 `requirements/current_requirements.csv`로, 서식 자체 메타데이터는 `documents/document_forms.csv`로 분리해 넣는다.
-4. 8차 기준이 끝나면 7차부터 역순으로 비교해 `history/change_history.csv`를 채운다.
+1. #40에서는 검수된 원천 데이터와 `schema_mapping.csv`를 동결한다.
+2. 공통 UUID/FK 발급과 실제 데이터 생성은 #44의 v2 통합 작업에서 수행한다.
+3. #44는 위 두 기준 입력과 `scoring/scoring_items.csv`, `history/change_history.csv`를 함께 읽어
+   점수·절차·쿼터·서류·변경 이력을 이관한다.
+4. 이관 후 원천 행 커버리지, 새 UUID/FK, 출처, 유효기간 및 점수 판정 결과를 회귀 검증한다.
