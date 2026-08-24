@@ -965,7 +965,11 @@ D-2는 공통 마스터로 이관하지 않으므로, 이 절은 "무엇을 옮�
 `gwangyeok_eligible_departments.csv` 한 파일에서만 등장하며(검색 확인 완료), 다른 어떤 D-2 관련
 파일에도 참조되지 않는다 — 즉 공통 정체성으로 의도된 값이라기보다 그 파일을 만들 때 내부적으로
 생성된 값으로 보인다. 그래서 "기존 v1 공통 UUID는 유지한다" 원칙이 적용될 대상 자체가 없었고,
-1단계에서 새 UUIDv4를 발급한 것은 맞는 처리였다고 본다.
+1단계에서 새 UUIDv4를 발급한 것은 맞는 처리였다고 본다. 실무적으로도, 이 문서를 쓰는 시점에
+`8a295d32-...`는 이미 `extraction/common_v2/`(`visa_requirements.csv` 1행,
+`source_documents.csv` 3행, `source_record_mappings.csv` 99행 — 총 약 103곳)에 퍼져 있어서,
+지금 `41f2d169-...`로 되돌리는 쪽이 `gwangyeok_eligible_departments.csv` 71행을 고치는 것보다
+수정 범위가 더 크다 — 이 편의성도 "원천 파일을 고치지 않는다"는 판단을 뒷받침한다.
 
 다만 이 불일치는 실제로 존재하므로 여기 기록해둔다 — 나중에 D-2가 실제로 공통 마스터와 연결되는
 단계에 들어가면(예: `visa_requirements`와의 FK를 만드는 경우), `gwangyeok_eligible_departments.csv`의
@@ -977,9 +981,10 @@ D-2 외 다른 값이 나온 적이 없으므로 사실상 상수) 재검토하�
 **출처·유효기간 검증 결과 — 전부 원문에 근거, 추가 조치 불필요**
 
 - `parttime_work_rules.csv`(10행): 전체 행의 `valid_from`이 문자열 `"UNKNOWN — PDF·웹페이지 모두
-  시행일 미기재, 확인 필요"`다. 값이 빠진 게 아니라 원문 자체에 시행일이 없다는 사실을
-  상태 문자열로 명시한 것이며(`extraction/C_D-2-common/README.md`에 이미 문서화됨), 이 이슈에서
-  임의로 날짜를 채우지 않는다.
+  시행일 미기재, 확인 필요"`다. 값이 빠진 게 아니라 원문 자체에 시행일이 없다는 사실을 CSV 셀에
+  직접 상태 문자열로 명시해둔 것이다(`extraction/C_D-2-common/README.md`는 이 컬럼의 관례를
+  별도로 설명하지 않는다 — `UNKNOWN` 표기 자체가 유일한 근거이며, 관련된 일반 규칙은 본 문서
+  759-773번째 줄 참고). 이 이슈에서 임의로 날짜를 채우지 않는다.
 - `certified_universities.csv`(18행): 전체 행에 `source_page`가 없다. 출처가 PDF가 아니라 두 개의
   웹페이지(충북지역대학혁신지원센터, 한국유학종합시스템)라 페이지 번호 자체가 존재하지 않는 게
   정상이다 — 결측이 아니라 구조적으로 해당 없음.
@@ -995,8 +1000,11 @@ visa_quota_policies.csv`·`visa_quota_snapshots.csv` 어디에도 D-2 행이 없
 
 **서비스 소비 경계**
 
-- `extraction/C_D-2-common/`의 3개 CSV는 원래 스키마 그대로 남고, v2 13개 테이블 어디로도 옮기지
-  않는다 — `visa_criterion_groups`/`visa_requirement_criteria`로 평탄화하지 않는다.
+- `extraction/C_D-2-common/`의 3개 CSV는 원래 스키마 그대로 남고, 서비스 판정용 10개 테이블
+  어디로도 옮기지 않는다 — `visa_criterion_groups`/`visa_requirement_criteria`로 평탄화하지 않는다.
+  예외는 `source_record_mappings`뿐이다: 이 3개 CSV의 원천 행 99개(F-2-R·E-7-4R과 같은 방식으로)
+  전부 `SKIP`/`BLOCKED` 상태로 추적만 기록돼 있다 — 이건 실제 내용 이관이 아니라 "이 원천 행을
+  검토했고 지금은 이관하지 않기로 했다"는 감사 기록이다.
 - v2 공통 마스터가 D-2에 대해 갖는 건 `visa_requirements`의 정체성 행(`visa_id`+`visa_code`만
   채워진 1단계 부트스트랩) 하나뿐이다 — 자격조건·절차·서류·쿼터 등 나머지 내용은 공통 마스터에
   없다.
