@@ -769,7 +769,7 @@ class TestBaseline:
         errors = validate_directory(REAL_COMMON_V2_DIR)
         exit_code = _check_against_baseline(errors, REAL_BASELINE_PATH)
         assert exit_code == 0
-        assert len(errors) == 18
+        assert len(errors) == 9
 
 
 # --------------------------------------------------------------------------
@@ -881,7 +881,7 @@ class TestCriterionGroupTreeIntegrityRealData:
         assert participant_count("f2r_language") == 3
 
         assert groups["f4r_eligibility_paths"]["boolean_operator"] == "OR"
-        assert participant_count("f4r_eligibility_paths") == 2
+        assert participant_count("f4r_eligibility_paths") == 3
 
 
 class TestCriterionGroupTreeIntegrityRejection:

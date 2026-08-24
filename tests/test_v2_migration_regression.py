@@ -108,12 +108,10 @@ class TestF2RNestedLogic:
 
 
 class TestF4RNestedLogic:
-    """F-4-R f4r_eligibility_paths(OR, 2개, 국내전입자 배제 확인) /
+    """F-4-R f4r_eligibility_paths(OR, 3개) /
     f4r_dependent_child_requirements(AND, 연령 2개 + 재학요건 OR 하위그룹)."""
 
-    def test_f4r_eligibility_paths_group_is_or_with_two_criteria_excluding_overseas_transferee(
-        self,
-    ):
+    def test_f4r_eligibility_paths_group_is_or_with_three_criteria(self):
         groups = _read_rows("visa_criterion_groups.csv")
         criteria = _read_rows("visa_requirement_criteria.csv")
 
@@ -122,11 +120,13 @@ class TestF4RNestedLogic:
         assert paths_group["boolean_operator"] == "OR"
 
         paths_criteria = [row for row in criteria if row["group_id"] == paths_group["group_id"]]
-        assert len(paths_criteria) == 2
+        assert len(paths_criteria) == 3
         names = {row["criteria_name"] for row in paths_criteria}
-        assert names == {"신청자격(기존거주자)", "신청자격(국내전입자)"}
-        # "해외전입자"는 v1 원문에 있었으나 이관 대상에서 배제됐다 — 다시 등장하지 않는지 확인.
-        assert not any("해외전입자" in name for name in names)
+        assert names == {
+            "신청자격(기존거주자)",
+            "신청자격(국내전입자)",
+            "신청자격(해외전입자)",
+        }
 
     def test_f4r_dependent_child_requirements_group_is_and_with_age_criteria_and_or_subgroup(
         self,

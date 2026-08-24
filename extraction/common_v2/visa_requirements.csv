@@ -1,5 +1,5 @@
 visa_id,visa_code,visa_name_kr,program_type,target_regions_json,residency_limit_years,allowed_industries_json,application_method,next_visa_code,valid_from,valid_to,source_document_id,source_page,last_verified_at
 606d8651-1d04-47fe-8f69-165b3ed3d834,F-4-R,지역특화형 재외동포,REGIONAL_SPECIALIZED,"[""제천시"",""보은군"",""옥천군"",""영동군"",""괴산군"",""단양군""]",2,,신청자 본인 방문 접수(원본 제출). 부득이한 경우 행정사 대리신청만 가능(위임장 제출 필수),F-5-6R,2025-03-07,2026-09-18,c4e3a139-af13-44ce-b72f-1f223bfc8db5,"1-2,6-7",2026-08-14
-346834f7-ac6e-4958-8e0d-8c2b4fb03a7e,E-7-4R,,,,,,,,,,,,
+346834f7-ac6e-4958-8e0d-8c2b4fb03a7e,E-7-4R,지역특화형 숙련기능인력,REGIONAL_SPECIALIZED,"[""제천시"",""보은군"",""옥천군"",""영동군"",""괴산군"",""단양군""]",,,시군 담당부서 방문 접수,,2026-01-12,2026-09-18,d3c64f30-9c86-4459-93d5-bfbb02863e5c,1,2026-08-21
 a228433b-abe4-4785-8496-3e1cb3d597c1,F-2-R,지역특화형 지역우수인재,REGIONAL_SPECIALIZED,"[""제천시"",""보은군"",""옥천군"",""영동군"",""괴산군"",""단양군""]",5,,시·군 지역특화비자 담당부서 방문접수,,2025-03-07,2026-09-18,2c892d50-7de9-431f-95f7-c02c7b2a7d76,1,2026-08-15
 8a295d32-46dd-43a8-8a9d-b3713251bf1f,D-2,,,,,,,,,,,,

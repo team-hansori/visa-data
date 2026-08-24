@@ -1070,7 +1070,7 @@ D-2는 "검수가 부족해서" 보류가 아니라 애초에 이번 마이그�
 plan 10단계는 원래 "v2 13개 CSV를 깨끗한 디렉터리에서 재생성해 결과가 결정적인지 확인"을
 요구했다. 이건 현재 온전히 달성할 수 없다. `scripts/migrate_to_v2.py`는 Task 3에서 의도적으로
 "헤더만 쓰는 스텁"으로 만들어졌고(`tests/test_migrate_to_v2.py`가 이 스텁 계약 — 13개 파일에
-헤더 한 줄만 있어야 함 — 을 그대로 검증한다), 실제 행 내용(F-4-R 4개 그룹 + 9개 조건, F-2-R
+헤더 한 줄만 있어야 함 — 을 그대로 검증한다), 실제 행 내용(F-4-R 4개 그룹 + 10개 조건, F-2-R
 5개 그룹 + 14개 조건, E-7-4R 점수·쿼터·절차·서류 32행 등)은 Task 1/4/5/6/7/9 각각의 리포트가
 공통으로 밝히듯 커밋되지 않은 1회성 스크립트로 채워졌다. 즉 **지금 `extraction/common_v2/`를
 지우고 `migrate_to_v2.py`를 다시 돌리면 헤더만 있는 빈 13개 CSV가 나온다 — 실제 이관 데이터는
@@ -1091,7 +1091,7 @@ plan 문서의 체크리스트는 17개 항목이다(브리프는 "16개"라고 
 1. **v2 명세에 13개 테이블의 컬럼·자료형·enum·null·PK/FK 규칙이 있다.** — 완료. 이 문서
    1~13번 절 + `scripts/schema_v2.py`가 단일 진실 공급원이다.
 2. **서비스 테이블 10개와 지원 테이블 3개의 실제 헤더가 명세와 일치한다.** — 완료.
-   `validate_directory()`가 13개 파일의 헤더 순서를 스키마와 대조하며, 현재 알려진 18건의
+   `validate_directory()`가 13개 파일의 헤더 순서를 스키마와 대조하며, 현재 알려진 9건의
    검증 실패(§14 참고) 중 헤더 불일치는 0건이다.
 3. **모든 이관 대상 비자에 eligibility ROOT 그룹이 정확히 하나 있다.** — 부분 완료. F-4-R,
    F-2-R은 각각 ROOT 1개(`f4r_root`, `f2r_root`)로 확인됨(이번 태스크의 Deliverable 1 검사로
@@ -1138,32 +1138,32 @@ plan 문서의 체크리스트는 17개 항목이다(브리프는 "16개"라고 
     `visa_quota_snapshots.csv`에 그대로 있고, 이번 태스크(Deliverable 2)에서
     `tests/test_v2_migration_regression.py::TestE7_4RQuotaSnapshot`로 고정했다.
 12. **F-4-R 기존 UUID, 판정, 절차 결과가 유지된다.** — 완료. `visa_id=606d8651-...`가 v1 UUID
-    그대로 재사용됐고(Task 4), 그룹 트리(4개 그룹·9개 조건)가 기존 판정 로직을 반영하며,
+    그대로 재사용됐고(Task 4), 그룹 트리(4개 그룹·10개 조건)가 기존 판정 로직을 반영하며,
     절차 4단계가 이관됐다. 이번 태스크(Deliverable 2)에서
     `tests/test_v2_migration_regression.py::TestF4RUuidLifecycle`로 UUID 재사용을 고정했다.
 13. **D-2 전용 구조와 공통 마스터의 연결 경계가 검증·문서화된다.** — 완료. 이 문서의
     "D-2 연결 검증(plan 8단계)" 절(Task 1)이 식별자 불일치, 출처·유효기간 완전성, 쿼터
     미생성, 서비스 소비 경계까지 상세히 검증·기록했다.
 14. **모든 공통 행에 필요한 출처·페이지·유효기간이 존재한다.** — 부분 완료. 알려진 위반이
-    18건 있고 전부 의도가 확인된 것들이다: (a) `source_documents.csv` 2행
-    (`f4r_r12_announcement`, `d2_gwangyeok_departments_guide_2026`)이 `source_location`을
-    비워둠 — 이건 실제 데이터 공백이며, 이 태스크에서 원천 파일을 수정하지 않는다는 원칙에
-    따라 고치지 않았다. (b) `visa_requirements.csv`의 E-7-4R·D-2 행이 `visa_id`+`visa_code`만
-    채운 "부트스트랩 전용" 행이라 나머지 12개 컬럼 중 8개(필수 필드 7건 + FK 1건)가 비어
-    있음(나머지 4개는 nullable 컬럼이라 정상) — 두 비자 모두 아직 본문 내용을 이관하지
-    않았다는 걸 정확히 반영한 상태이지 실수가 아니다.
-    `uv run python scripts/validate_common_schema_v2.py`는 지금도 이 18건을 그대로
+    9건 있다: (a) `source_documents.csv`의 `f4r_r12_announcement` 1행은 원본 파일이
+    로컬 저장소에 없어 `source_location`을 확인하지 못했다. (b) D-2는 plan 8단계 결정에
+    따라 공통 본문을 이관하지 않는 부트스트랩 행이라 `visa_requirements.csv`의 필수
+    본문·출처 필드 8건이 비어 있다. E-7-4R과 D-2 출처 중 로컬에서 확인 가능한 정보는
+    이번 보완에서 채웠다.
+    `uv run python scripts/validate_common_schema_v2.py`는 지금도 이 9건을 그대로
     보고한다(억지로 통과시키지 않음).
 15. **원천 ID와 공통 UUID가 분리되고 매핑표로 추적된다.** — 완료.
     `source_record_mappings.csv`(463행)가 4개 원천 데이터셋(A_F-2-R 74, B_E-7-4R 274,
     C_D-2-common 99, D_visa_requirements 16)의 원천 ID와 공통 UUID를 분리해 추적하며,
     `mapping_status`(PENDING/READY/MAPPED/BLOCKED)로 각 행의 이관 단계를 구분한다.
+    원천 파일의 실제 레코드 존재 여부와 MAPPED target UUID 연결은
+    `scripts/validate_source_record_mappings.py`에서 별도로 검증한다.
 16. **FK·UUID·enum·헤더·쿼터·누락·순환 검증 테스트가 통과한다.** — 완료(이번 태스크로
     마지막 공백을 메움). Task 3이 FK/UUID/enum/헤더 검증을 이미 구현했지만 ROOT 유일성·
     순환참조·OR 그룹 최소 자식 수는 "실제 데이터가 준비되면"으로 미뤄뒀었다. 이번 태스크
     (Deliverable 1)가 그 검사를 추가했고 실제 데이터에서 위반 0건을 확인했다. 전체 테스트는
-    `uv run pytest -q` 기준 271건 통과(기존 247 + 이번 태스크 추가 24). 독립 실행형 검증기
-    (`uv run python scripts/validate_common_schema_v2.py`)는 여전히 종료 코드 1과 18건을
+    `uv run pytest -q` 기준 301건 통과(기존 300 + 매핑 원장 검증 테스트 1건). 독립 실행형 검증기
+    (`uv run python scripts/validate_common_schema_v2.py`)는 여전히 종료 코드 1과 9건을
     보고하는데, 이는 pytest 실패가 아니라 항목 14에서 설명한 "알려진, 의도가 확인된 미완료
     데이터"를 검증기가 정직하게 계속 드러내고 있다는 뜻이다.
 17. **v1→v2 변환 규칙과 비자별 이관 결과·보류 항목이 문서화된다.** — 완료. 이 문서의
@@ -1193,9 +1193,9 @@ plan 문서의 체크리스트는 17개 항목이다(브리프는 "16개"라고 
 - **`change_history.csv`**: 모든 비자유형에 대해 여전히 비어 있음(헤더만). B_E-7-4R 원천
   매핑에 `target_table=change_history` 17행이 `PENDING` 상태로 대기 중이나 실제로 옮겨진
   행은 0개.
-- **`source_documents.csv`의 `source_location` 결측 2행**: `f4r_r12_announcement`,
-  `d2_gwangyeok_departments_guide_2026` — 원천 파일을 고치지 않는다는 원칙에 따라 이 태스크에서
-  값을 채우지 않았다. 실제 데이터 공백으로 남겨둔다.
+- **`source_documents.csv`의 `source_location` 결측 1행**: `f4r_r12_announcement` — 원본
+  파일이 로컬 저장소에 없어 위치를 확인하지 못했다. `d2_gwangyeok_departments_guide_2026`는
+  로컬 원본 위치를 확인해 보완했다.
 - **`scripts/uuid_utils.UUID_ID_COLUMNS`**: 이번 태스크에서 확장 완료(기존 3개 v1 컬럼 +
   v2 10개 PK 컬럼명 = 13개). PR #38 이후 Task 9 계획 항목이었으나 그때는 반영되지 않았던
   것을, 위험이 낮은 한 줄 변경(순수 추가, 기존 검사 로직 무변경)으로 판단해 이번에 반영했다.
@@ -1209,5 +1209,5 @@ plan 문서의 체크리스트는 17개 항목이다(브리프는 "16개"라고 
   `target_table=visa_criterion_groups`로 인용하는 행이 하나도 없다. 이건 데이터 누락이
   아니라 Task 9의 의도된 판단이다 — v1에는 F-4-R 전용 그룹 파일이 애초에 없었으므로(그룹은
   v2에서 새로 설계한 논리 구조) 이 4행 각각에 대응하는 자연스러운 단일 원천 행 자체가
-  존재하지 않는다. 반면 F-4-R의 9개 criteria 행은 v1 `visa_requirement_criteria.csv`의
+  존재하지 않는다. 반면 F-4-R의 10개 criteria 행은 v1 `visa_requirement_criteria.csv`의
   실제 행에서 파생됐으므로 정상적으로 인용된다.
