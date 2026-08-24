@@ -37,3 +37,8 @@ jobs:
 
       - name: E-7-4R 매핑 무결성 검증
         run: python scripts/validate_e7r_mapping.py
+
+      - name: 공통 스키마 v2 검증
+        run: |
+          python scripts/validate_common_schema_v2.py \
+            --baseline extraction/common_v2/known_validation_gaps.txt

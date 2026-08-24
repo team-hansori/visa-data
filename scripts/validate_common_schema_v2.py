@@ -655,12 +655,70 @@ def validate_directory(base_dir: Path) -> list[str]:
     return errors
 
 
+def _read_baseline(path: Path) -> list[str]:
+    """알려진(공개된) 검증 실패 목록 파일을 읽는다. 한 줄에 에러 메시지 하나, 빈 줄과
+    `#`로 시작하는 줄은 무시한다. 파일이 없으면 빈 목록(= 알려진 격차 없음)으로 취급한다."""
+    if not path.exists():
+        return []
+    lines = path.read_text(encoding="utf-8").splitlines()
+    return [
+        stripped for line in lines if (stripped := line.strip()) and not stripped.startswith("#")
+    ]
+
+
+def _check_against_baseline(errors: list[str], baseline_path: Path) -> int:
+    """실제 검증 에러가 베이스라인 파일과 정확히 같은 집합인지 확인한다.
+
+    plan "README와 CI에서는 하나의 공식 진입점만 사용한다"는 요구를 지키면서도, 알려진
+    18건의 사전 공개 격차(§14 "완전히 이관되지 않은 항목" 참고) 때문에 CI가 항상 빨간불로
+    깨지는 상태를 피하기 위한 절충이다 — 알려진 에러는 통과시키되, 새 에러가 생기거나
+    기존 에러가 조용히 바뀌면(예: 메시지 텍스트가 달라짐) 실패시켜 회귀를 잡아낸다.
+    """
+    baseline = set(_read_baseline(baseline_path))
+    current = set(errors)
+    new_errors = sorted(current - baseline)
+    resolved_errors = sorted(baseline - current)
+
+    if not new_errors and not resolved_errors:
+        print(f"v2 스키마 검증: 알려진 격차 {len(current)}건과 정확히 일치(회귀 없음)")
+        return 0
+
+    print(f"v2 스키마 검증: 실제 결과가 베이스라인({baseline_path})과 다름")
+    if new_errors:
+        print(f"  새로 발견된 에러 {len(new_errors)}건(회귀 가능성):")
+        for error in new_errors:
+            print(f"    + {error}")
+    if resolved_errors:
+        print(
+            f"  베이스라인에는 있으나 지금은 사라진 에러 {len(resolved_errors)}건 "
+            f"(의도한 수정이라면 {baseline_path}도 함께 갱신할 것):"
+        )
+        for error in resolved_errors:
+            print(f"    - {error}")
+    return 1
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="공통 스키마 v2(13개 테이블) 검증기")
     parser.add_argument("--base-dir", type=Path, default=DEFAULT_BASE_DIR)
+    parser.add_argument(
+        "--baseline",
+        type=Path,
+        default=None,
+        help=(
+            "알려진 검증 실패 목록 파일 경로. 지정하면 실제 결과가 이 파일과 정확히 같을 "
+            "때만 통과 처리한다(새 에러나 기존 에러의 조용한 변경만 실패로 취급) — CI에서 "
+            "알려진 사전 공개 격차를 그대로 두면서 회귀만 감지하는 용도. 지정하지 않으면 "
+            "기존과 동일하게 에러가 하나라도 있으면 실패한다."
+        ),
+    )
     args = parser.parse_args()
 
     errors = validate_directory(args.base_dir)
+
+    if args.baseline is not None:
+        return _check_against_baseline(errors, args.baseline)
+
     if errors:
         print(f"v2 스키마 검증 실패: {len(errors)}건")
         for error in errors:

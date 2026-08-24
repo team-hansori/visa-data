@@ -27,10 +27,12 @@ from scripts.schema_v2 import (
 )
 from scripts.uuid_utils import generate_uuid4
 from scripts.validate_common_schema_v2 import (
+    _check_against_baseline,
     _check_criterion_group_tree_integrity,
     _check_document_attachment_relation_integrity,
     _check_quota_arithmetic,
     _check_target_table_is_real_table_name,
+    _read_baseline,
     read_csv,
     validate_all,
     validate_directory,
@@ -716,6 +718,58 @@ class TestValidateDirectory:
 
         errors = validate_directory(tmp_path)
         assert errors == []
+
+
+# --------------------------------------------------------------------------
+# 베이스라인 비교 (finding 5) — CI가 알려진 18건은 통과시키되 회귀(새 에러/조용한 변경)는
+# 잡아내도록 하는 --baseline 옵션.
+# --------------------------------------------------------------------------
+
+REAL_BASELINE_PATH = REAL_COMMON_V2_DIR / "known_validation_gaps.txt"
+
+
+class TestBaseline:
+    def test_read_baseline_ignores_blank_and_comment_lines(self, tmp_path):
+        path = tmp_path / "baseline.txt"
+        path.write_text(
+            "# 주석 줄\n\nfoo.csv:2 - 에러 A\n  \nfoo.csv:3 - 에러 B\n",
+            encoding="utf-8",
+        )
+        assert _read_baseline(path) == ["foo.csv:2 - 에러 A", "foo.csv:3 - 에러 B"]
+
+    def test_read_baseline_missing_file_returns_empty_list(self, tmp_path):
+        assert _read_baseline(tmp_path / "does-not-exist.txt") == []
+
+    def test_matching_baseline_passes(self, tmp_path):
+        errors = ["a.csv:2 - x", "b.csv:3 - y"]
+        baseline_path = tmp_path / "baseline.txt"
+        baseline_path.write_text("\n".join(errors) + "\n", encoding="utf-8")
+        exit_code = _check_against_baseline(errors, baseline_path)
+        assert exit_code == 0
+
+    def test_new_error_not_in_baseline_fails(self, tmp_path):
+        baseline_path = tmp_path / "baseline.txt"
+        baseline_path.write_text("a.csv:2 - x\n", encoding="utf-8")
+        errors = ["a.csv:2 - x", "a.csv:5 - 새로운 에러"]
+        exit_code = _check_against_baseline(errors, baseline_path)
+        assert exit_code == 1
+
+    def test_baseline_error_that_silently_disappeared_fails(self, tmp_path):
+        # 베이스라인에 있던 에러가 실제 결과에는 없음 — 의도한 수정이면 baseline 파일도
+        # 같이 갱신해야 하므로 이 경우도 실패(0이 아님) 처리한다.
+        baseline_path = tmp_path / "baseline.txt"
+        baseline_path.write_text("a.csv:2 - x\na.csv:3 - y\n", encoding="utf-8")
+        errors = ["a.csv:2 - x"]
+        exit_code = _check_against_baseline(errors, baseline_path)
+        assert exit_code == 1
+
+    def test_real_data_matches_committed_baseline_file(self):
+        """extraction/common_v2/known_validation_gaps.txt가 실제 검증 결과와 정확히
+        일치하는지 확인한다 — CI가 사용하는 것과 같은 조합."""
+        errors = validate_directory(REAL_COMMON_V2_DIR)
+        exit_code = _check_against_baseline(errors, REAL_BASELINE_PATH)
+        assert exit_code == 0
+        assert len(errors) == 18
 
 
 # --------------------------------------------------------------------------

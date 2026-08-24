@@ -101,11 +101,15 @@ visa-data/
 ├── requirements.txt              # 핵심 의존성 목록
 ├── cliff.toml                    # git-cliff 변경 이력 설정
 │
+├── docs/
+│   └── schema-v2.md              # 공통 스키마 v2(13개 테이블) 확정 명세 — 컬럼·enum·무결성 규칙의 단일 진실 공급원
+│
 ├── extraction/                   # 비자 요건 추출 작업 (담당자별 전용 폴더 + 비자유형 공동 사용 폴더)
 │   ├── A_F-2-R/                  # F-2-R 전용 (담당자 폴더)
 │   ├── B_E-7-4R/                 # E-7-4R 전용 (담당자 폴더). requirements/documents/scoring/history 하위 폴더로 구분
 │   ├── C_D-2-common/             # D-2(유학생) 전용 (담당자 폴더)
-│   └── D_visa_requirements/      # 여러 비자유형이 공동 사용하는 공유 마스터 테이블 (담당자 전용 폴더 아님)
+│   ├── D_visa_requirements/      # 여러 비자유형이 공동 사용하는 공유 마스터 테이블 (담당자 전용 폴더 아님)
+│   └── common_v2/                # 공통 스키마 v2 검수 완료 데이터(13개 CSV) — docs/schema-v2.md 참고
 │
 ├── data/
 │   ├── raw/                      # 원본 PDF·자료, git 추적 제외
@@ -177,6 +181,17 @@ ruff check src/ tests/
 ruff format --check src/ tests/
 pytest tests/ -v
 ```
+
+공통 스키마 v2(`extraction/common_v2/`)를 건드렸다면 전용 검증기도 함께 실행하세요. 명세는
+`docs/schema-v2.md`에 있습니다.
+
+```bash
+uv run python scripts/validate_common_schema_v2.py
+```
+
+CI는 `extraction/common_v2/known_validation_gaps.txt`에 기록된 알려진 사전 공개 격차는
+통과시키되(`--baseline` 옵션), 새 에러나 기존 에러의 조용한 변경은 실패시킵니다. 알려진 격차
+중 하나를 실제로 고쳤다면 이 파일도 함께 갱신하세요.
 
 ---
 
