@@ -1,0 +1,71 @@
+﻿coverage_id,visa_code,announcement_round,fact_domain,coverage_status,fact_count,source_document_id,note
+f5acca7b-df05-523e-97f8-fd70ced5c0f9,F-2-R,17,application,complete,3,r17_announcement_2026_df1fdde9,접수기간은 차수별 기간이 아니라 전체 사업기간으로 저장
+9b3251b2-2051-57f1-8b08-c2552e713c13,F-2-R,17,regional_quota,complete,18,r17_announcement_2026_df1fdde9,지역 6개 추출
+738bce65-82de-58a4-b13d-b259ae154ffa,F-2-R,17,requirement,complete,15,r17_announcement_2026_df1fdde9,공고문 자격요건 영역의 비교 가능한 숫자·제도 키 추출
+6d275ab2-a53e-5dc0-889f-d61dbaed755d,F-2-R,17,applicant_status,partial,0,r17_announcement_2026_df1fdde9,공고가 전체 신청 가능 체류자격 목록을 열거하지 않음
+e143f505-6c56-5f7c-9105-41d86695a9fd,F-2-R,17,employer_capacity,partial,0,r17_announcement_2026_df1fdde9,내국인 고용규모별 허용 비율값이 HWPX 텍스트에서 확인되지 않음
+003ca818-d759-5043-9ba8-2e02b1757207,F-2-R,17,attachment_form,complete,16,r17_attachment_2026_07f157ee,붙임 목차 16개 추출; 번호는 fact_key에서 제외하여 번호 변경 노이즈 방지
+d7b1ecc8-d367-5954-a84e-da0ae947cdb3,F-2-R,17,attachment_content,complete,1,r17_attachment_2026_07f157ee,허가조건 안내문의 한·영 병기 여부
+ce768929-7184-515d-b1ba-a6a38bbce746,F-2-R,16,application,complete,3,r16_announcement_2026_0168a48f,접수기간은 차수별 기간이 아니라 전체 사업기간으로 저장
+40194548-d3ac-5c91-ac11-553c74b3bdf3,F-2-R,16,regional_quota,complete,18,r16_announcement_2026_0168a48f,지역 6개 추출
+78819ac5-569b-5cf0-a2e3-1fe35a14a78b,F-2-R,16,requirement,complete,15,r16_announcement_2026_0168a48f,공고문 자격요건 영역의 비교 가능한 숫자·제도 키 추출
+4c50c74b-9b05-5b28-a682-f305a69562f7,F-2-R,16,applicant_status,partial,0,r16_announcement_2026_0168a48f,공고가 전체 신청 가능 체류자격 목록을 열거하지 않음
+d504c977-673d-565b-8882-be1e8fe48b02,F-2-R,16,employer_capacity,partial,0,r16_announcement_2026_0168a48f,내국인 고용규모별 허용 비율값이 HWPX 텍스트에서 확인되지 않음
+a083a2ae-8ec8-5477-837d-424e0ba4dea4,F-2-R,16,attachment_form,complete,16,r16_attachment_2026_07f157ee,붙임 목차 16개 추출; 번호는 fact_key에서 제외하여 번호 변경 노이즈 방지
+4804814c-2ae9-5dc6-ac57-8fd4c6d4e233,F-2-R,16,attachment_content,complete,1,r16_attachment_2026_07f157ee,허가조건 안내문의 한·영 병기 여부
+87a4fc4b-f465-5fb4-adb1-de747fd46e51,F-2-R,15,application,complete,3,r15_announcement_2026_ac5296f0,접수기간은 차수별 기간이 아니라 전체 사업기간으로 저장
+756f6ff5-1022-563e-8696-831e5fbfae07,F-2-R,15,regional_quota,complete,18,r15_announcement_2026_ac5296f0,지역 6개 추출
+af8b2455-9e40-57c1-b65b-26768d4495f8,F-2-R,15,requirement,complete,15,r15_announcement_2026_ac5296f0,공고문 자격요건 영역의 비교 가능한 숫자·제도 키 추출
+2b7574d8-c40c-5e36-ba83-27a5abbe26cc,F-2-R,15,applicant_status,partial,0,r15_announcement_2026_ac5296f0,공고가 전체 신청 가능 체류자격 목록을 열거하지 않음
+05a17d33-8df3-5705-a397-32ad64843310,F-2-R,15,employer_capacity,partial,0,r15_announcement_2026_ac5296f0,내국인 고용규모별 허용 비율값이 HWPX 텍스트에서 확인되지 않음
+fae43da1-4cec-511e-b438-961d31f85f46,F-2-R,15,attachment_form,complete,16,r15_attachment_2026_973ff358,붙임 목차 16개 추출; 번호는 fact_key에서 제외하여 번호 변경 노이즈 방지
+757dbc89-639c-56db-9fa0-ded69d705630,F-2-R,15,attachment_content,complete,1,r15_attachment_2026_973ff358,허가조건 안내문의 한·영 병기 여부
+49308d35-c3db-592e-aa87-6b58e7beef47,F-2-R,14,application,complete,3,r14_announcement_2026_57b86220,접수기간은 차수별 기간이 아니라 전체 사업기간으로 저장
+772428f8-4c1f-52f7-bef5-fe2360c9195d,F-2-R,14,regional_quota,complete,18,r14_announcement_2026_57b86220,지역 6개 추출
+6742decd-425d-53c9-ba41-077c1b252f2c,F-2-R,14,requirement,complete,15,r14_announcement_2026_57b86220,공고문 자격요건 영역의 비교 가능한 숫자·제도 키 추출
+9a670232-0236-56a7-b50b-ee7bb76db13f,F-2-R,14,applicant_status,partial,0,r14_announcement_2026_57b86220,공고가 전체 신청 가능 체류자격 목록을 열거하지 않음
+8e20dc80-a475-5f4e-a6e8-692a78033548,F-2-R,14,employer_capacity,partial,0,r14_announcement_2026_57b86220,내국인 고용규모별 허용 비율값이 HWPX 텍스트에서 확인되지 않음
+7cefbc19-ac90-56b7-9ef7-50e6cb5701d1,F-2-R,14,attachment_form,complete,16,r14_attachment_2026_d5a5992f,붙임 목차 16개 추출; 번호는 fact_key에서 제외하여 번호 변경 노이즈 방지
+309a30ba-7637-5d27-bd5f-97e2acd3aad0,F-2-R,14,attachment_content,complete,1,r14_attachment_2026_d5a5992f,허가조건 안내문의 한·영 병기 여부
+8b412a3c-90ca-5ecb-b61e-aeba8e0304a0,F-2-R,13,application,complete,3,r13_announcement_2026_905fb908,접수기간은 차수별 기간이 아니라 전체 사업기간으로 저장
+36ae0750-7484-5e1d-9926-3adfda9da30a,F-2-R,13,regional_quota,complete,18,r13_announcement_2026_905fb908,지역 6개 추출
+99296961-f021-5d8c-aa6d-d969a703e847,F-2-R,13,requirement,complete,11,r13_announcement_2026_905fb908,공고문 자격요건 영역의 비교 가능한 숫자·제도 키 추출
+e184947b-f64f-5c58-9d36-e423a488500b,F-2-R,13,applicant_status,partial,0,r13_announcement_2026_905fb908,공고가 전체 신청 가능 체류자격 목록을 열거하지 않음
+61d6a680-5d2b-5a1a-89b7-b0298780e0cd,F-2-R,13,employer_capacity,partial,0,r13_announcement_2026_905fb908,내국인 고용규모별 허용 비율값이 HWPX 텍스트에서 확인되지 않음
+8bc50f02-41a8-5d11-8836-fd32e37a0faf,F-2-R,13,attachment_form,complete,13,r13_attachment_2026_ecddeb48,붙임 목차 13개 추출; 번호는 fact_key에서 제외하여 번호 변경 노이즈 방지
+6ab2fa5d-2e4c-5e0b-b608-4239046b7cab,F-2-R,13,attachment_content,complete,1,r13_attachment_2026_ecddeb48,허가조건 안내문의 한·영 병기 여부
+4f04cd9b-c78f-5f04-95f8-8e623d8ba48f,F-2-R,12,application,complete,3,r12_announcement_2026_ab75a6c7,접수기간은 차수별 기간이 아니라 전체 사업기간으로 저장
+a26f2ef2-f96e-5b27-aa81-e76359778b41,F-2-R,12,regional_quota,complete,18,r12_announcement_2026_ab75a6c7,지역 6개 추출
+0abb39f7-4a6a-5a46-bfcc-637d2339c795,F-2-R,12,requirement,complete,11,r12_announcement_2026_ab75a6c7,공고문 자격요건 영역의 비교 가능한 숫자·제도 키 추출
+b4ffa8c1-7ab1-523c-a4c2-07af000f20a3,F-2-R,12,applicant_status,partial,0,r12_announcement_2026_ab75a6c7,공고가 전체 신청 가능 체류자격 목록을 열거하지 않음
+c6d129b7-b04f-54b5-9bd2-63e276d765c1,F-2-R,12,employer_capacity,partial,0,r12_announcement_2026_ab75a6c7,내국인 고용규모별 허용 비율값이 HWPX 텍스트에서 확인되지 않음
+79d20b4c-1ebf-5a23-bcc3-8267d4ae643c,F-2-R,12,attachment_form,complete,13,r12_attachment_2026_7294555f,붙임 목차 13개 추출; 번호는 fact_key에서 제외하여 번호 변경 노이즈 방지
+f8bfaeb1-290c-58bd-a820-5c0f76261ff0,F-2-R,12,attachment_content,complete,1,r12_attachment_2026_7294555f,허가조건 안내문의 한·영 병기 여부
+efb954c1-38c5-5684-b567-ea59ad7920f8,F-2-R,11,application,complete,3,r11_announcement_2026_8a85727c,접수기간은 차수별 기간이 아니라 전체 사업기간으로 저장
+7b247ff6-b7af-5541-900c-5a50b4a3693e,F-2-R,11,regional_quota,complete,18,r11_announcement_2026_8a85727c,지역 6개 추출
+338559db-27c2-5d96-9529-941d232a465b,F-2-R,11,requirement,complete,11,r11_announcement_2026_8a85727c,공고문 자격요건 영역의 비교 가능한 숫자·제도 키 추출
+1590a031-36ba-54ef-8a6e-f9f0c014a776,F-2-R,11,applicant_status,partial,0,r11_announcement_2026_8a85727c,공고가 전체 신청 가능 체류자격 목록을 열거하지 않음
+98334de1-4d5c-5fb7-bf57-5e2204fedfbc,F-2-R,11,employer_capacity,partial,0,r11_announcement_2026_8a85727c,내국인 고용규모별 허용 비율값이 HWPX 텍스트에서 확인되지 않음
+fc02976d-4b16-55c3-b71f-498d92d88992,F-2-R,11,attachment_form,complete,14,r11_attachment_2026_6542ddcd,붙임 목차 14개 추출; 번호는 fact_key에서 제외하여 번호 변경 노이즈 방지
+7351a931-4840-5dfb-8042-2b8116e829d6,F-2-R,11,attachment_content,complete,1,r11_attachment_2026_6542ddcd,허가조건 안내문의 한·영 병기 여부
+5dd9021c-c5f4-56fc-8468-508dc4aeaaef,F-2-R,10,application,complete,3,r10_announcement_2026_81bfb577,접수기간은 차수별 기간이 아니라 전체 사업기간으로 저장
+fd5c3e36-8c2d-5930-8b62-02b35f7ae712,F-2-R,10,regional_quota,complete,18,r10_announcement_2026_81bfb577,지역 6개 추출
+f1260dc3-e9bd-52a4-8d21-61553adf7bbb,F-2-R,10,requirement,complete,11,r10_announcement_2026_81bfb577,공고문 자격요건 영역의 비교 가능한 숫자·제도 키 추출
+7909ecf8-a538-5804-b0c8-65886a897062,F-2-R,10,applicant_status,partial,0,r10_announcement_2026_81bfb577,공고가 전체 신청 가능 체류자격 목록을 열거하지 않음
+6aa4205f-83b9-536e-a959-a3c7ac463057,F-2-R,10,employer_capacity,partial,0,r10_announcement_2026_81bfb577,내국인 고용규모별 허용 비율값이 HWPX 텍스트에서 확인되지 않음
+45154b5b-e03c-52b0-83b9-e2dce609dc11,F-2-R,10,attachment_form,complete,13,r10_attachment_2025~2026_9c4cb7e5,붙임 목차 13개 추출; 번호는 fact_key에서 제외하여 번호 변경 노이즈 방지
+f1aa2fc5-2296-54e2-ba41-3860b997dd57,F-2-R,10,attachment_content,complete,1,r10_attachment_2025~2026_9c4cb7e5,허가조건 안내문의 한·영 병기 여부
+f1b77961-ba7a-5712-85fb-fc30ed310a4a,F-2-R,9,application,complete,3,r09_announcement_2025~2026_a483f5df,접수기간은 차수별 기간이 아니라 전체 사업기간으로 저장
+67bbf440-4681-5b70-aac0-fba9366234e0,F-2-R,9,regional_quota,complete,18,r09_announcement_2025~2026_a483f5df,지역 6개 추출
+85d84c42-e2d6-5a45-8a20-321a233c1501,F-2-R,9,requirement,complete,9,r09_announcement_2025~2026_a483f5df,공고문 자격요건 영역의 비교 가능한 숫자·제도 키 추출
+17371d1d-a460-5196-9062-81f112afb3bf,F-2-R,9,applicant_status,partial,0,r09_announcement_2025~2026_a483f5df,공고가 전체 신청 가능 체류자격 목록을 열거하지 않음
+ed4783a2-6d8c-5d68-a204-39f2a1af1485,F-2-R,9,employer_capacity,partial,0,r09_announcement_2025~2026_a483f5df,내국인 고용규모별 허용 비율값이 HWPX 텍스트에서 확인되지 않음
+fdd8c2ff-3f47-5f69-b3b1-8ebf69fcdd7b,F-2-R,9,attachment_form,complete,13,r09_attachment_2025~2026_fca2046d,붙임 목차 13개 추출; 번호는 fact_key에서 제외하여 번호 변경 노이즈 방지
+14a87277-a362-5516-9652-5e190d2756a5,F-2-R,9,attachment_content,complete,1,r09_attachment_2025~2026_fca2046d,허가조건 안내문의 한·영 병기 여부
+f1bb4822-fb7d-5c18-bcb8-d0cf6ba41091,F-2-R,8,application,complete,3,r08_announcement_2025_4d86b0b9,접수기간은 차수별 기간이 아니라 전체 사업기간으로 저장
+ab1ca5b3-9cfc-5752-8e26-1c9cbdd9b688,F-2-R,8,regional_quota,complete,18,r08_announcement_2025_4d86b0b9,지역 6개 추출
+f9198092-77de-588a-9da1-64ced4eae2dd,F-2-R,8,requirement,complete,9,r08_announcement_2025_4d86b0b9,공고문 자격요건 영역의 비교 가능한 숫자·제도 키 추출
+2e03e30f-2e85-59b7-8233-133d0ed1d79c,F-2-R,8,applicant_status,partial,0,r08_announcement_2025_4d86b0b9,공고가 전체 신청 가능 체류자격 목록을 열거하지 않음
+6e994997-47e5-5330-acbc-b760fd83a287,F-2-R,8,employer_capacity,partial,0,r08_announcement_2025_4d86b0b9,내국인 고용규모별 허용 비율값이 HWPX 텍스트에서 확인되지 않음
+4e38eba2-8afc-58e6-b774-79131daa37df,F-2-R,8,attachment_form,complete,13,r08_attachment_2025_0797c490,붙임 목차 13개 추출; 번호는 fact_key에서 제외하여 번호 변경 노이즈 방지
+7b323e98-8379-58fe-8932-206e388f531b,F-2-R,8,attachment_content,complete,1,r08_attachment_2025_0797c490,허가조건 안내문의 한·영 병기 여부

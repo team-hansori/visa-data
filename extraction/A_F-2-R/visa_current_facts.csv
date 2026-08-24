@@ -1,0 +1,54 @@
+﻿current_fact_id,visa_code,fact_domain,fact_key,fact_name_kr,value_text,value_number,unit,source_round,source_document_id,fill_strategy,backfilled_from_round,source_fact_id
+d3ec0959-eb0d-5877-8116-8e15eff2c74b,F-2-R,application,application:start,전체 사업 접수 시작일,2025-03-07,,date,17,r17_announcement_2026_df1fdde9,latest,,c523f064-7ab1-5f6f-b5a4-76931aedb04e
+ee08f7d3-2d42-597e-8b97-034505bce092,F-2-R,application,application:end,전체 사업 접수 종료일,2026-09-18,,date,17,r17_announcement_2026_df1fdde9,latest,,75dd5d66-2960-541e-baa8-8f94ec097332
+de148400-27dd-5f7d-b726-9323666643ef,F-2-R,application,application:total_quota,총 모집인원,,311.0,person,17,r17_announcement_2026_df1fdde9,latest,,e2cc471d-2a15-5fc1-93a6-c2d02bbeb239
+b1ce27c9-4d23-5a91-9744-99e8a9b03800,F-2-R,regional_quota,quota:괴산군:allocated,괴산군 배정 인원,,30.0,person,17,r17_announcement_2026_df1fdde9,latest,,0c93d3b7-a9f1-5359-ae84-a87865fe58d2
+f3e5a90a-be31-588c-b3c7-775bafed7f68,F-2-R,regional_quota,quota:괴산군:recommended,괴산군 기추천 인원,,17.0,person,17,r17_announcement_2026_df1fdde9,latest,,520da226-03fe-5099-b2d2-f86d5babb249
+010ff3f9-20cf-5718-a1f7-3d4d0665f66a,F-2-R,regional_quota,quota:괴산군:remaining,괴산군 잔여 인원,,13.0,person,17,r17_announcement_2026_df1fdde9,latest,,f19abdb4-ac0a-55dd-bbd6-4190a19ab053
+0944c55c-e982-5974-895f-1ce2a9e82396,F-2-R,regional_quota,quota:단양군:allocated,단양군 배정 인원,,44.0,person,17,r17_announcement_2026_df1fdde9,latest,,fa35e99b-55c4-520d-b6e5-1a759fab82be
+9396bd63-11d2-5d18-b817-fe0224c52356,F-2-R,regional_quota,quota:단양군:recommended,단양군 기추천 인원,,36.0,person,17,r17_announcement_2026_df1fdde9,latest,,e4be2b40-dae0-54f5-a91d-53fa21aafd5f
+8234fc55-659c-5c1d-a055-68e8c25197fd,F-2-R,regional_quota,quota:단양군:remaining,단양군 잔여 인원,,8.0,person,17,r17_announcement_2026_df1fdde9,latest,,2c7a67ce-82f1-5f3c-9b8d-c6d34272bff2
+4a89f31e-4bb6-5391-8f1b-783ee78fea27,F-2-R,regional_quota,quota:보은군:allocated,보은군 배정 인원,,70.0,person,17,r17_announcement_2026_df1fdde9,latest,,1c924000-a660-5809-8769-bf016a795db2
+cd392dd4-8d85-5f37-8cae-e8e2d498b08d,F-2-R,regional_quota,quota:보은군:recommended,보은군 기추천 인원,,41.0,person,17,r17_announcement_2026_df1fdde9,latest,,fb4ecc0f-d3d3-524b-adbc-2b44746849f1
+f0992ceb-51dd-5351-8094-370d80a4acf0,F-2-R,regional_quota,quota:보은군:remaining,보은군 잔여 인원,,29.0,person,17,r17_announcement_2026_df1fdde9,latest,,d745bd8e-dc51-5999-b7f6-c5ac3e61a575
+ed39ebd3-c65c-5660-afab-6ea559a0fa38,F-2-R,regional_quota,quota:영동군:allocated,영동군 배정 인원,,33.0,person,17,r17_announcement_2026_df1fdde9,latest,,45901527-f1cd-5d6a-81a2-ac75f308bd41
+568a5145-8467-51d2-b005-b620f48a83c4,F-2-R,regional_quota,quota:영동군:recommended,영동군 기추천 인원,,9.0,person,17,r17_announcement_2026_df1fdde9,latest,,69cea9b1-11f7-55cc-b97f-51edda5a22c2
+c52b41b1-6885-539b-abf0-855c8196b123,F-2-R,regional_quota,quota:영동군:remaining,영동군 잔여 인원,,24.0,person,17,r17_announcement_2026_df1fdde9,latest,,3c0070bb-ad73-5bd2-8d54-f8bbaaad9afe
+d3b5928b-5c22-5eac-87ff-acd246e96fd6,F-2-R,regional_quota,quota:옥천군:allocated,옥천군 배정 인원,,50.0,person,17,r17_announcement_2026_df1fdde9,latest,,03ccd2a3-929b-514a-be64-30d58938acc2
+b930dad7-c912-5cd0-8681-24af58a18a0f,F-2-R,regional_quota,quota:옥천군:recommended,옥천군 기추천 인원,,24.0,person,17,r17_announcement_2026_df1fdde9,latest,,d4d03484-a304-557b-b003-5520f54eaea4
+3f5b114e-2c6d-5477-ac04-7e6e5e922d6f,F-2-R,regional_quota,quota:옥천군:remaining,옥천군 잔여 인원,,26.0,person,17,r17_announcement_2026_df1fdde9,latest,,7b01a677-eb6a-506b-85a7-774868ee4d1d
+2fc5c4d3-fd58-59d0-94c6-42db2e655571,F-2-R,regional_quota,quota:제천시:allocated,제천시 배정 인원,,84.0,person,17,r17_announcement_2026_df1fdde9,latest,,3a92c4a3-d370-5d1e-9e29-bb59e689a8eb
+23492bdc-dab5-5a18-9451-cf5b46b1430d,F-2-R,regional_quota,quota:제천시:recommended,제천시 기추천 인원,,51.0,person,17,r17_announcement_2026_df1fdde9,latest,,8c0edbaa-40ee-55ef-8e32-7cad690a6ee5
+37558996-a2c8-508a-90cf-44503d70e74a,F-2-R,regional_quota,quota:제천시:remaining,제천시 잔여 인원,,33.0,person,17,r17_announcement_2026_df1fdde9,latest,,3f2228ef-5d4a-582d-ab47-dbb7fee2f4fd
+91b464a3-2876-570d-aca6-e2d8428cef7d,F-2-R,requirement,requirement:income,연간 소득 기준,,30539916.0,KRW/year,17,r17_announcement_2026_df1fdde9,latest,,608aa02e-ae9c-52c3-84b5-442a0fbbd12d
+52b57d95-df85-5807-94d4-7080ece4c2e0,F-2-R,requirement,requirement:kiip,사회통합프로그램 이수 단계,,3.0,level,17,r17_announcement_2026_df1fdde9,latest,,e0f5e821-46a0-58d3-bf22-5827b1768000
+f0f75d7c-f315-5fc0-9c26-3c34edc88b55,F-2-R,requirement,requirement:preassessment,사회통합프로그램 사전평가 배정 단계,,4.0,level,17,r17_announcement_2026_df1fdde9,latest,,30fc5ad1-1a5e-5358-a855-e65318495f7c
+dd07b18f-ce07-527a-8dc0-5a07eda951dd,F-2-R,requirement,requirement:topik,TOPIK 등급,,3.0,grade,17,r17_announcement_2026_df1fdde9,latest,,5ffa213c-2de0-5963-89a2-c5fc321c604c
+a066b04a-f2c5-5047-96a8-3063bcc0bf1e,F-2-R,requirement,requirement:employment_start,근로 시작 기한,,3.0,month,17,r17_announcement_2026_df1fdde9,latest,,b825f1d4-3ec9-574f-9352-20291dcc9264
+b3b6b068-fa80-5f1a-a8da-848db1d33076,F-2-R,requirement,requirement:contract_years,근로계약 최소기간,,1.0,year,17,r17_announcement_2026_df1fdde9,latest,,0a2c1b10-bbbf-594c-8aac-5c833d54bef5
+bdab55af-133c-510b-997c-1db3c27b212a,F-2-R,requirement,requirement:investment,창업 총 투자금액,,200000000.0,KRW,17,r17_announcement_2026_df1fdde9,latest,,b698bf95-f330-58cf-b4c7-4af085753489
+caa324f2-af31-53fe-b425-161397675f06,F-2-R,requirement,requirement:foreign_capital,해외 반입 외국자본,,100000000.0,KRW,17,r17_announcement_2026_df1fdde9,latest,,4bf063e7-885f-50a8-bc6a-f3a3c523c3ad
+09f3c41e-60c6-5548-a574-36e541185540,F-2-R,requirement,requirement:initial_residence,최초 추천지역 실거주기간,,2.0,year,17,r17_announcement_2026_df1fdde9,latest,,02601af3-f2d9-532c-9496-1d0b8ab72edf
+cbc3770e-b8fc-52b0-b945-752ba86b715d,F-2-R,requirement,requirement:stay_initial,최초 체류기간 상한,,1.0,year,17,r17_announcement_2026_df1fdde9,latest,,a0dcb9ac-370c-5f58-b439-0cd04a885318
+5ea18108-a938-5b4e-8046-5c38a7c52b2a,F-2-R,requirement,requirement:stay_later_extension,후속 연장기간 상한,,2.0,year,17,r17_announcement_2026_df1fdde9,latest,,2ed23ba8-c8d1-5ff2-abf8-21977c78ab99
+1c5772c9-5632-55b6-bc06-61254e08b23e,F-2-R,requirement,requirement:small_business_exception,지역활력 소상공인 고용특례,present,,,17,r17_announcement_2026_df1fdde9,latest,,2122b25a-e3d8-5e32-a695-30865009b43b
+47a62342-6137-5e8e-90f4-b06a7c3748cd,F-2-R,requirement,requirement:small_business_allowed,특례 F-2-R 허용인원,,1.0,person,17,r17_announcement_2026_df1fdde9,latest,,6e470143-86fe-5d85-9c6f-e97482a40abd
+31faa1aa-d748-51f5-8494-4c4b4fc92392,F-2-R,requirement,requirement:small_business_years,특례 최소 업력,,3.0,year,17,r17_announcement_2026_df1fdde9,latest,,14f0ca50-7232-5f06-b303-6c8bea3c4e33
+eb026bd3-f0d4-5360-babb-0bd825e09048,F-2-R,requirement,requirement:small_business_sales,특례 최소 매출액,,100000000.0,KRW/year,17,r17_announcement_2026_df1fdde9,latest,,2a08fc1f-85af-5bfb-9e68-cb338e7a5dd0
+6509992e-80d4-59dc-8d60-f078bf933b42,F-2-R,attachment_form,form:지역특화형비자안내문,붙임 서식: 지역특화형 비자 안내문,present,,,17,r17_attachment_2026_07f157ee,latest,,91b85f82-debe-58f1-b440-4012e538c47e
+f0330e23-696d-5757-898a-574b375072df,F-2-R,attachment_form,form:지역특화형비자취업제한분야(법무부),붙임 서식: 지역특화형 비자 취업제한 분야(법무부),present,,,17,r17_attachment_2026_07f157ee,latest,,0fae500e-da56-5f92-8131-cc7795c5d7df
+4649f012-543e-5d27-81f2-704ba5bb6c28,F-2-R,attachment_form,form:준법시민교육,붙임 서식: 준법시민교육,present,,,17,r17_attachment_2026_07f157ee,latest,,8678578e-1119-5330-ae15-ae6aa29cc663
+98ae9065-c97e-58cc-98aa-6851b688c0d2,F-2-R,attachment_form,form:출입국관리법시행규칙별표5“사증발급신청등첨부서류”에관한고시,붙임 서식: 출입국관리법시행규칙 별표5 “사증발급신청 등 첨부서류”에 관한 고시,present,,,17,r17_attachment_2026_07f157ee,latest,,d9d6bff0-0c42-5ad5-ab1d-56fd7e6d118a
+babe37d4-50d2-5cf7-91d1-61968a171a1c,F-2-R,attachment_form,form:지역특화형비자사업추천서발급신청서,붙임 서식: 지역특화형 비자사업 추천서 발급 신청서,present,,,17,r17_attachment_2026_07f157ee,latest,,3344843b-e22f-5e6c-963a-c2a7df9412a0
+ee0e9a35-4383-54bd-a342-8e33c1830efb,F-2-R,attachment_form,form:거주/숙소제공확인서,붙임 서식: 거주/숙소제공 확인서,present,,,17,r17_attachment_2026_07f157ee,latest,,70d0993f-ae28-5abc-a4ee-9d7c4b25c628
+81be199a-725b-57a4-9d42-a91f073cd151,F-2-R,attachment_form,form:확약서,붙임 서식: 확 약 서,present,,,17,r17_attachment_2026_07f157ee,latest,,5fdb0372-18b8-5811-8e43-9dc1d23bd426
+c21040c4-e813-513c-8717-2ffa1d3b5cd7,F-2-R,attachment_form,form:위임장,붙임 서식: 위 임 장,present,,,17,r17_attachment_2026_07f157ee,latest,,13b3c91b-bb35-50b9-aa72-723b7f28e81e
+6b6cf0e7-4d89-5643-b8a6-66b215e3e910,F-2-R,attachment_form,form:지역우수인재추천서,붙임 서식: 지역우수인재 추천서,present,,,17,r17_attachment_2026_07f157ee,latest,,5cf97932-75d8-5015-a7e5-83cce4029724
+fe2637e7-95f3-5415-a4e3-719d6e6f5514,F-2-R,attachment_form,form:수령증,붙임 서식: 수 령 증,present,,,17,r17_attachment_2026_07f157ee,latest,,09e776d1-01ae-5284-933d-487e3c5cb468
+bd3d6783-5451-58a3-acc1-f5140e6f8626,F-2-R,attachment_form,form:외국인근로자표준근로계약서(예시),붙임 서식: 외국인근로자 표준근로계약서(예시),present,,,17,r17_attachment_2026_07f157ee,latest,,766cb796-be89-5827-9be4-3f1801bb086f
+6ee0a392-2900-5e69-b71c-e2b454f46ebf,F-2-R,attachment_form,form:관할출입국·외국인사무소비자신청제출서류,붙임 서식: 관할 출입국･외국인사무소 비자 신청 제출서류,present,,,17,r17_attachment_2026_07f157ee,latest,,fbb524b0-11e0-5590-875e-05984ee8f522
+229a5bd4-90e9-5698-bbe2-1d420fa9fa2c,F-2-R,attachment_form,form:지역특화형우수인재허가조건변경신청서,붙임 서식: 지역특화형 우수인재 허가조건 변경 신청서,present,,,17,r17_attachment_2026_07f157ee,latest,,fafe3c82-29fa-5a95-a170-d5a8836dd1bb
+dde7eaf0-4e93-58de-912b-2d713e7679c8,F-2-R,attachment_form,form:중소기업확인서,붙임 서식: 중소기업 확인서,present,,,17,r17_attachment_2026_07f157ee,latest,,5f60b7c5-d9c2-5ee2-8e19-b8893dc5365c
+84d5462a-eff7-5e92-9e04-639261267223,F-2-R,attachment_form,form:영농조합법인설립신고확인증,붙임 서식: 영농조합법인 설립신고확인증,present,,,17,r17_attachment_2026_07f157ee,latest,,88dddb5c-e6ec-5054-bcab-812eefc14286
+ec6d8e94-eb3d-528a-9a51-a703520cea9c,F-2-R,attachment_form,form:농업회사법인설립신고확인증,붙임 서식: 농업회사법인 설립신고확인증,present,,,17,r17_attachment_2026_07f157ee,latest,,db08fdd9-eb36-5326-871d-85179fed5601
+4e680dfe-3222-5572-89ab-f3b27dafb06b,F-2-R,attachment_content,attachment:permission_notice_language,허가조건 안내 언어,ko_en,,,17,r17_attachment_2026_07f157ee,latest,,8ddd09fd-fd4e-51d7-83f7-76c81413a061
