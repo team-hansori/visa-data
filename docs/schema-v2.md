@@ -786,7 +786,7 @@ D-2를 조사했지만 공식 자료에서 확인할 수 없을 때만 `UNKNOWN`
 | `as_of_date` | 해당 수량의 기준일 |
 | `scope_type` | `NATIONAL`, `PROVINCE`, `MUNICIPALITY`, `INSTITUTION`, `DEPARTMENT`, `OTHER` |
 | `scope_name` | 충청북도, 제천시, 화학과 등 |
-| `parent_scope_name` | 상위 지역·기관 |
+| `parent_scope_name` | 상위 지역·기관. nullable(`NATIONAL`/`PROVINCE`처럼 상위 범위 자체가 없는 스냅샷은 비움) |
 | `allocated_quota` | 전체 배정 인원 |
 | `recommended_count` | 전체 추천 인원, nullable |
 | `quota_exempt_count` | 추천됐지만 쿼터에서 미차감된 인원, nullable |

@@ -1,3 +1,4 @@
 quota_policy_id,visa_id,quota_type,quota_unit,valid_from,valid_to,source_document_id,source_page
 e09ec683-e806-4f75-9f8f-531cacf378dd,606d8651-1d04-47fe-8f69-165b3ed3d834,UNLIMITED,PERSON,2025-03-07,2026-09-18,c4e3a139-af13-44ce-b72f-1f223bfc8db5,1
 e5966735-9d7c-4fe2-a7ef-0ca6c85e88fb,a228433b-abe4-4785-8496-3e1cb3d597c1,LIMITED,PERSON,2025-03-07,2026-09-18,2c892d50-7de9-431f-95f7-c02c7b2a7d76,1
+075f41cf-a090-4814-a4c3-9ab6c4da5d16,346834f7-ac6e-4958-8e0d-8c2b4fb03a7e,LIMITED,PERSON,2026-01-12,2026-09-18,d3c64f30-9c86-4459-93d5-bfbb02863e5c,1

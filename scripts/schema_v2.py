@@ -518,7 +518,10 @@ _VISA_QUOTA_SNAPSHOTS_TABLE = TableSpec(
         _date("as_of_date"),
         _enum("scope_type", SCOPE_TYPE_VALUES),
         _text("scope_name"),
-        _text("parent_scope_name"),
+        # NATIONAL/PROVINCE처럼 상위 범위가 없는 스냅샷은 부모가 없는 게 정상이다
+        # (실제 사례: E-7-4R 8차 PROVINCE 스냅샷). Task 3에서 "실제 사례가 나오면
+        # 완화" 조건으로 non-nullable로 되돌렸던 필드 — 그 사례가 나와 완화한다.
+        _text("parent_scope_name", nullable=True),
         _numeric("allocated_quota"),
         _numeric("recommended_count", nullable=True),
         _numeric("quota_exempt_count", nullable=True),

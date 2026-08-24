@@ -1,1 +1,2 @@
 quota_snapshot_id,quota_policy_id,notice_round,as_of_date,scope_type,scope_name,parent_scope_name,allocated_quota,recommended_count,quota_exempt_count,consumed_quota,remaining_quota,consumption_exception,valid_from,valid_to,source_document_id,source_page,recorded_at
+894caed7-bcc2-4ed7-9818-2cbbba242720,075f41cf-a090-4814-a4c3-9ab6c4da5d16,8,2026-08-03,PROVINCE,충청북도,,542,246,10,236,306,직전 자격이 E-7-4인 E-7-4R 추천 대상자는 쿼터 미소모,2026-01-12,2026-09-18,d3c64f30-9c86-4459-93d5-bfbb02863e5c,1,2026-08-24
