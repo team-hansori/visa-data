@@ -203,6 +203,10 @@ operator·criteria_type 변환:
 - v1 README의 "판단 기준 5단계 질문"은 재량판단 조건을 애초에 이 테이블에 넣지 않는 규칙이었으므로,
   기존 v1 criteria 행은 원칙적으로 `evaluation_mode=AUTOMATED`로 이관한다. `MANUAL`/
   `INFORMATIONAL`은 v2 신규 조건(예: `docs/schema-v2.md`의 소상공인 특례 매출액 예시)에만 붙인다.
+  단, 원문이 "허가일로부터"/"자격변경 후"/"승인 후"처럼 허가·자격변경 **이후**의 유지의무임을
+  명시하는 조건(예: F-4-R "허가조건(거주지 유지의무)")은 원천이 PENDING/READY든 상관없이
+  `INFORMATIONAL`로 이관한다 — 최초 신청 시점에는 그 값 자체가 존재하지 않아 `AUTOMATED`로 두면
+  최초 신청자를 항상 FAIL 처리하게 되기 때문이다.
 
 ### 4. F-4-R v1 → v2 마이그레이션
 
