@@ -103,7 +103,7 @@ visa-data/
 │
 ├── extraction/                   # 비자 요건 추출 작업 (담당자별 전용 폴더 + 비자유형 공동 사용 폴더)
 │   ├── A_F-2-R/                  # F-2-R 전용 (담당자 폴더)
-│   ├── B_E-7-4R/                 # E-7-4R 전용 (담당자 폴더). current_requirements/scoring_items/document_forms/change_history.csv
+│   ├── B_E-7-4R/                 # E-7-4R 전용 (담당자 폴더). requirements/documents/scoring/history 하위 폴더로 구분
 │   ├── C_D-2-common/             # D-2(유학생) 전용 (담당자 폴더)
 │   └── D_visa_requirements/      # 여러 비자유형이 공동 사용하는 공유 마스터 테이블 (담당자 전용 폴더 아님)
 │
@@ -143,7 +143,7 @@ git checkout -b extraction/b-e74r-current-requirements
 ```
 
 3. 원본 PDF는 `data/raw/`의 상대 경로 또는 공유 저장소로 참조합니다 (PDF 자체는 이 레포에 올리지 않습니다).
-4. 근거표는 `extraction/<비자유형>/`의 대상 CSV(`current_requirements.csv`/`scoring_items.csv`/`document_forms.csv`/`change_history.csv`)를 페이지 순서대로 채웁니다. 작성 규칙은 각 담당자 폴더의 `README.md`를 따릅니다.
+4. 근거표는 `extraction/<비자유형>/`의 대상 CSV를 페이지 순서대로 채웁니다. B_E-7-4R처럼 하위 폴더가 있는 경우 폴더별 `README.md`와 담당자 폴더의 `README.md`를 따릅니다.
 5. 검수가 필요하면 `🔍 검수 요청` 이슈로 담당자를 지정합니다.
 6. PR을 열고 이슈를 `Closes #번호`로 연결한 뒤, 근거표 품질 체크리스트(출처·근거, `raw_text` 보존, `status` 코드, 공고문·심사표 불일치 처리)를 확인합니다.
 7. 검수를 마친 근거표만 공통 스키마 SQL(`seeds/`, 예정)로 반영합니다.

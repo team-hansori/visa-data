@@ -19,10 +19,12 @@ class TestFilterRowsBySection:
 
 class TestResolveOutputPath:
     def test_replaces_draft_with_review(self):
-        output = resolve_output_path(Path("extraction/B_E-7-4R/_draft_current_requirements.csv"))
-        assert output == Path("extraction/B_E-7-4R/_review_current_requirements.csv")
+        output = resolve_output_path(
+            Path("extraction/B_E-7-4R/requirements/_draft_current_requirements.csv")
+        )
+        assert output == Path("extraction/B_E-7-4R/requirements/_review_current_requirements.csv")
 
     def test_raises_when_filename_has_no_draft_marker(self):
         """'_draft_'가 없는 파일명은 출력 경로가 입력과 같아져 원본을 덮어쓰게 되므로 막아야 한다."""
         with pytest.raises(ValueError, match="_draft_"):
-            resolve_output_path(Path("extraction/B_E-7-4R/current_requirements.csv"))
+            resolve_output_path(Path("extraction/B_E-7-4R/requirements/current_requirements.csv"))

@@ -5,7 +5,7 @@
 condition_group 자동 생성 규칙과 그 한계: 이 스크립트는 ❍(GROUP_START_MARKER) 하나를 만날 때마다
 새 G번호를 발급하고, 그 아래 ※/- 하위 조각(subcondition)을 전부 같은 그룹으로 묶는다. 이건 "같은
 ❍ 아래 있다"는 사실만 반영할 뿐 실제 OR(대체 가능) 관계를 판별하지 않는다 — condition_operator는
-항상 비워서 사람이 채우게 한다. B_E-7-4R/current_requirements.csv에 이렇게 생성된 G1~G8 중
+항상 비워서 사람이 채우게 한다. B_E-7-4R/requirements/current_requirements.csv에 이렇게 생성된 G1~G8 중
 실제로 condition_operator=OR인 건 일부뿐이고 나머지는 그냥 같은 ❍의 보충설명·하위조건이다.
 extraction/D_visa_requirements/(공유 criteria 테이블)용으로 초안을 뽑을 때는 이 G번호를 그대로
 condition_group으로 확정하지 말 것 — `--candidate-groups` 플래그로 실행하면 G번호에
@@ -28,6 +28,7 @@ SECTION_MARKER = "□"
 GROUP_START_MARKER = "❍"
 SUBCONDITION_MARKERS = ("※", "-")
 NUMBERED_MARKERS = "①②③④⑤⑥⑦⑧⑨⑩"
+CIRCLED_ALPHABET_MARKERS = "ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿ"
 FOOTNOTE_MARKER = "*"
 
 # 최상위 챕터 제목은 원문에서 항상 '<숫자> |  | <제목>\n' 형태(헤딩 번호박스 표)로만 등장한다.
@@ -39,6 +40,7 @@ HEADING_DISCOVERY_PATTERN = re.compile(r"(?<!\S)\d+\s*\|\s*\|\s*([가-힣][가-�
 BASE_SPLIT_PATTERN = (
     r"(?=[□❍※])"  # 바로 다음 글자가 이 기호들 중 하나면 여기서 자름
     r"|(?<!<)(?=[①②③④⑤⑥⑦⑧⑨⑩])"  # 번호 앞에서 자르되, 바로 앞이 '<'면 자르지 않음 (다이어그램 라벨 보호)
+    r"|(?<!<)(?=[ⒶⒷⒸⒹⒺⒻⒼⒽⒾⒿ])"  # 점수표 알파벳 표식도 원문 행 경계로 보존
     r"|(?<=\s)(?=-\s)"  # 바로 앞 공백이 2개 이상 + 바로 다음이 (하이픈+공백) 이면 여기서 자름 -> 공백 없이 붙은 하이픈은 건드리지 않음.
     r"|(?<=\s)(?=\*\s)"  # 바로 앞에 공백이 있고, 다음이 '* '이면 여기서 자름
 )
@@ -93,7 +95,7 @@ def classify_chunk(chunk: str) -> str:
         return "requirement"  # 새로운 요건 시작
     if first in SUBCONDITION_MARKERS:
         return "subcondition"
-    if first in NUMBERED_MARKERS:
+    if first in NUMBERED_MARKERS or first in CIRCLED_ALPHABET_MARKERS:
         return "number"
     if first == FOOTNOTE_MARKER:
         return "footnote"  # 각주

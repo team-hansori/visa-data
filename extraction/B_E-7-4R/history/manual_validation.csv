@@ -1,0 +1,13 @@
+change_id,validation_status,old_source_page,new_source_page,evidence,follow_up
+CHG-001,verified_changed,7,7,1차·2차 p.7의 고용 가능 인원 산정 기준 비교,none
+CHG-002,verified_changed,7,7,1차·2차 p.7의 체류기간 문구 비교,none
+CHG-003,verified_changed,7,7,1차·2차 p.7의 허가조건 문구 비교,none
+CHG-004,verified_changed,7,7,1차·2차 p.7의 고용주 요건 문구 비교,none
+CHG-005,verified_changed,21,21,1차·2차 p.21 서식8 항목 비교,none
+CHG-006,verified_added,,15,2차 p.15 서식3 기본요건 항목 확인,none
+CHG-007,verified_added,,8,4차·5차 p.8 필수 제출서류 목록 비교,none
+CHG-008,verified_changed,2,2,7차·8차 p.2 추천대상 기준 및 8차 서식3 p.16 비교,팀 결정에 따라 8차 본문 300만원 기준 적용. 서식3의 100만원은 미수정 잔존 문구로 기록
+CHG-009,verified_changed,3,3,7차·8차 p.3 점수표 및 8차 서식3 p.16 비교,팀 결정에 따라 8차 본문 300만원 기준 적용. 서식3의 100만원은 미수정 잔존 문구로 기록
+CHG-010,verified_changed,3,3,7차·8차 p.3 점수표 및 p.6 각주 비교,none
+CHG-011,verified_changed,7,8,7차·8차 p.7 근속자 특례 비교,none
+CHG-012,verified_added,,8,8차 p.7 동시 고용 특례 확인,none

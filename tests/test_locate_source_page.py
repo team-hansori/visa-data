@@ -25,6 +25,10 @@ class TestBuildSearchFragment:
         fragment = build_search_fragment("① 벌금 300만 원 이상의 형을 받은 자")
         assert fragment == "벌금 300만 원 이상의 형을 받은 자"
 
+    def test_strips_circled_alphabet_marker(self):
+        fragment = build_search_fragment("Ⓐ 평균소득(최근 2년 연간 평균소득)")
+        assert fragment == "평균소득(최근 2년 연간 평균소득)"
+
 
 class TestFindMatchingPages:
     def test_single_match(self):

@@ -1,6 +1,8 @@
 """HWPX 텍스트 추출 스크립트(extract_hwpx.py) 회귀 테스트."""
 
-from scripts.extract_hwpx import section_number
+import xml.etree.ElementTree as ET
+
+from scripts.extract_hwpx import extract_node_text, section_number
 
 
 class TestSectionNumber:
@@ -24,3 +26,12 @@ class TestSectionNumber:
             "Contents/section10.xml",
             "Contents/section11.xml",
         ]
+
+
+def test_extracts_circled_latin_compose_marker():
+    node = ET.fromstring(
+        '<hp:compose xmlns:hp="http://www.hancom.co.kr/hwpml/2011/paragraph" '
+        'circleType="SHAPE_CIRCLE" composeText="A" />'
+    )
+
+    assert extract_node_text(node) == "Ⓐ"

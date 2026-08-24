@@ -50,6 +50,13 @@ class TestSplitIntoChunks:
         chunks = split_into_chunks("<제외대상>① 벌금 300만 원 이상", pattern)
         assert chunks == ["<제외대상>", "① 벌금 300만 원 이상"]
 
+    def test_circled_alphabet_marker_is_split_and_preserved(self):
+        """점수표의 Ⓐ~Ⓙ 표식도 행을 나누되 raw_text에는 그대로 남겨야 한다."""
+        pattern = build_split_pattern(())
+        chunks = split_into_chunks("Ⓐ 평균소득(최근 2년)Ⓑ 한국어능력", pattern)
+
+        assert chunks == ["Ⓐ 평균소득(최근 2년)", "Ⓑ 한국어능력"]
+
 
 class TestDiscoverTopHeadings:
     def test_finds_real_headings_only(self):
@@ -134,6 +141,9 @@ class TestClassifyChunk:
 
     def test_requirement_marker(self):
         assert classify_chunk("❍ 요건") == "requirement"
+
+    def test_circled_alphabet_marker_is_numbered_item(self):
+        assert classify_chunk("Ⓒ 나이 : 최대 60점") == "number"
 
     def test_footnote_marker(self):
         assert classify_chunk("* 각주") == "footnote"
