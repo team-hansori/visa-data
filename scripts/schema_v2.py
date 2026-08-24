@@ -578,7 +578,9 @@ _SOURCE_RECORD_MAPPINGS_TABLE = TableSpec(
         _enum("mapping_action", MAPPING_ACTION_VALUES),
         _enum("mapping_status", MAPPING_STATUS_VALUES),
         _text("blocking_reason", nullable=True),
-        _timestamp("mapped_at"),
+        # target_record_id와 마찬가지로 실제 이관(9단계) 전에는 비어 있다. PENDING/
+        # BLOCKED 상태의 초안 행은 아직 매핑되지 않았으므로 null이 정상이다.
+        _timestamp("mapped_at", nullable=True),
         _text("mapping_note", nullable=True),
     ),
 )

@@ -898,7 +898,7 @@ remaining_quota
 | `mapping_action` | `COPY`, `TRANSFORM`, `MERGE`, `SKIP`, `MANUAL_REVIEW` |
 | `mapping_status` | `PENDING`, `READY`, `MAPPED`, `BLOCKED` |
 | `blocking_reason` | 차단 사유 |
-| `mapped_at` | 이관 시각 |
+| `mapped_at` | 이관 시각. 매핑 전(초안, `PENDING`/`BLOCKED`)에는 null |
 | `mapping_note` | 변환 설명 |
 
 핵심 ID 규칙은 다음과 같다.
