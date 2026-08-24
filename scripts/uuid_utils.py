@@ -9,7 +9,23 @@ from __future__ import annotations
 import uuid
 from collections.abc import Collection, Iterable, Mapping
 
-UUID_ID_COLUMNS = frozenset({"visa_id", "stage_id", "document_requirement_id"})
+UUID_ID_COLUMNS = frozenset(
+    {
+        "visa_id",
+        "stage_id",
+        "document_requirement_id",
+        "group_id",
+        "criteria_id",
+        "score_model_id",
+        "scoring_item_id",
+        "relation_id",
+        "quota_policy_id",
+        "quota_snapshot_id",
+        "source_document_id",
+        "mapping_id",
+        "change_id",
+    }
+)
 
 
 class UUIDGenerationError(ValueError):

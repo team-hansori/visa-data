@@ -1046,3 +1046,149 @@ D-2는 "검수가 부족해서" 보류가 아니라 애초에 이번 마이그�
 
 이 구조로 가면 **스키마는 지금 확정할 수 있고**, 남은 조사 결과는 테이블 구조 변경 없이 null 값을
 채우거나 새 행을 추가하는 방식으로 처리할 수 있다.
+
+## 이관 결과 요약 및 완료 체크리스트
+
+이슈 #44의 마지막 태스크(10. 통합·회귀 검증과 전환) 산출물이다. 여기서는 두 가지만 한다:
+`plans/issue-44-common-schema-v2-migration.md` "완료 체크리스트"의 17개 항목을 실제
+`extraction/common_v2/` 데이터를 다시 읽어 하나씩 정직하게 판정하고, 아직 이관되지 않은 항목을
+한곳에 모아 다음 작업이 어디서부터 시작해야 하는지 남긴다. 이 문서를 신뢰하고 이어받을 다음
+작업을 위해, 실제보다 낙관적으로 "완료"라고 적지 않는다.
+
+### `migrate_to_v2.py` 재생성 한계 — 먼저 밝혀둘 것
+
+plan 10단계는 원래 "v2 13개 CSV를 깨끗한 디렉터리에서 재생성해 결과가 결정적인지 확인"을
+요구했다. 이건 현재 온전히 달성할 수 없다. `scripts/migrate_to_v2.py`는 Task 3에서 의도적으로
+"헤더만 쓰는 스텁"으로 만들어졌고(`tests/test_migrate_to_v2.py`가 이 스텁 계약 — 13개 파일에
+헤더 한 줄만 있어야 함 — 을 그대로 검증한다), 실제 행 내용(F-4-R 4개 그룹 + 9개 조건, F-2-R
+5개 그룹 + 13개 조건, E-7-4R 점수·쿼터·절차·서류 32행 등)은 Task 1/4/5/6/7/9 각각의 리포트가
+공통으로 밝히듯 커밋되지 않은 1회성 스크립트로 채워졌다. 즉 **지금 `extraction/common_v2/`를
+지우고 `migrate_to_v2.py`를 다시 돌리면 헤더만 있는 빈 13개 CSV가 나온다 — 실제 이관 데이터는
+복원되지 않는다.** 이번 태스크에서 그 1회성 스크립트들을 되짚어 정식 마이그레이션 파이프라인으로
+재작성하는 일은 하지 않았다 — 시간 압박 속에서 이전 태스크들의 해석적 판단(어떤 v1 조건을 어떤
+그룹으로 나눌지, 어떤 행을 BLOCKED로 둘지 등)을 서둘러 재구현하는 것이기 때문이다. 대신
+확인 가능한 범위만 확인했다: `schema_v2.py`의 빈 스켈레톤 생성(`generate_empty_csvs`)은
+결정적이며 이미 테스트돼 있다. 실제 데이터의 재현성은 **git 커밋 이력**이 유일한 보장이다 —
+이 스냅샷을 실수로 덮어쓰거나 되돌릴 경우, 다시 만들 수 있는 유일한 방법은 각 태스크
+리포트(`task-{1,4,5,6,7,9}-report.md`)를 읽고 같은 해석적 판단을 사람이 다시 내리는 것뿐이다.
+
+### 17개 완료 체크리스트 판정
+
+plan 문서의 체크리스트는 17개 항목이다(브리프는 "16개"라고 적었으나 실제로는 17개 — plan
+원문의 항목 수를 그대로 따른다). 각 항목을 이 스냅샷 시점의 실제 `extraction/common_v2/` 내용
+기준으로 판정한다.
+
+1. **v2 명세에 13개 테이블의 컬럼·자료형·enum·null·PK/FK 규칙이 있다.** — 완료. 이 문서
+   1~13번 절 + `scripts/schema_v2.py`가 단일 진실 공급원이다.
+2. **서비스 테이블 10개와 지원 테이블 3개의 실제 헤더가 명세와 일치한다.** — 완료.
+   `validate_directory()`가 13개 파일의 헤더 순서를 스키마와 대조하며, 현재 알려진 18건의
+   검증 실패(§14 참고) 중 헤더 불일치는 0건이다.
+3. **모든 이관 대상 비자에 eligibility ROOT 그룹이 정확히 하나 있다.** — 부분 완료. F-4-R,
+   F-2-R은 각각 ROOT 1개(`f4r_root`, `f2r_root`)로 확인됨(이번 태스크의 Deliverable 1 검사로
+   확인). E-7-4R은 `visa_criterion_groups`에 행 자체가 아직 없음(아래 "완전히 이관되지 않은
+   항목" 참고) — 검사 대상이 아니라 "아직 없음"이다. D-2는 plan 8단계 결정에 따라 조건 트리를
+   만들지 않으므로 대상 자체가 아니다.
+4. **조건 그룹에 부모 누락, 비자 불일치, 자기참조, 순환참조가 없다.** — 완료(실제 존재하는
+   그룹에 한해). Task 3이 "실제 마이그레이션 데이터가 준비되는 후속 작업 범위"로 명시적으로
+   미뤄뒀던 검사(ROOT 유일성 제외 나머지)를 이번 태스크(Deliverable 1)에서 구현해
+   `extraction/common_v2/visa_criterion_groups.csv`(F-4-R·F-2-R, 9행)에 돌린 결과 위반 0건.
+   합성 fixture로 자기참조·순환참조 거부 케이스도 함께 테스트했다(`tests/
+   test_validate_common_schema_v2.py`의 `TestCriterionGroupTreeIntegrityRejection`).
+5. **F-2-R의 차단된 복합 조건이 논리 손실 없이 이관된다.** — 부분 완료. 이관된 15행(원천
+   기준)은 중첩 AND/OR 구조(예: `f2r_language` OR 3개 조건, `f2r_conduct` AND)를 손실 없이
+   반영한다. 그러나 원천 68행 중 53행(중첩 AND/OR 평탄화 불가 42건 + 최초 신청자격 대상 아님
+   11건)은 여전히 보류 상태다 — "검수 완료 범위 vs 보류 범위" 표 참고. 이 53행은 이 이슈
+   범위가 아니라 PR #36 자체의 내용 검토 대상이다.
+6. **E-7-4R의 기본 자격과 K-POINT 점수표가 분리된다.** — 부분 완료, 정확히는 "점수표만
+   존재". `visa_scoring_models`/`visa_scoring_items`는 이관 완료(항목 7 참고). 그러나 E-7-4R의
+   기본 자격조건은 `visa_criterion_groups`/`visa_requirement_criteria`에 단 한 행도 없다 —
+   "분리"라고 부를 수 있으려면 분리된 두 쪽이 모두 있어야 하는데, 지금은 점수표 쪽만 있다.
+7. **점수 모델의 미확인 값은 null이며 검수 미완료 점수는 소비되지 않는다.** — 완료. E-7-4R
+   `visa_scoring_models`의 `final_maximum_points`/`bonus_cap_points`/`tie_breaker_rule`은
+   모두 null(미확인 값을 임의로 채우지 않음, 이번 태스크에서 재확인). #35(F-2-R) 점수표는
+   현행성 미검증 상태라 아예 공통 마스터에 넣지 않았다 — "검수 미완료 점수는 소비되지 않는다"는
+   원칙을 데이터를 만들지 않는 방식으로 지킨 것.
+8. **제출서류의 필수·선택·조건부·대체·첨부관계가 표현된다.** — 부분 완료. E-7-4R만 해당:
+   `document_requirements` 32행 전부(REQUIRED 17 / CONDITIONAL 8 / ALTERNATIVE 7,
+   `alternative_group` 채워진 행 7개)와 `document_attachment_relations` 2행이 이관돼
+   필수·조건부·대체·첨부관계 스펙트럼을 실제로 보여준다. F-4-R은 v1부터 0행이었으므로
+   해당 없음(누락이 아니라 원래 없음). F-2-R은 `document_requirements`가 아예 이관 후보에도
+   없다 — A_F-2-R 원천 매핑(`source_record_mappings.csv`)에 `target_table=document_requirements`
+   행 자체가 0개다. 이건 "이관 완료 범위 vs 보류 범위" 표에 별도로 명시되지 않은 추가 격차이므로
+   아래 "완전히 이관되지 않은 항목"에도 다시 적어둔다.
+9. **첨부관계에 자기참조나 순환참조가 없다.** — 완료. 실제 존재하는 2행(둘 다 E-7-4R)에 대해
+   이번 태스크(Deliverable 1)의 새 검사가 위반 0건을 확인했고, 합성 fixture로 자기참조·순환
+   거부 케이스도 확인했다(`TestDocumentAttachmentRelationIntegrityRejection`).
+10. **F-2-R 시군별 및 E-7-4R 광역별 쿼터 의미가 보존된다.** — 부분 완료. E-7-4R 광역(PROVINCE,
+    충청북도) 쿼터 스냅샷은 완전히 이관됨(항목 11 참고). F-2-R 시군별(MUNICIPALITY) 쿼터
+    스냅샷은 이관되지 않았다 — `visa_quota_snapshots.csv`에는 E-7-4R 행 1개만 있다. F-2-R의
+    `visa_quota_policies` 행(LIMITED)은 있지만 실제 시군별 배정·소진 수치(원천 61행, Task 6에서
+    보류)는 아직 없다.
+11. **E-7-4R 쿼터 집계 542/246/10/236/306이 검증된다.** — 완료. 이 값들은 실제
+    `visa_quota_snapshots.csv`에 그대로 있고, 이번 태스크(Deliverable 2)에서
+    `tests/test_v2_migration_regression.py::TestE7_4RQuotaSnapshot`로 고정했다.
+12. **F-4-R 기존 UUID, 판정, 절차 결과가 유지된다.** — 완료. `visa_id=606d8651-...`가 v1 UUID
+    그대로 재사용됐고(Task 4), 그룹 트리(4개 그룹·9개 조건)가 기존 판정 로직을 반영하며,
+    절차 4단계가 이관됐다. 이번 태스크(Deliverable 2)에서
+    `tests/test_v2_migration_regression.py::TestF4RUuidLifecycle`로 UUID 재사용을 고정했다.
+13. **D-2 전용 구조와 공통 마스터의 연결 경계가 검증·문서화된다.** — 완료. 이 문서의
+    "D-2 연결 검증(plan 8단계)" 절(Task 1)이 식별자 불일치, 출처·유효기간 완전성, 쿼터
+    미생성, 서비스 소비 경계까지 상세히 검증·기록했다.
+14. **모든 공통 행에 필요한 출처·페이지·유효기간이 존재한다.** — 부분 완료. 알려진 위반이
+    18건 있고 전부 의도가 확인된 것들이다: (a) `source_documents.csv` 2행
+    (`f4r_r12_announcement`, `d2_gwangyeok_departments_guide_2026`)이 `source_location`을
+    비워둠 — 이건 실제 데이터 공백이며, 이 태스크에서 원천 파일을 수정하지 않는다는 원칙에
+    따라 고치지 않았다. (b) `visa_requirements.csv`의 E-7-4R·D-2 행이 `visa_id`+`visa_code`만
+    채운 "부트스트랩 전용" 행이라 나머지 11개 컬럼(9건 필수 필드 + FK)이 비어 있음 — 두 비자
+    모두 아직 본문 내용을 이관하지 않았다는 걸 정확히 반영한 상태이지 실수가 아니다.
+    `uv run python scripts/validate_common_schema_v2.py`는 지금도 이 18건을 그대로
+    보고한다(억지로 통과시키지 않음).
+15. **원천 ID와 공통 UUID가 분리되고 매핑표로 추적된다.** — 완료.
+    `source_record_mappings.csv`(463행)가 4개 원천 데이터셋(A_F-2-R 74, B_E-7-4R 274,
+    C_D-2-common 99, D_visa_requirements 16)의 원천 ID와 공통 UUID를 분리해 추적하며,
+    `mapping_status`(PENDING/READY/MAPPED/BLOCKED)로 각 행의 이관 단계를 구분한다.
+16. **FK·UUID·enum·헤더·쿼터·누락·순환 검증 테스트가 통과한다.** — 완료(이번 태스크로
+    마지막 공백을 메움). Task 3이 FK/UUID/enum/헤더 검증을 이미 구현했지만 ROOT 유일성·
+    순환참조·OR 그룹 최소 자식 수는 "실제 데이터가 준비되면"으로 미뤄뒀었다. 이번 태스크
+    (Deliverable 1)가 그 검사를 추가했고 실제 데이터에서 위반 0건을 확인했다. 전체 테스트는
+    `uv run pytest -q` 기준 271건 통과(기존 247 + 이번 태스크 추가 24). 독립 실행형 검증기
+    (`uv run python scripts/validate_common_schema_v2.py`)는 여전히 종료 코드 1과 18건을
+    보고하는데, 이는 pytest 실패가 아니라 항목 14에서 설명한 "알려진, 의도가 확인된 미완료
+    데이터"를 검증기가 정직하게 계속 드러내고 있다는 뜻이다.
+17. **v1→v2 변환 규칙과 비자별 이관 결과·보류 항목이 문서화된다.** — 완료. 이 문서의
+    "마이그레이션 전제" 절(Task 1)이 변환 규칙과 비자별 기준을 이미 문서화했고, 이번 태스크가
+    최종 체크리스트 판정과 아래 "완전히 이관되지 않은 항목" 전체 목록으로 마무리한다.
+
+### 완전히 이관되지 않은 항목 (한곳에 모음)
+
+다음은 이 스냅샷 시점에 `extraction/common_v2/`가 아직 다루지 않는 것들이다. 위 체크리스트
+설명과 중복되더라도, 다음 작업이 훑어볼 단일 목록으로 여기 다시 모아둔다.
+
+- **E-7-4R 자격조건 + 그룹 트리**: 시작 전. `visa_criterion_groups`/
+  `visa_requirement_criteria`에 E-7-4R 행이 0개. `source_record_mappings.csv`에서
+  `source_dataset=B_E-7-4R AND target_table=visa_requirement_criteria`인 35행이 전부
+  `mapping_status=PENDING`이다(하나도 `MAPPED`가 아님).
+- **E-7-4R `visa_requirements` 본문 내용**: 부트스트랩(`visa_id`+`visa_code`)만 있음.
+- **D-2 `visa_requirements` 본문 내용**: 부트스트랩만 있음 — plan 8단계 결정에 따라 D-2는
+  Lookup/Rule 구조를 유지하고 공통 자격조건 트리로 평탄화하지 않으므로 이건 예상된 상태이지
+  격차가 아니다.
+- **F-2-R의 보류 53행**: PR #36 자체의 내용 검토 대상(중첩 AND/OR 평탄화 불가 42건 + 승인
+  이후 의무·동반가족 등 최초 신청자격 대상 아님 11건). 이 이슈 범위가 아니다.
+- **F-2-R `document_requirements`/`document_attachment_relations`**: 완전히 이관되지 않음.
+  A_F-2-R 원천 매핑에 `document_requirements`를 대상으로 하는 행 자체가 없다 — 53행 보류
+  목록과 별개로, 애초에 서류 요건 이관이 이 범위에서 다뤄진 적이 없다.
+- **F-2-R 쿼터 스냅샷(시군별 세부, 원천 61행)**: Task 6에서 보류. `visa_quota_snapshots.csv`에
+  F-2-R 행이 0개.
+- **`change_history.csv`**: 모든 비자유형에 대해 여전히 비어 있음(헤더만). B_E-7-4R 원천
+  매핑에 `target_table=change_history` 17행이 `PENDING` 상태로 대기 중이나 실제로 옮겨진
+  행은 0개.
+- **`source_documents.csv`의 `source_location` 결측 2행**: `f4r_r12_announcement`,
+  `d2_gwangyeok_departments_guide_2026` — 원천 파일을 고치지 않는다는 원칙에 따라 이 태스크에서
+  값을 채우지 않았다. 실제 데이터 공백으로 남겨둔다.
+- **`scripts/uuid_utils.UUID_ID_COLUMNS`**: 이번 태스크에서 확장 완료(기존 3개 v1 컬럼 +
+  v2 10개 PK 컬럼명 = 13개). PR #38 이후 Task 9 계획 항목이었으나 그때는 반영되지 않았던
+  것을, 위험이 낮은 한 줄 변경(순수 추가, 기존 검사 로직 무변경)으로 판단해 이번에 반영했다.
+  기존 유닛 테스트 중 "criteria_id를 미지원 컬럼 예시로 쓰던" 테스트 하나만
+  `not_a_real_id_column`으로 바꿔 계속 통과하게 했다(`tests/test_uuid_utils.py`).
+- **`migrate_to_v2.py`의 실제 콘텐츠 재생성**: 위 "`migrate_to_v2.py` 재생성 한계" 절 참고 —
+  헤더 생성은 결정적이지만 행 내용 재생성은 현재 불가능하다.

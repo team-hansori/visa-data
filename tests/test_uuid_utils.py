@@ -46,7 +46,9 @@ def test_assign_new_id_preserves_existing_id():
 
 def test_assign_new_id_rejects_unknown_column_and_invalid_existing_id():
     with pytest.raises(UUIDGenerationError, match="지원하지 않는 ID 컬럼"):
-        assign_new_id({}, "criteria_id", set())
+        # "criteria_id"는 issue #44 task 10에서 UUID_ID_COLUMNS에 추가돼 더 이상 예시로
+        # 쓸 수 없다 — 스키마에 실재하지 않는 컬럼명으로 "미지원" 케이스를 확인한다.
+        assign_new_id({}, "not_a_real_id_column", set())
 
     with pytest.raises(UUIDGenerationError, match="UUID 형식이 아님"):
         assign_new_id({"stage_id": "not-an-id"}, "stage_id", set())

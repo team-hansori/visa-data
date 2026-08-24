@@ -36,7 +36,9 @@ from pathlib import Path
 from scripts import schema_v2
 from scripts.schema_v2 import (
     CHANGE_HISTORY,
+    DOCUMENT_ATTACHMENT_RELATIONS,
     SOURCE_RECORD_MAPPINGS,
+    VISA_CRITERION_GROUPS,
     VISA_REQUIREMENT_CRITERIA,
     ColumnKind,
     ColumnSpec,
@@ -253,6 +255,186 @@ def _check_criteria_list_value_text_is_json(
 
 
 # --------------------------------------------------------------------------
+# 그룹 트리 / 첨부관계 무결성 검사 (docs/schema-v2.md §3, §9)
+#
+# task-3에서 "실제 마이그레이션 데이터가 준비되는 후속 작업(4~10단계)의 범위"로 명시적으로
+# 미룬 항목들(ROOT 유일성, 순환참조, OR 그룹 최소 자식 수)을 여기서 구현한다. 이제 실제
+# 이관 데이터(`extraction/common_v2/`)가 있으므로 이 검사들을 건너뛸 이유가 없다.
+# --------------------------------------------------------------------------
+
+
+def _detect_cycles(edges: dict[str, list[str]]) -> list[list[str]]:
+    """방향 그래프에서 사이클을 찾아 노드 리스트로 반환한다(자기참조도 길이 1 사이클로 포함).
+
+    ``edges``는 {node: [neighbor, ...]} 형태의 인접 리스트다. 3-color DFS로 순회하며,
+    한 사이클에 속한 노드는 어느 시작점에서 순회하든 한 번만 보고한다(같은 사이클을
+    여러 번 중복 보고하지 않기 위함). 존재하지 않는 노드를 가리키는 엣지는 조용히
+    무시한다 — 그 문제는 FK 검사(`_check_fk`)가 별도로 잡는다.
+    """
+    WHITE, GRAY, BLACK = 0, 1, 2
+    color: dict[str, int] = dict.fromkeys(edges, WHITE)
+    cycles: list[list[str]] = []
+    reported_nodes: set[str] = set()
+
+    def dfs(node: str, stack: list[str]) -> None:
+        color[node] = GRAY
+        stack.append(node)
+        for neighbor in edges.get(node, []):
+            if neighbor not in color:
+                continue
+            if color[neighbor] == WHITE:
+                dfs(neighbor, stack)
+            elif color[neighbor] == GRAY:
+                idx = stack.index(neighbor)
+                cycle = stack[idx:]
+                if not (set(cycle) & reported_nodes):
+                    cycles.append(cycle)
+                    reported_nodes.update(cycle)
+        stack.pop()
+        color[node] = BLACK
+
+    for node in list(edges):
+        if color[node] == WHITE:
+            dfs(node, [])
+    return cycles
+
+
+def _check_criterion_group_tree_integrity(
+    tables_rows: dict[str, list[dict[str, str]]],
+) -> list[str]:
+    """visa_criterion_groups의 트리 무결성을 검사한다(docs/schema-v2.md §3 "무결성 규칙").
+
+    - 비자별 ROOT 그룹(parent_group_id가 빈 값)이 정확히 하나여야 한다.
+    - 자식 그룹의 visa_id는 부모 그룹의 visa_id와 같아야 한다.
+    - group_id == parent_group_id 자기참조를 허용하지 않는다.
+    - parent_group_id 체인에 순환참조가 없어야 한다.
+    - OR 그룹은 판정에 참여하는 항목(직속 criteria 중 evaluation_mode != INFORMATIONAL
+      + 자식 그룹)이 2개 이상이어야 한다.
+    """
+    errors: list[str] = []
+    table = schema_v2.SCHEMA_V2[VISA_CRITERION_GROUPS]
+    rows = tables_rows.get(VISA_CRITERION_GROUPS, [])
+    if not rows:
+        return errors
+
+    by_id: dict[str, dict[str, str]] = {
+        row["group_id"]: row for row in rows if row.get("group_id", "")
+    }
+
+    # ROOT 유일성: parent_group_id가 빈 값인 그룹을 비자별로 묶어 정확히 1개인지 확인.
+    roots_by_visa: dict[str, list[str]] = {}
+    for row in rows:
+        if row.get("parent_group_id", "") == "":
+            roots_by_visa.setdefault(row.get("visa_id", ""), []).append(row.get("group_id", ""))
+    for visa_id, root_ids in roots_by_visa.items():
+        if len(root_ids) != 1:
+            errors.append(
+                f"{table.filename} - visa_id={visa_id}의 ROOT 그룹이 {len(root_ids)}개임"
+                f"(정확히 1개여야 함): {root_ids}"
+            )
+
+    # 자기참조 + 부모-자식 visa_id 일치.
+    for i, row in enumerate(rows, start=2):
+        group_id = row.get("group_id", "")
+        parent_id = row.get("parent_group_id", "")
+        if not parent_id:
+            continue
+        if group_id == parent_id:
+            errors.append(
+                f"{table.filename}:{i} - group_id와 parent_group_id가 동일함(자기참조): {group_id}"
+            )
+        parent_row = by_id.get(parent_id)
+        if parent_row is not None and parent_row.get("visa_id", "") != row.get("visa_id", ""):
+            errors.append(
+                f"{table.filename}:{i} - group_id={group_id}의 visa_id가 "
+                f"부모 그룹({parent_id})의 visa_id와 다름"
+            )
+
+    # 순환참조: 자식 -> 부모 방향 엣지로 그래프를 구성해 검사한다.
+    edges: dict[str, list[str]] = {
+        group_id: ([row["parent_group_id"]] if row.get("parent_group_id", "") else [])
+        for group_id, row in by_id.items()
+    }
+    for cycle in _detect_cycles(edges):
+        errors.append(
+            f"{table.filename} - parent_group_id 체인에 순환참조 발견: "
+            f"{' -> '.join([*cycle, cycle[0]])}"
+        )
+
+    # OR 그룹 최소 참여 자식 수(직속 criteria 중 INFORMATIONAL 제외 + 자식 그룹) >= 2.
+    criteria_rows = tables_rows.get(VISA_REQUIREMENT_CRITERIA, [])
+    participating_criteria_count: dict[str, int] = {}
+    for crow in criteria_rows:
+        if crow.get("evaluation_mode", "") == "INFORMATIONAL":
+            continue
+        gid = crow.get("group_id", "")
+        if gid:
+            participating_criteria_count[gid] = participating_criteria_count.get(gid, 0) + 1
+
+    child_group_count: dict[str, int] = {}
+    for row in rows:
+        parent_id = row.get("parent_group_id", "")
+        if parent_id:
+            child_group_count[parent_id] = child_group_count.get(parent_id, 0) + 1
+
+    for row in rows:
+        if row.get("boolean_operator", "") != "OR":
+            continue
+        group_id = row.get("group_id", "")
+        total = participating_criteria_count.get(group_id, 0) + child_group_count.get(group_id, 0)
+        if total < 2:
+            errors.append(
+                f"{table.filename} - OR 그룹 group_id={group_id}"
+                f"({row.get('group_key', '')})의 판정 참여 자식 수가 {total}개임"
+                "(2개 이상이어야 함)"
+            )
+
+    return errors
+
+
+def _check_document_attachment_relation_integrity(
+    tables_rows: dict[str, list[dict[str, str]]],
+) -> list[str]:
+    """document_attachment_relations의 자기참조·순환 첨부관계를 검사한다.
+
+    docs/schema-v2.md §9 제약조건: ``parent_document_id != attachment_document_id``,
+    순환 첨부관계 금지. 2행짜리 실제 데이터에서는 순환이 물리적으로 불가능하지만,
+    행 수와 무관하게 일반적인 그래프 사이클 검사로 구현한다.
+    """
+    errors: list[str] = []
+    table = schema_v2.SCHEMA_V2[DOCUMENT_ATTACHMENT_RELATIONS]
+    rows = tables_rows.get(DOCUMENT_ATTACHMENT_RELATIONS, [])
+    if not rows:
+        return errors
+
+    for i, row in enumerate(rows, start=2):
+        parent_id = row.get("parent_document_id", "")
+        attachment_id = row.get("attachment_document_id", "")
+        if parent_id and parent_id == attachment_id:
+            errors.append(
+                f"{table.filename}:{i} - parent_document_id와 attachment_document_id가 "
+                f"동일함(자기참조): {parent_id}"
+            )
+
+    edges: dict[str, list[str]] = {}
+    for row in rows:
+        parent_id = row.get("parent_document_id", "")
+        attachment_id = row.get("attachment_document_id", "")
+        if not parent_id or not attachment_id:
+            continue
+        edges.setdefault(parent_id, []).append(attachment_id)
+        edges.setdefault(attachment_id, [])
+
+    for cycle in _detect_cycles(edges):
+        errors.append(
+            f"{table.filename} - document_attachment_relations에 순환 첨부관계 발견: "
+            f"{' -> '.join([*cycle, cycle[0]])}"
+        )
+
+    return errors
+
+
+# --------------------------------------------------------------------------
 # 테이블 단위 / 전체 검증
 # --------------------------------------------------------------------------
 
@@ -307,6 +489,10 @@ def validate_all(tables_rows: dict[str, list[dict[str, str]]]) -> list[str]:
             errors.extend(_check_table_name_values(table, row, i))
             errors.extend(_check_criteria_conditional_requirements(table, row, i))
             errors.extend(_check_criteria_list_value_text_is_json(table, row, i))
+
+    # 3) 그룹 트리 / 첨부관계처럼 여러 테이블·행을 함께 봐야 하는 무결성 규칙
+    errors.extend(_check_criterion_group_tree_integrity(tables_rows))
+    errors.extend(_check_document_attachment_relation_integrity(tables_rows))
 
     return errors
 

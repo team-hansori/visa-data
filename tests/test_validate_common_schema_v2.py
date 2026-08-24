@@ -1,17 +1,37 @@
 """validate_common_schema_v2.py(공통 스키마 v2 검증기) 회귀 테스트.
 
-실제 v2 이관 데이터가 아직 없으므로(그 작업은 이슈 #44의 4~10단계), 13개 테이블이 서로
-정합성 있게 맞물리는 최소 fixture 행 집합을 손으로 구성해 검증기가 통과/거부해야 하는
-경우를 확인한다.
+기본 fixture 부분은 13개 테이블이 서로 정합성 있게 맞물리는 최소 fixture 행 집합을
+손으로 구성해 검증기가 통과/거부해야 하는 경우를 확인한다.
+
+`TestCriterionGroupTreeIntegrity*`/`TestDocumentAttachmentRelationIntegrity*` 클래스는
+task-3에서 "실제 마이그레이션 데이터가 준비되는 후속 작업(4~10단계)의 범위"로 미뤄뒀던
+ROOT 유일성·순환참조·OR 그룹 최소 자식 수 검사(issue #44 task 10)를 다룬다. 실제 이관
+데이터(`extraction/common_v2/`)가 이제 존재하므로, 각 규칙마다 실제 데이터에 대한
+긍정 검증과 합성 fixture에 대한 부정(거부) 검증을 함께 둔다.
 """
 
 from __future__ import annotations
 
 import copy
+from pathlib import Path
 
-from scripts.schema_v2 import SCHEMA_V2, TABLE_ORDER
+from scripts.schema_v2 import (
+    DOCUMENT_ATTACHMENT_RELATIONS,
+    SCHEMA_V2,
+    TABLE_ORDER,
+    VISA_CRITERION_GROUPS,
+    VISA_REQUIREMENT_CRITERIA,
+)
 from scripts.uuid_utils import generate_uuid4
-from scripts.validate_common_schema_v2 import validate_all, validate_directory
+from scripts.validate_common_schema_v2 import (
+    _check_criterion_group_tree_integrity,
+    _check_document_attachment_relation_integrity,
+    read_csv,
+    validate_all,
+    validate_directory,
+)
+
+REAL_COMMON_V2_DIR = Path("extraction/common_v2")
 
 # --------------------------------------------------------------------------
 # 서로 참조가 맞물리는 13개 테이블의 최소 유효 fixture
@@ -690,4 +710,324 @@ class TestValidateDirectory:
                 writer.writerows(tables_rows[name])
 
         errors = validate_directory(tmp_path)
+        assert errors == []
+
+
+# --------------------------------------------------------------------------
+# 그룹 트리 무결성 (docs/schema-v2.md §3) — ROOT 유일성 / 순환참조 / OR 최소 자식 수
+# --------------------------------------------------------------------------
+
+
+def _load_real_table(table_name: str) -> list[dict[str, str]]:
+    """extraction/common_v2/의 실제 CSV 하나를 읽어 행 목록을 반환한다."""
+    table = SCHEMA_V2[table_name]
+    _, rows = read_csv(REAL_COMMON_V2_DIR / table.filename)
+    return rows
+
+
+def _group_row(
+    *,
+    group_id: str,
+    visa_id: str,
+    parent_group_id: str = "",
+    group_key: str = "test_group",
+    boolean_operator: str = "AND",
+    display_order: str = "1",
+    source_document_id: str | None = None,
+) -> dict[str, str]:
+    return {
+        "group_id": group_id,
+        "visa_id": visa_id,
+        "parent_group_id": parent_group_id,
+        "group_key": group_key,
+        "group_name_kr": "테스트 그룹",
+        "boolean_operator": boolean_operator,
+        "applicability_note": "",
+        "display_order": display_order,
+        "valid_from": "2026-01-01",
+        "valid_to": "",
+        "source_document_id": source_document_id or generate_uuid4(),
+        "source_page": "1",
+        "last_verified_at": "2026-01-02",
+    }
+
+
+def _criteria_row(
+    *,
+    criteria_id: str,
+    group_id: str,
+    evaluation_mode: str = "AUTOMATED",
+) -> dict[str, str]:
+    return {
+        "criteria_id": criteria_id,
+        "group_id": group_id,
+        "criteria_name": "테스트 조건",
+        "field_identifier": "test.field" if evaluation_mode == "AUTOMATED" else "",
+        "criteria_type": "EXISTENCE",
+        "evaluation_mode": evaluation_mode,
+        "operator": "EXISTS" if evaluation_mode == "AUTOMATED" else "",
+        "value_numeric": "",
+        "value_text": "테스트 조건 원문",
+        "unit": "",
+        "measurement_window_value": "",
+        "measurement_window_unit": "",
+        "special_case_note": "",
+        "display_order": "1",
+        "valid_from": "2026-01-01",
+        "valid_to": "",
+        "source_document_id": generate_uuid4(),
+        "source_page": "1",
+        "last_verified_at": "2026-01-02",
+    }
+
+
+class TestCriterionGroupTreeIntegrityRealData:
+    """extraction/common_v2/의 실제 F-4-R·F-2-R 그룹 트리에 대한 긍정 검증."""
+
+    def test_real_data_has_no_root_uniqueness_or_cycle_or_or_group_violations(self):
+        tables_rows = {
+            VISA_CRITERION_GROUPS: _load_real_table(VISA_CRITERION_GROUPS),
+            VISA_REQUIREMENT_CRITERIA: _load_real_table(VISA_REQUIREMENT_CRITERIA),
+        }
+        errors = _check_criterion_group_tree_integrity(tables_rows)
+        assert errors == []
+
+    def test_real_data_has_exactly_one_root_per_visa(self):
+        rows = _load_real_table(VISA_CRITERION_GROUPS)
+        roots_by_visa: dict[str, list[str]] = {}
+        for row in rows:
+            if row["parent_group_id"] == "":
+                roots_by_visa.setdefault(row["visa_id"], []).append(row["group_id"])
+        # F-4-R, F-2-R 두 비자유형에 그룹 트리가 있고 각각 ROOT가 정확히 1개여야 한다.
+        assert len(roots_by_visa) == 2
+        for visa_id, root_ids in roots_by_visa.items():
+            assert len(root_ids) == 1, f"visa_id={visa_id}의 ROOT 그룹이 {root_ids}"
+
+    def test_real_data_or_group_participant_counts(self):
+        """brief에 명시된 실제 수치를 고정한다: f2r_language(OR)=3, f4r_eligibility_paths(OR)=2."""
+        groups = {row["group_key"]: row for row in _load_real_table(VISA_CRITERION_GROUPS)}
+        criteria = _load_real_table(VISA_REQUIREMENT_CRITERIA)
+
+        def participant_count(group_key: str) -> int:
+            group_id = groups[group_key]["group_id"]
+            direct = sum(
+                1
+                for c in criteria
+                if c["group_id"] == group_id and c["evaluation_mode"] != "INFORMATIONAL"
+            )
+            children = sum(1 for g in groups.values() if g["parent_group_id"] == group_id)
+            return direct + children
+
+        assert groups["f2r_language"]["boolean_operator"] == "OR"
+        assert participant_count("f2r_language") == 3
+
+        assert groups["f4r_eligibility_paths"]["boolean_operator"] == "OR"
+        assert participant_count("f4r_eligibility_paths") == 2
+
+
+class TestCriterionGroupTreeIntegrityRejection:
+    """ROOT 유일성 / 자기참조 / 순환참조 / OR 최소 자식 수를 합성 fixture로 거부하는지 확인."""
+
+    def test_two_roots_for_same_visa_is_rejected(self):
+        visa_id = generate_uuid4()
+        rows = [
+            _group_row(group_id=generate_uuid4(), visa_id=visa_id, group_key="root_a"),
+            _group_row(group_id=generate_uuid4(), visa_id=visa_id, group_key="root_b"),
+        ]
+        errors = _check_criterion_group_tree_integrity({VISA_CRITERION_GROUPS: rows})
+        assert any("ROOT" in e and visa_id in e for e in errors)
+
+    def test_self_reference_is_rejected(self):
+        gid = generate_uuid4()
+        visa_id = generate_uuid4()
+        rows = [_group_row(group_id=gid, visa_id=visa_id, parent_group_id=gid)]
+        errors = _check_criterion_group_tree_integrity({VISA_CRITERION_GROUPS: rows})
+        assert any("자기참조" in e for e in errors)
+
+    def test_two_node_cycle_is_rejected(self):
+        visa_id = generate_uuid4()
+        gid_a, gid_b = generate_uuid4(), generate_uuid4()
+        rows = [
+            _group_row(group_id=gid_a, visa_id=visa_id, parent_group_id=gid_b, group_key="a"),
+            _group_row(group_id=gid_b, visa_id=visa_id, parent_group_id=gid_a, group_key="b"),
+        ]
+        errors = _check_criterion_group_tree_integrity({VISA_CRITERION_GROUPS: rows})
+        assert any("순환참조" in e for e in errors)
+
+    def test_child_visa_id_mismatch_with_parent_is_rejected(self):
+        parent_visa_id = generate_uuid4()
+        child_visa_id = generate_uuid4()
+        parent_id = generate_uuid4()
+        rows = [
+            _group_row(group_id=parent_id, visa_id=parent_visa_id, group_key="parent"),
+            _group_row(
+                group_id=generate_uuid4(),
+                visa_id=child_visa_id,
+                parent_group_id=parent_id,
+                group_key="child",
+            ),
+        ]
+        errors = _check_criterion_group_tree_integrity({VISA_CRITERION_GROUPS: rows})
+        assert any("visa_id" in e and "다름" in e for e in errors)
+
+    def test_or_group_with_fewer_than_two_participants_is_rejected(self):
+        visa_id = generate_uuid4()
+        root_id = generate_uuid4()
+        or_group_id = generate_uuid4()
+        rows = [
+            _group_row(group_id=root_id, visa_id=visa_id, group_key="root"),
+            _group_row(
+                group_id=or_group_id,
+                visa_id=visa_id,
+                parent_group_id=root_id,
+                group_key="lonely_or",
+                boolean_operator="OR",
+            ),
+        ]
+        criteria_rows = [_criteria_row(criteria_id=generate_uuid4(), group_id=or_group_id)]
+        errors = _check_criterion_group_tree_integrity(
+            {VISA_CRITERION_GROUPS: rows, VISA_REQUIREMENT_CRITERIA: criteria_rows}
+        )
+        assert any("OR 그룹" in e and "2개 이상" in e for e in errors)
+
+    def test_or_group_with_two_participants_passes(self):
+        visa_id = generate_uuid4()
+        root_id = generate_uuid4()
+        or_group_id = generate_uuid4()
+        rows = [
+            _group_row(group_id=root_id, visa_id=visa_id, group_key="root"),
+            _group_row(
+                group_id=or_group_id,
+                visa_id=visa_id,
+                parent_group_id=root_id,
+                group_key="valid_or",
+                boolean_operator="OR",
+            ),
+        ]
+        criteria_rows = [
+            _criteria_row(criteria_id=generate_uuid4(), group_id=or_group_id),
+            _criteria_row(criteria_id=generate_uuid4(), group_id=or_group_id),
+        ]
+        errors = _check_criterion_group_tree_integrity(
+            {VISA_CRITERION_GROUPS: rows, VISA_REQUIREMENT_CRITERIA: criteria_rows}
+        )
+        assert errors == []
+
+    def test_informational_criteria_do_not_count_as_or_group_participants(self):
+        """evaluation_mode=INFORMATIONAL은 계산에서 제외되므로 OR 참여 카운트에도 안 들어가야 한다."""
+        visa_id = generate_uuid4()
+        root_id = generate_uuid4()
+        or_group_id = generate_uuid4()
+        rows = [
+            _group_row(group_id=root_id, visa_id=visa_id, group_key="root"),
+            _group_row(
+                group_id=or_group_id,
+                visa_id=visa_id,
+                parent_group_id=root_id,
+                group_key="or_with_informational",
+                boolean_operator="OR",
+            ),
+        ]
+        criteria_rows = [
+            _criteria_row(criteria_id=generate_uuid4(), group_id=or_group_id),
+            _criteria_row(
+                criteria_id=generate_uuid4(),
+                group_id=or_group_id,
+                evaluation_mode="INFORMATIONAL",
+            ),
+        ]
+        errors = _check_criterion_group_tree_integrity(
+            {VISA_CRITERION_GROUPS: rows, VISA_REQUIREMENT_CRITERIA: criteria_rows}
+        )
+        assert any("OR 그룹" in e and "2개 이상" in e for e in errors)
+
+
+# --------------------------------------------------------------------------
+# 첨부관계 무결성 (docs/schema-v2.md §9) — 자기참조 / 순환 첨부관계
+# --------------------------------------------------------------------------
+
+
+def _relation_row(
+    *, relation_id: str, parent_document_id: str, attachment_document_id: str
+) -> dict[str, str]:
+    return {
+        "relation_id": relation_id,
+        "parent_document_id": parent_document_id,
+        "attachment_document_id": attachment_document_id,
+        "requirement_status": "REQUIRED",
+        "alternative_group": "",
+        "condition_note": "",
+        "display_order": "1",
+        "valid_from": "2026-01-01",
+        "valid_to": "",
+        "source_document_id": generate_uuid4(),
+        "source_page": "1",
+    }
+
+
+class TestDocumentAttachmentRelationIntegrityRealData:
+    """extraction/common_v2/document_attachment_relations.csv(실제 2행)에 대한 긍정 검증."""
+
+    def test_real_data_has_no_self_reference_or_cycle(self):
+        rows = _load_real_table(DOCUMENT_ATTACHMENT_RELATIONS)
+        assert len(rows) == 2, "브리프가 전제한 실제 행 수(2)와 다름 — 수치를 다시 확인할 것"
+        errors = _check_document_attachment_relation_integrity(
+            {DOCUMENT_ATTACHMENT_RELATIONS: rows}
+        )
+        assert errors == []
+
+
+class TestDocumentAttachmentRelationIntegrityRejection:
+    """자기참조 / 순환 첨부관계를 합성 fixture로 거부하는지 확인."""
+
+    def test_self_reference_is_rejected(self):
+        doc_id = generate_uuid4()
+        rows = [
+            _relation_row(
+                relation_id=generate_uuid4(),
+                parent_document_id=doc_id,
+                attachment_document_id=doc_id,
+            )
+        ]
+        errors = _check_document_attachment_relation_integrity(
+            {DOCUMENT_ATTACHMENT_RELATIONS: rows}
+        )
+        assert any("자기참조" in e for e in errors)
+
+    def test_two_node_cycle_is_rejected(self):
+        doc_a, doc_b = generate_uuid4(), generate_uuid4()
+        rows = [
+            _relation_row(
+                relation_id=generate_uuid4(),
+                parent_document_id=doc_a,
+                attachment_document_id=doc_b,
+            ),
+            _relation_row(
+                relation_id=generate_uuid4(),
+                parent_document_id=doc_b,
+                attachment_document_id=doc_a,
+            ),
+        ]
+        errors = _check_document_attachment_relation_integrity(
+            {DOCUMENT_ATTACHMENT_RELATIONS: rows}
+        )
+        assert any("순환" in e for e in errors)
+
+    def test_acyclic_chain_of_three_passes(self):
+        doc_a, doc_b, doc_c = generate_uuid4(), generate_uuid4(), generate_uuid4()
+        rows = [
+            _relation_row(
+                relation_id=generate_uuid4(),
+                parent_document_id=doc_a,
+                attachment_document_id=doc_b,
+            ),
+            _relation_row(
+                relation_id=generate_uuid4(),
+                parent_document_id=doc_b,
+                attachment_document_id=doc_c,
+            ),
+        ]
+        errors = _check_document_attachment_relation_integrity(
+            {DOCUMENT_ATTACHMENT_RELATIONS: rows}
+        )
         assert errors == []
