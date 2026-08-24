@@ -15,8 +15,13 @@ Lookup/Eligibility/Rule 구조를 유지한 채 공통 마스터 연결만 검�
 - 작업 브랜치: `feat/20260821_#44_공통_스키마_v2_정의_및_비자_데이터_마이그레이션`
 - 기준 브랜치: 최신 `origin/main`
 - PR #36과 PR #43은 `main`에 병합되어 있으므로 별도 cherry-pick 또는 재병합하지 않는다.
+- PR #38(`scripts/uuid_utils.py`, 이슈 #37)은 아직 `main`에 병합되지 않았다(OPEN, mergeable).
+  9단계에서 이 유틸리티를 재사용하므로, 그 전에 병합하거나 v2 브랜치로 가져와야 한다.
 - v1 기준 데이터는 `extraction/D_visa_requirements/`에 그대로 보존한 상태에서 변환을 시작한다.
 - F-2-R, E-7-4R의 원천 extraction과 검수 상태는 공통 테이블로 복사하지 않고 매핑 근거로 사용한다.
+- 공통 스키마 v2 명세는 `docs/schema-v2.md`에 확정되어 있다(이슈 #44 댓글 결정 반영). 아래 모든
+  단계는 이 문서를 1차 근거로 삼는다 — 컬럼·enum 정의가 필요하면 여기 요약이 아니라
+  `docs/schema-v2.md` 원문을 확인한다.
 
 ## 목표 테이블
 
@@ -38,6 +43,43 @@ Lookup/Eligibility/Rule 구조를 유지한 채 공통 마스터 연결만 검�
 1. `source_documents`
 2. `change_history`
 3. `source_record_mappings`
+
+## 확정된 enum (schema.py·검증기에 그대로 반영)
+
+`docs/schema-v2.md`에서 확정된 값이다. 구현 중 다른 값을 추가로 발견하면 이 표와 명세 문서를
+같이 갱신한다.
+
+| 테이블.컬럼 | 허용값 |
+| --- | --- |
+| `visa_criterion_groups.boolean_operator` | `AND`, `OR` |
+| `visa_requirement_criteria.criteria_type` | `NUMERIC`, `TEXT`, `BOOLEAN`, `LIST`, `EXISTENCE` |
+| `visa_requirement_criteria.evaluation_mode` | `AUTOMATED`, `MANUAL`, `INFORMATIONAL` |
+| `visa_requirement_criteria.operator` | `EQ`, `GT`, `GTE`, `LT`, `LTE`, `IN`, `NOT_IN`, `EXISTS`, `NOT_EXISTS`, `WITHIN` |
+| `visa_scoring_models.model_purpose` | `PASS_THRESHOLD`, `QUOTA_RANKING`, `BOTH`, `UNKNOWN` |
+| `visa_scoring_items.score_group` | `BASE`, `BONUS`, `PENALTY` |
+| `visa_scoring_items.stacking_rule` | `STACK`, `ONE_OF`, `MAX_SCORE_ONLY`, `UNKNOWN` |
+| `document_requirements.requirement_status`, `document_attachment_relations.requirement_status` | `REQUIRED`, `OPTIONAL`, `CONDITIONAL`, `ALTERNATIVE` |
+| `visa_quota_policies.quota_type` | `LIMITED`, `UNLIMITED`, `UNKNOWN` |
+| `visa_quota_snapshots.scope_type` | `NATIONAL`, `PROVINCE`, `MUNICIPALITY`, `INSTITUTION`, `DEPARTMENT`, `OTHER` |
+| `source_documents.document_type` | `ANNOUNCEMENT`, `ATTACHMENT`, `AMENDMENT`, `GUIDELINE`, `FORM`, `OTHER` |
+| `source_record_mappings.mapping_action` | `COPY`, `TRANSFORM`, `MERGE`, `SKIP`, `MANUAL_REVIEW` |
+| `source_record_mappings.mapping_status` | `PENDING`, `READY`, `MAPPED`, `BLOCKED` |
+
+원천 기호(`=`, `==`, `>`, `>=`, `<`, `<=`)를 위 `operator` enum으로 바꾸는 변환표는
+`docs/schema-v2.md`의 "공통 operator enum" 절에 있다. `schema.py`나 마이그레이션 스크립트에
+같은 변환표를 하드코딩할 때는 이 문서를 그대로 옮기고 임의로 새 매핑을 추가하지 않는다.
+
+## 공통 마스터에 절대 만들지 않는 컬럼·테이블
+
+`docs/schema-v2.md`의 "제외되는 것" 절 그대로다. `schema.py` 작성 시 아래 이름이 13개 테이블
+어디에도 없는지 3단계 검증기에서 확인한다.
+
+- 별도 상태관리 테이블 전반
+- `visa_round_facts`, `visa_current_facts`, `visa_fact_coverage`
+- `extraction_status`, `review_status`, `consumption_gate`, `confidence`
+
+이 값들은 원천·검수 계층(`extraction/`)에만 유지하고 공통 마스터에는 검수 완료 여부만 걸러진
+결과 데이터로 올린다.
 
 ## 구현 원칙
 
@@ -67,28 +109,32 @@ Lookup/Eligibility/Rule 구조를 유지한 채 공통 마스터 연결만 검�
 - v1 기준선과 비자별 입력 범위를 설명하는 v2 명세의 마이그레이션 전제 절
 - 원천 레코드별 초기 `source_record_mappings` 초안(`target_record_id`는 null)
 
-### 2. 공통 스키마 v2 명세 확정
+### 2. 공통 스키마 v2 명세 확정 — 완료
 
-`extraction/D_visa_requirements/README.md`를 v2 기준으로 개편하거나 별도 v2 명세를 먼저
-작성한다. 각 테이블에 대해 다음을 빠짐없이 정의한다.
+`docs/schema-v2.md`로 확정했다(v1 `extraction/D_visa_requirements/README.md`는 그대로 두고
+별도 문서로 분리). 아래 항목이 모두 문서에 포함되어 있음을 확인했다.
 
 - 컬럼명, 자료형, nullable 여부, 기본값
 - PK, FK, 유일성, 유효기간 규칙
-- enum 허용값과 대소문자
+- enum 허용값(위 "확정된 enum" 표로 요약)
 - CSV 직렬화 규칙(JSON 배열, 날짜, null)
 - 출처 문서와 페이지 연결 규칙
 - 원천 레코드와 공통 레코드의 ID 수명주기
-- v1 컬럼의 유지·이동·제거·분리 규칙
+- v1 컬럼의 유지·이동·제거·분리 규칙(`total_score_threshold`, `quota_type` 등 `visa_requirements`
+  이탈 컬럼, `is_mandatory`/`required_attachments` 대체 등)
 
-특히 아래 계약을 명시적으로 고정한다.
+고정된 계약:
 
 - eligibility 트리는 비자별 ROOT 하나와 `parent_group_id`, `AND/OR`로 표현한다.
 - criteria는 `group_id`만으로 소속 비자를 찾고 `visa_id`를 중복 저장하지 않는다.
-- `INFORMATIONAL` criteria는 판정에서 제외한다.
+- `INFORMATIONAL` criteria는 판정에서 제외하고, `MANUAL` criteria는 `REVIEW_REQUIRED`로 반환한다.
 - 제출서류 첨부는 문자열이 아닌 관계 테이블로 표현한다.
 - 점수 모델과 항목은 자격 criteria와 분리한다.
-- 쿼터 정책과 시점별 스냅샷을 분리한다.
+- 쿼터 정책과 시점별 스냅샷을 분리하고, `visa_quota_snapshots.consumption_exception`은 개인별
+  자동 판정 규칙이 아니라 원문 설명 보존 전용 텍스트로만 다룬다(코드에서 판정 로직에 참조하지 않는다).
 - `change_history`는 v1 헤더를 유지한다.
+
+남은 것은 이 명세를 기준으로 3단계(`schema.py`) 이후 코드·데이터를 맞추는 작업뿐이다.
 
 ### 3. 스키마 코드와 빈 v2 CSV 골격 구현
 
@@ -108,12 +154,63 @@ Lookup/Eligibility/Rule 구조를 유지한 채 공통 마스터 연결만 검�
 - 유효기간 역전 여부
 - 논리 테이블명에 `.csv`가 없는지 여부
 
+### 3.5. v1 조건 그룹 → v2 그룹 트리 변환 규칙 (F-4-R/E-7-4R/F-2-R 공통)
+
+v1 `visa_requirement_criteria.csv`(및 `B_E-7-4R`의 `condition_group` 방식)는 "그룹 없는 행끼리
+AND" + "같은 `condition_group` 안에서만 단일 단계 OR"만 표현한다. `(A AND B) OR C`나
+서로 다른 그룹끼리의 OR(`G1 OR G2`)는 v1 스키마가 애초에 지원하지 않으므로, 실제 v1 데이터에도
+그런 형태는 존재하지 않는다 — 즉 v2의 중첩 트리는 v1을 그대로 옮기는 게 아니라 **원문을 다시 읽고
+새로 설계**해야 한다.
+
+실제 F-4-R v1 데이터(`extraction/D_visa_requirements/visa_requirement_criteria.csv`, 10행)로
+변환 절차를 확정한다.
+
+| v1 원본 | 값 |
+| --- | --- |
+| `condition_group=G1`(3행): 신청자격(기존거주자·국내전입자·해외전입자) | `condition_operator=OR` |
+| `condition_group` 없음(2행): 동반자녀 연령요건 하한(`>=6`)·상한(`<19`) | 그룹 없음 → AND |
+| `condition_group=G2`(2행): 동반자녀 재학요건(원칙·질병장애 예외) | `condition_operator=OR` |
+| `condition_group` 없음(3행): 허가조건, 결격사유, 취업활동 지역 제한 | 그룹 없음 → AND |
+
+변환 절차:
+
+1. 비자별 ROOT 그룹(`boolean_operator=AND`, `parent_group_id=NULL`)을 하나 만든다.
+2. `condition_group`이 비어 있는 v1 행은 ROOT에 직접 연결한다(위 예시의 허가조건·결격사유·
+   취업활동 지역 제한).
+3. 같은 `condition_group` 값을 가진 v1 행들은 그 그룹 전용 v2 하위 그룹(`boolean_operator=OR`,
+   `parent_group_id=ROOT`)을 새로 만들어 그 아래에 연결한다(`G1` → `eligibility_paths` 그룹 3행,
+   `G2` → `dependent_child_school_paths` 그룹 2행).
+4. README "복합 조건" 절의 "동반자녀 연령요건(AND) + 재학요건(OR)"처럼 그룹 없는 AND 조건과
+   OR 그룹이 원문에서 하나의 상위 조건으로 묶여 있다면, 그 상위 개념을 나타내는 중간 그룹을
+   ROOT 아래에 새로 만들고 연령요건 2행과 `G2` 그룹을 그 아래로 옮긴다 — v1에는 이 상위 묶음이
+   컬럼으로 존재하지 않으므로 원문을 다시 읽고 사람이 그룹을 설계한다.
+5. "동반자녀" 조건이 `docs/schema-v2.md`의 `group_scope` 처리표에서 말하는 `DEPENDENT_FAMILY`에
+   해당하는지(별도 자격 트리로 분리해야 하는지), 아니면 F-4-R 본인 자격 트리의 한 가지에
+   불과한지는 원문 재확인이 필요하다 — 이관 시 임의로 결정하지 않고 열린 질문으로 남긴다.
+6. v1에는 없는 "일반조건–특례조건 대체관계"(F-2-R 소상공인 특례 등)는 `docs/schema-v2.md`의
+   F-2-R 예시가 목표 형태이며, v1 데이터에서 자동으로 유도하지 않고 원문을 다시 읽어 그룹을
+   설계한다.
+7. v1 `condition_group`이 비어 있지만 `special_case_note`에 "논리구조 확인 필요"가 남아있는
+   행은 이관 대상에서 제외하고 `source_record_mappings.mapping_status=BLOCKED`로 남긴다.
+
+operator·criteria_type 변환:
+
+- v1 `operator`(`>=`/`>`/`<=`/`<`/`==`)는 위 "확정된 enum" 표의 변환 규칙대로
+  `GTE`/`GT`/`LTE`/`LT`/`EQ`로 바꾼다.
+- v1은 `criteria_type`이 전부 `binary`로 고정되어 있었다. v2에서는 `value_numeric`+`operator`가
+  있으면 `NUMERIC`, 서술형 존재 조건(결격사유·지역 제한처럼 `value_numeric`이 비어 있는 행)이면
+  `EXISTENCE`+`EXISTS`/`NOT_EXISTS`로, 목록 비교면 `LIST`로 재분류한다.
+- v1 README의 "판단 기준 5단계 질문"은 재량판단 조건을 애초에 이 테이블에 넣지 않는 규칙이었으므로,
+  기존 v1 criteria 행은 원칙적으로 `evaluation_mode=AUTOMATED`로 이관한다. `MANUAL`/
+  `INFORMATIONAL`은 v2 신규 조건(예: `docs/schema-v2.md`의 소상공인 특례 매출액 예시)에만 붙인다.
+
 ### 4. F-4-R v1 → v2 마이그레이션
 
 가장 안정적인 기존 공통 데이터를 먼저 옮겨 변환기의 기준 동작을 확정한다.
 
 - 기존 `visa_id`와 재사용 가능한 v1 공통 UUID를 유지한다.
-- 비자별 eligibility ROOT 그룹을 생성하고 기존 평면 criteria를 원문 의미에 맞게 연결한다.
+- 비자별 eligibility ROOT 그룹을 만들고, 위 "3.5" 변환 절차대로 `G1`/`G2`와 그룹 없는 행을
+  ROOT/중간/말단 그룹으로 재구성한다. 10행 전체를 실제 변환해 회귀 테스트 fixture로 남긴다.
 - `total_score_threshold`와 기존 쿼터 컬럼을 `visa_requirements`에서 제거한다.
 - F-4-R은 `visa_quota_policies.quota_type=UNLIMITED`만 만들고 snapshot은 만들지 않는다.
 - 절차와 제출서류의 기존 결과가 의미 손실 없이 유지되는지 행 단위로 대조한다.
@@ -121,8 +218,10 @@ Lookup/Eligibility/Rule 구조를 유지한 채 공통 마스터 연결만 검�
 
 ### 5. E-7-4R 마이그레이션
 
-- 기본 신청 자격은 eligibility 트리와 criteria로 이관한다.
-- 로컬 `G*` 묶음을 공통 논리 그룹으로 복사하지 않고 원문에서 확인된 AND/OR만 구성한다.
+- 기본 신청 자격은 "3.5" 변환 절차대로 eligibility 트리와 criteria로 이관한다.
+- 로컬 `G*` 묶음을 공통 논리 그룹으로 복사하지 않고 원문에서 확인된 AND/OR만 구성한다. F-4-R과
+  달리 `B_E-7-4R`의 G번호는 OR 전용이 아니라 느슨한 묶음이므로(README 90번째 줄 참고), 그룹당
+  실제 대체관계 여부를 다시 판단한 뒤에만 v2 OR 그룹으로 옮긴다.
 - K-POINT 데이터를 `visa_scoring_models`와 `visa_scoring_items`로 이관한다.
 - 동점처리, 최종 상한, 전체 가점 상한처럼 미확인인 값은 null로 둔다.
 - 중앙부처·광역지자체 추천 점수는 같은 배타 그룹과 `MAX_SCORE_ONLY` 규칙으로 표현한다.
@@ -141,8 +240,12 @@ remaining_quota        = 306
 
 ### 6. F-2-R 마이그레이션
 
-- PR #36에서 차단된 복합 조건을 ROOT/중간/말단 그룹으로 재구성한다.
+- PR #36에서 차단된 복합 조건을 "3.5" 변환 절차대로 ROOT/중간/말단 그룹으로 재구성한다.
+  `docs/schema-v2.md`의 소상공인 특례 예시(`employer` AND → `employment_capacity_paths` OR →
+  `standard_employment_capacity`/`small_business_exception`)를 목표 트리 형태로 삼는다.
 - 일반 경로와 특례 경로를 같은 OR 그룹 아래에 배치하되 원문에서 확인되지 않은 관계는 만들지 않는다.
+  매출액처럼 두 조건(전년도/최근 2년 평균) 중 어느 것을 자동 판정할지 원문에서 확정하지 못했다면
+  분리하지 않고 `evaluation_mode=MANUAL` 단일 criteria로 보존한다(명세 예시 그대로).
 - criteria를 ROOT나 중간 그룹에도 직접 연결할 수 있도록 한다.
 - 기존 매핑 원장의 원천 ID와 문서 근거를 `source_record_mappings`로 변환한다.
 - #35 점수표는 최신 차수 승계가 검증되기 전까지 공통 서비스 데이터에 넣지 않거나 명시적인
@@ -166,8 +269,19 @@ remaining_quota        = 306
 
 ### 9. 공통 UUID 최종 발급과 매핑 확정
 
+- PR #38(`scripts/uuid_utils.py`, 이슈 #37)의 UUID 생성·검증 유틸리티를 재사용한다. 현재
+  main에 병합되지 않은 상태이므로 먼저 병합하거나 v2 통합 브랜치로 가져온다. 새로 구현하지 않는다
+  (`CLAUDE.md`의 재발명 금지 원칙).
+  - `generate_uuid4()`, `validate_uuid4()`는 수정 없이 그대로 쓴다.
+  - `get_or_create_visa_id()`는 v2 `visa_requirements.visa_id` 재사용 로직(같은 `visa_code`면
+    기존 ID 유지)에 그대로 맞으므로 그대로 쓴다.
+  - `UUID_ID_COLUMNS`가 현재 `{"visa_id", "stage_id", "document_requirement_id"}`로 하드코딩되어
+    있어 `assign_new_id`/`ensure_new_id_is_unique`가 다른 컬럼을 거부한다. v2의 나머지 PK
+    (`group_id`, `criteria_id`, `score_model_id`, `scoring_item_id`, `relation_id`,
+    `quota_policy_id`, `quota_snapshot_id`, `source_document_id`, `mapping_id`, `change_id`)를
+    이 집합에 추가하는 작업을 이 단계에 포함한다.
 - 모든 변환 행의 대상 테이블, 논리 구조, 출처, 페이지, 유효기간을 먼저 검증한다.
-- 검증 완료된 신규 행에만 UUIDv4를 발급한다.
+- 검증 완료된 신규 행에만 `uuid_utils`로 UUIDv4를 발급한다.
 - 기존 v1 공통 레코드는 기존 UUID를 유지한다.
 - `REQ-*`, `SCORE-*`, 원천 criteria UUID는 공통 PK로 사용하지 않는다.
 - 발급 결과를 `source_record_mappings.target_record_id`에 기록한다.
@@ -191,8 +305,14 @@ remaining_quota        = 306
 - 부모·자식의 `visa_id`가 같은지 검사한다.
 - 부모 누락, 자기참조, 간접 순환을 거부한다.
 - OR 그룹의 판정 참여 자식/criteria가 2개 이상인지 검사한다.
+- `boolean_operator`가 `AND`/`OR`, `criteria_type`이 `NUMERIC`/`TEXT`/`BOOLEAN`/`LIST`/
+  `EXISTENCE`, `evaluation_mode`가 `AUTOMATED`/`MANUAL`/`INFORMATIONAL`, `operator`가
+  `EQ`/`GT`/`GTE`/`LT`/`LTE`/`IN`/`NOT_IN`/`EXISTS`/`NOT_EXISTS`/`WITHIN` 중 하나인지 검사한다.
 - `AUTOMATED` criteria의 `field_identifier`와 `operator`를 필수로 검사한다.
+- `MANUAL` criteria는 `operator`가 비어 있어도 되지만 `value_text`가 필수인지 검사한다.
 - `INFORMATIONAL` criteria가 계산 대상에서 제외되는지 테스트한다.
+- AND 그룹은 `FAIL > REVIEW_REQUIRED > PASS`, OR 그룹은 `PASS > REVIEW_REQUIRED > FAIL` 우선순위로
+  자식/criteria 판정을 결합하는지 계산 로직을 fixture로 검증한다.
 
 ### 점수표
 
@@ -204,16 +324,21 @@ remaining_quota        = 306
 ### 제출서류
 
 - stage FK와 문서 FK를 검사한다.
+- `requirement_status`가 `REQUIRED`/`OPTIONAL`/`CONDITIONAL`/`ALTERNATIVE` 중 하나인지 검사한다.
 - 자기 첨부와 간접 순환 첨부를 거부한다.
 - `ALTERNATIVE` 행의 대체 그룹과 `CONDITIONAL` 행의 조건 설명을 검사한다.
 
 ### 쿼터
 
+- `quota_type`이 `LIMITED`/`UNLIMITED`/`UNKNOWN`, `scope_type`이 `NATIONAL`/`PROVINCE`/
+  `MUNICIPALITY`/`INSTITUTION`/`DEPARTMENT`/`OTHER` 중 하나인지 검사한다.
 - `UNLIMITED` policy에 snapshot이 없음을 검사한다.
 - nullable 숫자를 0으로 해석하지 않는다.
 - 관련 네 값이 존재할 때 `consumed_quota = recommended_count - quota_exempt_count`를 검사한다.
 - 관련 세 값이 존재할 때 `remaining_quota = allocated_quota - consumed_quota`를 검사한다.
 - 모든 수량이 음수가 아닌지 검사한다.
+- `consumption_exception`은 자유 텍스트로만 취급하고, 코드(검증기·서비스 로직 어디에도)가 이
+  값을 파싱해 개인별 자동 판정에 쓰지 않는지 확인한다.
 
 ### 출처·매핑
 
