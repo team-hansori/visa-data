@@ -1,1 +1,3 @@
 relation_id,parent_document_id,attachment_document_id,requirement_status,alternative_group,condition_note,display_order,valid_from,valid_to,source_document_id,source_page
+c825aaf9-8f76-4805-8fcd-fbba254dbad0,8f28a393-d0e4-4f33-ae7c-56de386bd45a,38f87f10-58d7-45c4-8773-1b9fafd83bfd,CONDITIONAL,,"대리신청(부득이한 경우, 행정사 등)일 때만 첨부 — 본인 직접 신청 시 불필요",10,2026-01-12,2026-09-18,d3c64f30-9c86-4459-93d5-bfbb02863e5c,9-10
+5a8fa696-1d14-40a5-8a61-2b31bf414709,9f7377b5-6a67-4e5c-baf4-e095e57a6321,abbde325-2173-4681-9add-f00981b76675,REQUIRED,,고용기업 추천서(서식5)에 명시된 첨부물(주민등록증 또는 운전면허증),20,2026-01-12,2026-09-18,d3c64f30-9c86-4459-93d5-bfbb02863e5c,"9,19"
