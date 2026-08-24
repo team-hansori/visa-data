@@ -40,6 +40,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([e3a86ef](https://github.com/team-hansori/visa-data/commit/e3a86ef44293d96f491bce78e09882107536060a))
 - E-7-4R 점수제 규칙 조사 보고서 추가 (#44) ([3b58697](https://github.com/team-hansori/visa-data/commit/3b58697d6143f1985bb2fcfeb80f628c39b94148))
 - Finalize E-7-4R v2 migration handoff ([42a1c54](https://github.com/team-hansori/visa-data/commit/42a1c54f674964d633bd68bb855f6c4469d9a3b5))
 - E-7-4R README 구조 및 컬럼 설명 정리 (#40) ([c7e9886](https://github.com/team-hansori/visa-data/commit/c7e988670a571e6a638330c6194d43ad31b019df))
@@ -76,6 +77,7 @@
 
 ### 버그 수정
 
+- 되돌린 F-2-R 원천 스키마에 검증기 정합화 (#36) ([e209f15](https://github.com/team-hansori/visa-data/commit/e209f15f268c0a3b1df69f9d8d774d1ed530928e))
 - E-7-4R 데이터 정규화 스크립트 5건 데이터 무결성 버그 수정 (#43 코드래빗 리뷰) ([7c22f92](https://github.com/team-hansori/visa-data/commit/7c22f92d59c1b84cda828aab04f043a55d4acbaa))
 - HWPX 원문 표식 재추출 및 리뷰 하위 행 반영 (#40) ([53535f8](https://github.com/team-hansori/visa-data/commit/53535f88ada117ef6e525adc20663998901970e4))
 - 제출서류 상태값 검증 강화 ([318fec0](https://github.com/team-hansori/visa-data/commit/318fec0cf4cb78b6a7fd743d3209e973d5e3df05))
@@ -104,6 +106,8 @@
 
 ### 새 기능
 
+- F-2-R 공통 마스터 매핑 추가 (#39) ([ba2ad92](https://github.com/team-hansori/visa-data/commit/ba2ad923a9ad6e72c9e95dbf2a665269c752907c))
+- 지역특화_우수인재_F-2-R 자료 추출 (#35) ([66f0004](https://github.com/team-hansori/visa-data/commit/66f00049b9e1973e67622021dbae8f50ac988203))
 - E-7-4R 자동 분류 스크립트 추가 (#40) ([2d9271c](https://github.com/team-hansori/visa-data/commit/2d9271c23c10512ebc1ebcc4b68eabb6f648e236))
 - 절차 단계별 제출서류 스키마와 FK 무결성 검증 스크립트 추가 ([50e831a](https://github.com/team-hansori/visa-data/commit/50e831a2a48a9151f070aef680b94c4c2d9ed548))
 - 1~8차 공고문 비교로 change_history.csv 채우기 ([bb0b711](https://github.com/team-hansori/visa-data/commit/bb0b71112fd4f58a7ecd21d7fb67a6ae1abd02eb))
