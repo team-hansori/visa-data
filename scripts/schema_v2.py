@@ -283,8 +283,9 @@ _VISA_CRITERION_GROUPS_TABLE = TableSpec(
         _uuid("group_id"),
         _uuid("visa_id", fk=_fk(VISA_REQUIREMENTS, "visa_id")),
         # ROOT 그룹만 비워야 한다는 규칙은 스키마의 nullable 여부만으로는 표현할 수 없다 —
-        # ROOT 유일성/자식 visa_id 일치 등 트리 무결성 규칙은 이번 태스크 범위 밖이며,
-        # plans/issue-44-....md "검증기 세부 계약"의 후속 작업이다.
+        # ROOT 유일성/자식 visa_id 일치/자기참조·순환참조/OR 그룹 최소 자식 수 등 트리
+        # 무결성 규칙은 scripts/validate_common_schema_v2.py에 구현되어 있다
+        # (plans/issue-44-....md "검증기 세부 계약"의 자격조건 절 참고).
         _uuid(
             "parent_group_id",
             nullable=True,
@@ -659,10 +660,41 @@ def check_no_csv_suffix_in_logical_names(schema: dict[str, TableSpec] | None = N
 # --------------------------------------------------------------------------
 
 
-def write_empty_csv(table: TableSpec, output_dir: Path) -> Path:
-    """테이블 정의의 헤더만 담은 빈 CSV 하나를 output_dir에 쓰고 경로를 반환한다."""
+class PopulatedFileExistsError(RuntimeError):
+    """헤더 외에 데이터 행이 있는 기존 CSV를 force 없이 덮어쓰려 할 때 발생시키는 예외.
+
+    `extraction/common_v2/`는 검수를 마친, git 커밋 이력 외에는 복구 수단이 없는 데이터다.
+    이 예외는 그 디렉터리를 기본 출력 경로로 삼는 스크립트를 그대로 실행했을 때 실수로
+    13개 CSV를 헤더만 남기고 지워버리는 사고를 막기 위한 안전장치다.
+    """
+
+
+def _has_data_rows(path: Path) -> bool:
+    """CSV 파일에 헤더 외의 데이터 행이 하나라도 있으면 True.
+
+    파일이 없거나 헤더 한 줄(또는 완전히 빈 파일)뿐이면 False — 이 경우는 덮어써도 안전하다.
+    """
+    if not path.exists():
+        return False
+    with path.open(newline="", encoding="utf-8") as f:
+        rows = list(csv.reader(f))
+    return len(rows) > 1
+
+
+def write_empty_csv(table: TableSpec, output_dir: Path, *, force: bool = False) -> Path:
+    """테이블 정의의 헤더만 담은 빈 CSV 하나를 output_dir에 쓰고 경로를 반환한다.
+
+    기존 파일에 헤더 외 데이터 행이 있으면 `force=True`를 명시하지 않는 한 거부한다 —
+    `extraction/common_v2/`처럼 검수 완료된 데이터를 실수로 헤더만 남기고 지우는 사고를
+    막기 위함이다(git 커밋 이력이 유일한 복구 수단인 데이터).
+    """
     output_dir.mkdir(parents=True, exist_ok=True)
     path = output_dir / table.filename
+    if not force and _has_data_rows(path):
+        raise PopulatedFileExistsError(
+            f"{path}에 이미 데이터 행이 있어 덮어쓰기를 거부합니다. "
+            "의도적으로 비우려면 --force(또는 force=True)를 명시하세요."
+        )
     with path.open("w", newline="", encoding="utf-8") as f:
         writer = csv.writer(f)
         writer.writerow(table.header)
@@ -672,10 +704,27 @@ def write_empty_csv(table: TableSpec, output_dir: Path) -> Path:
 def generate_empty_csvs(
     output_dir: Path,
     tables: Iterable[TableSpec] | None = None,
+    *,
+    force: bool = False,
 ) -> list[Path]:
-    """스키마 정의 순서대로 13개(또는 지정한) 빈 CSV를 output_dir에 생성한다."""
+    """스키마 정의 순서대로 13개(또는 지정한) 빈 CSV를 output_dir에 생성한다.
+
+    기존 파일에 데이터 행이 있는 경우 `force=True`가 아니면 `PopulatedFileExistsError`를
+    발생시키고 어떤 파일도 쓰지 않는다(부분적으로 파괴하는 상황을 피하기 위해 쓰기 전에
+    먼저 전체 대상 파일을 검사한다).
+    """
     tables = [SCHEMA_V2[name] for name in TABLE_ORDER] if tables is None else list(tables)
-    return [write_empty_csv(table, output_dir) for table in tables]
+    if not force:
+        populated = [
+            output_dir / t.filename for t in tables if _has_data_rows(output_dir / t.filename)
+        ]
+        if populated:
+            names = ", ".join(str(p) for p in populated)
+            raise PopulatedFileExistsError(
+                f"다음 파일에 이미 데이터 행이 있어 덮어쓰기를 거부합니다: {names}. "
+                "의도적으로 비우려면 --force(또는 force=True)를 명시하세요."
+            )
+    return [write_empty_csv(table, output_dir, force=force) for table in tables]
 
 
 DEFAULT_OUTPUT_DIR = Path("extraction/common_v2")
@@ -688,6 +737,15 @@ def main() -> int:
         description="schema_v2.py 정의에서 13개 v2 빈 CSV 골격(헤더만)을 생성한다."
     )
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help=(
+            "output-dir에 이미 데이터 행이 있는 CSV가 있어도 헤더만 남기고 덮어쓴다. "
+            "기본값은 거부(PopulatedFileExistsError) — extraction/common_v2/처럼 검수 완료된 "
+            "데이터를 실수로 지우는 것을 막기 위함이다."
+        ),
+    )
     args = parser.parse_args()
 
     forbidden_errors = check_no_forbidden_names()
@@ -697,7 +755,11 @@ def main() -> int:
             print(f"  - {error}")
         return 1
 
-    written = generate_empty_csvs(args.output_dir)
+    try:
+        written = generate_empty_csvs(args.output_dir, force=args.force)
+    except PopulatedFileExistsError as exc:
+        print(f"거부됨 — {exc}")
+        return 1
     print(f"v2 빈 CSV {len(written)}개 생성 완료 -> {args.output_dir}")
     for path in written:
         print(f"  - {path}")

@@ -10,8 +10,10 @@ from __future__ import annotations
 import csv
 from pathlib import Path
 
+import pytest
+
 from scripts.migrate_to_v2 import migrate, read_v1_csv
-from scripts.schema_v2 import SCHEMA_V2, TABLE_ORDER
+from scripts.schema_v2 import SCHEMA_V2, TABLE_ORDER, PopulatedFileExistsError
 
 
 def _write_csv(path: Path, header: list[str], rows: list[dict[str, str]] | None = None) -> None:
@@ -97,3 +99,44 @@ class TestMigrateStub:
         assert written_header == v2_header
         assert "total_score_threshold" not in written_header
         assert "quota_type" not in written_header
+
+
+class TestMigrateDestructiveOverwriteProtection:
+    """Finding 1 — output_dir(기본값 extraction/common_v2/)에 이미 데이터가 있으면
+    migrate()가 --force 없이 헤더만 남기고 덮어쓰지 않는다."""
+
+    def test_refuses_when_output_dir_has_populated_v2_csv(self, tmp_path: Path):
+        v1_dir = tmp_path / "v1"
+        output_dir = tmp_path / "v2"
+        v1_dir.mkdir()
+        table = SCHEMA_V2["visa_requirements"]
+        _write_csv(
+            output_dir / table.filename,
+            table.header,
+            [dict.fromkeys(table.header, "x")],
+        )
+
+        with pytest.raises(PopulatedFileExistsError):
+            migrate(v1_dir, output_dir)
+
+        with (output_dir / table.filename).open(newline="", encoding="utf-8") as f:
+            rows = list(csv.reader(f))
+        assert len(rows) == 2, "거부됐다면 기존 데이터 행이 그대로 남아 있어야 함"
+
+    def test_force_overrides_refusal(self, tmp_path: Path):
+        v1_dir = tmp_path / "v1"
+        output_dir = tmp_path / "v2"
+        v1_dir.mkdir()
+        table = SCHEMA_V2["visa_requirements"]
+        _write_csv(
+            output_dir / table.filename,
+            table.header,
+            [dict.fromkeys(table.header, "x")],
+        )
+
+        written = migrate(v1_dir, output_dir, force=True)
+
+        assert len(written) == 13
+        with (output_dir / table.filename).open(newline="", encoding="utf-8") as f:
+            rows = list(csv.reader(f))
+        assert rows == [table.header]

@@ -24,7 +24,7 @@ import argparse
 import csv
 from pathlib import Path
 
-from scripts.schema_v2 import TABLE_ORDER, generate_empty_csvs
+from scripts.schema_v2 import TABLE_ORDER, PopulatedFileExistsError, generate_empty_csvs
 
 DEFAULT_V1_DIR = Path("extraction/D_visa_requirements")
 DEFAULT_OUTPUT_DIR = Path("extraction/common_v2")
@@ -49,18 +49,23 @@ def read_v1_csv(path: Path) -> list[dict[str, str]]:
         return list(csv.DictReader(f))
 
 
-def migrate(v1_dir: Path, output_dir: Path) -> list[Path]:
+def migrate(v1_dir: Path, output_dir: Path, *, force: bool = False) -> list[Path]:
     """v1 CSV 존재를 확인한 뒤(현재는 읽기만 함) v2 출력 디렉터리에 헤더만 있는 13개
     CSV를 생성한다.
 
     실제 행 변환 로직은 의도적으로 비어 있다 — 모듈 docstring의 스코프 설명 참고.
     v1 파일은 여기서 절대 쓰지 않는다.
+
+    output_dir에 이미 데이터 행이 있는 v2 CSV가 있으면 `force=True`가 아닌 한
+    `scripts.schema_v2.PopulatedFileExistsError`를 발생시키고 아무것도 쓰지 않는다 —
+    이 스텁의 기본 출력 경로(`extraction/common_v2/`)는 검수 완료된 실 데이터 디렉터리이기
+    때문이다.
     """
     for table_name in V1_TABLE_NAMES:
         # 지금은 파일이 읽히는지만 확인한다. 반환값은 아직 v2 행으로 변환하지 않는다.
         _ = read_v1_csv(v1_dir / f"{table_name}.csv")
 
-    return generate_empty_csvs(output_dir)
+    return generate_empty_csvs(output_dir, force=force)
 
 
 def main() -> int:
@@ -72,9 +77,22 @@ def main() -> int:
     )
     parser.add_argument("--v1-dir", type=Path, default=DEFAULT_V1_DIR)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT_DIR)
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help=(
+            "output-dir에 이미 데이터 행이 있는 CSV가 있어도 헤더만 남기고 덮어쓴다. "
+            "기본값은 거부 — 기본 output-dir(extraction/common_v2/)는 검수 완료된 실 데이터 "
+            "디렉터리이며 git 커밋 이력 외에는 복구 수단이 없다."
+        ),
+    )
     args = parser.parse_args()
 
-    written = migrate(args.v1_dir, args.output_dir)
+    try:
+        written = migrate(args.v1_dir, args.output_dir, force=args.force)
+    except PopulatedFileExistsError as exc:
+        print(f"거부됨 — {exc}")
+        return 1
 
     print(
         f"v2 스텁 마이그레이션 완료 (헤더만 생성됨, 실제 행 변환 없음): "

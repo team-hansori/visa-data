@@ -14,8 +14,10 @@ from scripts.schema_v2 import (
     ColumnKind,
     ColumnSpec,
     ForeignKey,
+    PopulatedFileExistsError,
     TableSpec,
     generate_empty_csvs,
+    write_empty_csv,
 )
 
 
@@ -193,3 +195,83 @@ class TestEmptyCsvGeneration:
         names = {p.name for p in written}
         for table_name in TABLE_ORDER:
             assert f"{table_name}.csv" in names
+
+
+class TestDestructiveOverwriteProtection:
+    """Finding 1 — 데이터가 있는 v2 CSV를 실수로 헤더만 남기고 덮어쓰지 못하게 막는다."""
+
+    def test_empty_or_nonexistent_directory_does_not_require_force(self, tmp_path: Path):
+        # 디렉터리가 비어 있거나 아직 없으면 --force 없이도 정상적으로 생성된다.
+        written = generate_empty_csvs(tmp_path)
+        assert len(written) == 13
+
+    def test_write_empty_csv_refuses_populated_file_without_force(self, tmp_path: Path):
+        table = SCHEMA_V2["visa_requirements"]
+        path = tmp_path / table.filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(table.header)
+            writer.writerow(["x"] * len(table.header))  # 데이터 행 1개
+
+        with pytest.raises(PopulatedFileExistsError):
+            write_empty_csv(table, tmp_path)
+
+        # 거부됐으므로 원본 데이터 행이 그대로 남아 있어야 한다.
+        with path.open(newline="", encoding="utf-8") as f:
+            rows = list(csv.reader(f))
+        assert len(rows) == 2, "거부된 쓰기가 실제로 파일을 건드리면 안 됨"
+
+    def test_write_empty_csv_force_overrides_refusal(self, tmp_path: Path):
+        table = SCHEMA_V2["visa_requirements"]
+        path = tmp_path / table.filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        with path.open("w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(table.header)
+            writer.writerow(["x"] * len(table.header))
+
+        write_empty_csv(table, tmp_path, force=True)
+
+        with path.open(newline="", encoding="utf-8") as f:
+            rows = list(csv.reader(f))
+        assert rows == [table.header], "force=True면 헤더만 남기고 덮어써야 함"
+
+    def test_generate_empty_csvs_refuses_when_any_table_is_populated(self, tmp_path: Path):
+        # 13개 중 1개만 데이터가 있어도 전체를 거부하고 아무 파일도 건드리지 않는다.
+        populated_table = SCHEMA_V2["visa_scoring_items"]
+        populated_path = tmp_path / populated_table.filename
+        populated_path.parent.mkdir(parents=True, exist_ok=True)
+        with populated_path.open("w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(populated_table.header)
+            writer.writerow(["x"] * len(populated_table.header))
+
+        untouched_table = SCHEMA_V2["visa_requirements"]
+        untouched_path = tmp_path / untouched_table.filename
+        with untouched_path.open("w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(untouched_table.header)
+            writer.writerow(["y"] * len(untouched_table.header))
+
+        with pytest.raises(PopulatedFileExistsError):
+            generate_empty_csvs(tmp_path)
+
+        with untouched_path.open(newline="", encoding="utf-8") as f:
+            rows = list(csv.reader(f))
+        assert len(rows) == 2, "거부 시 다른 파일도 건드리면 안 됨(all-or-nothing)"
+
+    def test_generate_empty_csvs_force_overrides_all(self, tmp_path: Path):
+        populated_table = SCHEMA_V2["visa_scoring_items"]
+        populated_path = tmp_path / populated_table.filename
+        populated_path.parent.mkdir(parents=True, exist_ok=True)
+        with populated_path.open("w", newline="", encoding="utf-8") as f:
+            writer = csv.writer(f)
+            writer.writerow(populated_table.header)
+            writer.writerow(["x"] * len(populated_table.header))
+
+        written = generate_empty_csvs(tmp_path, force=True)
+        assert len(written) == 13
+        with populated_path.open(newline="", encoding="utf-8") as f:
+            rows = list(csv.reader(f))
+        assert rows == [populated_table.header]
