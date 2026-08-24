@@ -34,12 +34,16 @@
 
 ### 리팩터링
 
+- Replace CSV UUID generator with reusable utility: CSV UUID 생성기를 공용 유틸리티로 교체 ([c43d78a](https://github.com/team-hansori/visa-data/commit/c43d78a03c7a0e7247a1571f3e783c3ed7cbace4))
 - History 매핑표 단일화 (#40) ([631165d](https://github.com/team-hansori/visa-data/commit/631165d3be47ea7927c68614b16f9e2a426bab31))
 - Review 스크립트 통합 진입점 및 행 정렬 추가 (#40) ([e7dd3c8](https://github.com/team-hansori/visa-data/commit/e7dd3c816295afe6cc2f4d2acfa9686fe49ed7a9))
 - C_D-2-common 스키마를 데이터 형태(매트릭스/목록)에 맞게 재설계 ([13da43a](https://github.com/team-hansori/visa-data/commit/13da43a3852673875c48d899b0b740ef2a807ee3))
 
 ### 문서
 
+- UUID 유틸리티 구조로 계획 수정 (#37) ([e0a3ead](https://github.com/team-hansori/visa-data/commit/e0a3ead0ce40a1cd641330f51c6cb6a2eb3fec9c))
+- UUID 생성 계획을 유틸리티 방식으로 정리 (#37) ([ca9144a](https://github.com/team-hansori/visa-data/commit/ca9144a65779ea5333fe3e5c2e0e186e47eaf7ea))
+- CHANGELOG 자동 업데이트 [skip ci] ([10ee453](https://github.com/team-hansori/visa-data/commit/10ee4534179b5a5d364ffd11dd7eb9b78e3f3650))
 - CHANGELOG 자동 업데이트 [skip ci] ([e3a86ef](https://github.com/team-hansori/visa-data/commit/e3a86ef44293d96f491bce78e09882107536060a))
 - E-7-4R 점수제 규칙 조사 보고서 추가 (#44) ([3b58697](https://github.com/team-hansori/visa-data/commit/3b58697d6143f1985bb2fcfeb80f628c39b94148))
 - Finalize E-7-4R v2 migration handoff ([42a1c54](https://github.com/team-hansori/visa-data/commit/42a1c54f674964d633bd68bb855f6c4469d9a3b5))
@@ -106,6 +110,7 @@
 
 ### 새 기능
 
+- [자동화] 공통 UUID 생성 및 중복 검증 스크립트 추가 (#37) ([7739a95](https://github.com/team-hansori/visa-data/commit/7739a95008193ac65b0a2f3358fe4852fffc74da))
 - F-2-R 공통 마스터 매핑 추가 (#39) ([ba2ad92](https://github.com/team-hansori/visa-data/commit/ba2ad923a9ad6e72c9e95dbf2a665269c752907c))
 - 지역특화_우수인재_F-2-R 자료 추출 (#35) ([66f0004](https://github.com/team-hansori/visa-data/commit/66f00049b9e1973e67622021dbae8f50ac988203))
 - E-7-4R 자동 분류 스크립트 추가 (#40) ([2d9271c](https://github.com/team-hansori/visa-data/commit/2d9271c23c10512ebc1ebcc4b68eabb6f648e236))
