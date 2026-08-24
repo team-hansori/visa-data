@@ -946,9 +946,63 @@ remaining_quota
   재검토가 끝났다는 뜻이 아니므로(`COMMON_MASTER_MAPPING.md` 참고), 이후 단계에서도 재확인이 필요하다.
 - **D-2**: `extraction/C_D-2-common/`(3개 CSV: `parttime_work_rules.csv`, `certified_universities.csv`,
   `gwangyeok_eligible_departments.csv`)를 기준으로 삼는다. 이슈 #41의 연결 결과에 따라 D-2는
-  Lookup/Rule 구조를 그대로 유지하고 공통 자격조건 트리로 평탄화하지 않는다(plan 8단계) — 이번
-  초안에서는 연결 여부를 별도로 검증하지 않고, 전량을 공통 마스터 이관 대상에서 제외하는 매핑만
-  기록했다.
+  Lookup/Rule 구조를 그대로 유지하고 공통 자격조건 트리로 평탄화하지 않는다(plan 8단계).
+
+### D-2 연결 검증 (plan 8단계)
+
+D-2는 공통 마스터로 이관하지 않으므로, 이 절은 "무엇을 옮겼는가"가 아니라 "`extraction/C_D-2-common/`이
+공통 `visa_requirements`와 실제로 연결 가능한 상태인가"만 확인한다.
+
+**식별자 검증 결과 — 불일치 발견, 원천 파일은 수정하지 않음**
+
+`gwangyeok_eligible_departments.csv`(71행)에는 자체 `visa_id` 컬럼이 있고 71행 전부 동일한 값
+(`41f2d169-e38f-4e76-8047-1d4964815ee4`, 형식상 유효한 UUIDv4)을 쓴다. 이 값은 v2 공통 마스터가
+1단계에서 D-2용으로 발급한 `visa_id`(`8a295d32-46dd-43a8-8a9d-b3713251bf1f`)와 다르다.
+
+두 값이 다른 게 버그가 아니라고 판단한 근거: D-2는 F-4-R과 달리 `extraction/` 안에 자체
+`visa_requirements.csv`(공통 마스터에 준하는 단일 정체성 행)가 존재한 적이 없다 — 이 비자유형의
+"기존 v1 공통 UUID"라는 게 애초에 없었다. `41f2d169-...`는 저장소 전체에서
+`gwangyeok_eligible_departments.csv` 한 파일에서만 등장하며(검색 확인 완료), 다른 어떤 D-2 관련
+파일에도 참조되지 않는다 — 즉 공통 정체성으로 의도된 값이라기보다 그 파일을 만들 때 내부적으로
+생성된 값으로 보인다. 그래서 "기존 v1 공통 UUID는 유지한다" 원칙이 적용될 대상 자체가 없었고,
+1단계에서 새 UUIDv4를 발급한 것은 맞는 처리였다고 본다.
+
+다만 이 불일치는 실제로 존재하므로 여기 기록해둔다 — 나중에 D-2가 실제로 공통 마스터와 연결되는
+단계에 들어가면(예: `visa_requirements`와의 FK를 만드는 경우), `gwangyeok_eligible_departments.csv`의
+`visa_id` 컬럼을 `8a295d32-...`로 정정하거나, 애초에 이 컬럼이 왜 필요했는지(같은 파일 안에서
+D-2 외 다른 값이 나온 적이 없으므로 사실상 상수) 재검토하는 게 좋다. 이번 검증에서는 원천 파일을
+고치지 않았다 — `extraction/`의 검수 완료 데이터를 이 이슈 범위에서 임의로 수정하지 않는다는 원칙을
+따른다.
+
+**출처·유효기간 검증 결과 — 전부 원문에 근거, 추가 조치 불필요**
+
+- `parttime_work_rules.csv`(10행): 전체 행의 `valid_from`이 문자열 `"UNKNOWN — PDF·웹페이지 모두
+  시행일 미기재, 확인 필요"`다. 값이 빠진 게 아니라 원문 자체에 시행일이 없다는 사실을
+  상태 문자열로 명시한 것이며(`extraction/C_D-2-common/README.md`에 이미 문서화됨), 이 이슈에서
+  임의로 날짜를 채우지 않는다.
+- `certified_universities.csv`(18행): 전체 행에 `source_page`가 없다. 출처가 PDF가 아니라 두 개의
+  웹페이지(충북지역대학혁신지원센터, 한국유학종합시스템)라 페이지 번호 자체가 존재하지 않는 게
+  정상이다 — 결측이 아니라 구조적으로 해당 없음.
+- `gwangyeok_eligible_departments.csv`(71행): `source_document`/`source_page`/`valid_from`/`valid_to`
+  전부 채워져 있다. 위 식별자 불일치를 빼면 이 파일은 완전하다.
+
+**쿼터 미생성 확인**
+
+D-2 공식 정원 숫자는 아직 확인되지 않았다(1단계 시점 기준). `extraction/common_v2/
+visa_quota_policies.csv`·`visa_quota_snapshots.csv` 어디에도 D-2 행이 없음을 확인했다 — plan
+8단계의 "공식 정원 숫자가 확인되지 않은 상태에서는 quota policy/snapshot 행을 생성하지 않는다"
+원칙대로 유지한다.
+
+**서비스 소비 경계**
+
+- `extraction/C_D-2-common/`의 3개 CSV는 원래 스키마 그대로 남고, v2 13개 테이블 어디로도 옮기지
+  않는다 — `visa_criterion_groups`/`visa_requirement_criteria`로 평탄화하지 않는다.
+- v2 공통 마스터가 D-2에 대해 갖는 건 `visa_requirements`의 정체성 행(`visa_id`+`visa_code`만
+  채워진 1단계 부트스트랩) 하나뿐이다 — 자격조건·절차·서류·쿼터 등 나머지 내용은 공통 마스터에
+  없다.
+- 따라서 어떤 v2 서비스 테이블도 현재 D-2 Lookup/Rule 데이터를 소비하지 않는다. 나중에 추천
+  시스템이 D-2를 다뤄야 하면, `extraction/C_D-2-common/`을 직접 읽는 별도 조회 경로가 필요하며,
+  이는 이 이슈의 범위가 아니다.
 
 ### 검수 완료 범위 vs 보류 범위
 
