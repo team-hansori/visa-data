@@ -18,14 +18,19 @@ from pathlib import Path
 from scripts.schema_v2 import (
     DOCUMENT_ATTACHMENT_RELATIONS,
     SCHEMA_V2,
+    SOURCE_RECORD_MAPPINGS,
     TABLE_ORDER,
     VISA_CRITERION_GROUPS,
+    VISA_QUOTA_POLICIES,
+    VISA_QUOTA_SNAPSHOTS,
     VISA_REQUIREMENT_CRITERIA,
 )
 from scripts.uuid_utils import generate_uuid4
 from scripts.validate_common_schema_v2 import (
     _check_criterion_group_tree_integrity,
     _check_document_attachment_relation_integrity,
+    _check_quota_arithmetic,
+    _check_target_table_is_real_table_name,
     read_csv,
     validate_all,
     validate_directory,
@@ -1031,3 +1036,259 @@ class TestDocumentAttachmentRelationIntegrityRejection:
             {DOCUMENT_ATTACHMENT_RELATIONS: rows}
         )
         assert errors == []
+
+
+# --------------------------------------------------------------------------
+# source_record_mappings.target_table — 실제 v2 테이블명(또는 NONE sentinel)만 허용
+# (finding 2: 이전에는 검사 자체가 없어 "scoring_items"/"visa_quota_status" 같은 잘못된
+# 값이 조용히 통과했다)
+# --------------------------------------------------------------------------
+
+
+class TestTargetTableIsRealTableName:
+    def test_real_data_target_table_values_are_all_valid(self):
+        """이번 태스크에서 target_table 오류 102건(finding 2)을 고친 뒤
+        source_record_mappings.csv 전체가 새 검사를 통과하는지 확인한다."""
+        table = SCHEMA_V2[SOURCE_RECORD_MAPPINGS]
+        rows = _load_real_table(SOURCE_RECORD_MAPPINGS)
+        errors: list[str] = []
+        for i, row in enumerate(rows, start=2):
+            errors.extend(_check_target_table_is_real_table_name(table, row, i))
+        assert errors == []
+
+    def test_none_sentinel_is_allowed(self):
+        rows = mutate(
+            build_valid_tables_rows(), "source_record_mappings", 0, "target_table", "NONE"
+        )
+        errors = validate_all(rows)
+        assert errors == []
+
+    def test_empty_target_table_is_allowed(self):
+        # target_table 자체는 컬럼 정의상 필수라 별도의 "필수 필드 비어 있음" 에러가
+        # 나지만, 이 새 검사(target_table enum 여부)만 놓고 보면 빈 값은 통과해야 한다.
+        table = SCHEMA_V2[SOURCE_RECORD_MAPPINGS]
+        errors = _check_target_table_is_real_table_name(table, {"target_table": ""}, 2)
+        assert errors == []
+
+    def test_legacy_scoring_items_shorthand_is_rejected(self):
+        rows = mutate(
+            build_valid_tables_rows(), "source_record_mappings", 0, "target_table", "scoring_items"
+        )
+        errors = validate_all(rows)
+        assert any("target_table" in e and "scoring_items" in e for e in errors)
+
+    def test_obsolete_v1_quota_status_name_is_rejected(self):
+        rows = mutate(
+            build_valid_tables_rows(),
+            "source_record_mappings",
+            0,
+            "target_table",
+            "visa_quota_status",
+        )
+        errors = validate_all(rows)
+        assert any("target_table" in e and "visa_quota_status" in e for e in errors)
+
+    def test_real_v2_table_name_is_accepted(self):
+        rows = mutate(
+            build_valid_tables_rows(),
+            "source_record_mappings",
+            0,
+            "target_table",
+            "visa_scoring_items",
+        )
+        errors = validate_all(rows)
+        assert errors == []
+
+
+# --------------------------------------------------------------------------
+# 쿼터 산술 검증 (finding 4, plan "검증기 세부 계약 > 쿼터" 절) —
+# UNLIMITED policy에 snapshot 없음 / consumed·remaining 등식 / 음수 금지.
+# nullable 숫자(recommended_count, quota_exempt_count)는 0으로 치환하지 않고,
+# 관련 값이 전부 존재할 때만 등식을 적용한다.
+# --------------------------------------------------------------------------
+
+
+def _quota_policy_row(
+    *, quota_policy_id: str, visa_id: str, quota_type: str = "LIMITED"
+) -> dict[str, str]:
+    return {
+        "quota_policy_id": quota_policy_id,
+        "visa_id": visa_id,
+        "quota_type": quota_type,
+        "quota_unit": "PERSON",
+        "valid_from": "2026-01-01",
+        "valid_to": "",
+        "source_document_id": generate_uuid4(),
+        "source_page": "1",
+    }
+
+
+def _quota_snapshot_row(
+    *,
+    quota_snapshot_id: str,
+    quota_policy_id: str,
+    allocated_quota: str = "100",
+    recommended_count: str = "",
+    quota_exempt_count: str = "",
+    consumed_quota: str = "40",
+    remaining_quota: str = "60",
+) -> dict[str, str]:
+    return {
+        "quota_snapshot_id": quota_snapshot_id,
+        "quota_policy_id": quota_policy_id,
+        "notice_round": "12",
+        "as_of_date": "2026-01-15",
+        "scope_type": "PROVINCE",
+        "scope_name": "충청북도",
+        "parent_scope_name": "",
+        "allocated_quota": allocated_quota,
+        "recommended_count": recommended_count,
+        "quota_exempt_count": quota_exempt_count,
+        "consumed_quota": consumed_quota,
+        "remaining_quota": remaining_quota,
+        "consumption_exception": "",
+        "valid_from": "2026-01-01",
+        "valid_to": "",
+        "source_document_id": generate_uuid4(),
+        "source_page": "1",
+        "recorded_at": "2026-01-15T00:00:00",
+    }
+
+
+class TestQuotaArithmeticRealData:
+    """실제 E-7-4R 8차 쿼터 스냅샷(542/246/10/236/306)이 새 산술 검증을 통과하는지 확인."""
+
+    def test_real_quota_data_has_no_arithmetic_violations(self):
+        tables_rows = {
+            VISA_QUOTA_POLICIES: _load_real_table(VISA_QUOTA_POLICIES),
+            VISA_QUOTA_SNAPSHOTS: _load_real_table(VISA_QUOTA_SNAPSHOTS),
+        }
+        errors = _check_quota_arithmetic(tables_rows)
+        assert errors == []
+
+    def test_real_e7_4r_snapshot_values_are_542_246_10_236_306(self):
+        snapshots = _load_real_table(VISA_QUOTA_SNAPSHOTS)
+        assert len(snapshots) == 1
+        row = snapshots[0]
+        assert row["allocated_quota"] == "542"
+        assert row["recommended_count"] == "246"
+        assert row["quota_exempt_count"] == "10"
+        assert row["consumed_quota"] == "236"
+        assert row["remaining_quota"] == "306"
+
+
+class TestQuotaArithmeticRejection:
+    def test_unlimited_policy_with_snapshot_is_rejected(self):
+        visa_id = generate_uuid4()
+        policy_id = generate_uuid4()
+        policies = [
+            _quota_policy_row(quota_policy_id=policy_id, visa_id=visa_id, quota_type="UNLIMITED")
+        ]
+        snapshots = [
+            _quota_snapshot_row(quota_snapshot_id=generate_uuid4(), quota_policy_id=policy_id)
+        ]
+        errors = _check_quota_arithmetic(
+            {VISA_QUOTA_POLICIES: policies, VISA_QUOTA_SNAPSHOTS: snapshots}
+        )
+        assert any("UNLIMITED" in e for e in errors)
+
+    def test_unlimited_policy_without_snapshot_passes(self):
+        visa_id = generate_uuid4()
+        policy_id = generate_uuid4()
+        policies = [
+            _quota_policy_row(quota_policy_id=policy_id, visa_id=visa_id, quota_type="UNLIMITED")
+        ]
+        errors = _check_quota_arithmetic({VISA_QUOTA_POLICIES: policies, VISA_QUOTA_SNAPSHOTS: []})
+        assert errors == []
+
+    def test_wrong_consumed_quota_is_rejected(self):
+        policy_id = generate_uuid4()
+        snapshots = [
+            _quota_snapshot_row(
+                quota_snapshot_id=generate_uuid4(),
+                quota_policy_id=policy_id,
+                allocated_quota="542",
+                recommended_count="246",
+                quota_exempt_count="10",
+                consumed_quota="999",  # 246 - 10 = 236이어야 하는데 틀림
+                remaining_quota="306",
+            )
+        ]
+        errors = _check_quota_arithmetic({VISA_QUOTA_POLICIES: [], VISA_QUOTA_SNAPSHOTS: snapshots})
+        assert any("consumed_quota" in e for e in errors)
+
+    def test_correct_consumed_quota_passes(self):
+        policy_id = generate_uuid4()
+        snapshots = [
+            _quota_snapshot_row(
+                quota_snapshot_id=generate_uuid4(),
+                quota_policy_id=policy_id,
+                allocated_quota="542",
+                recommended_count="246",
+                quota_exempt_count="10",
+                consumed_quota="236",
+                remaining_quota="306",
+            )
+        ]
+        errors = _check_quota_arithmetic({VISA_QUOTA_POLICIES: [], VISA_QUOTA_SNAPSHOTS: snapshots})
+        assert errors == []
+
+    def test_wrong_remaining_quota_is_rejected(self):
+        policy_id = generate_uuid4()
+        snapshots = [
+            _quota_snapshot_row(
+                quota_snapshot_id=generate_uuid4(),
+                quota_policy_id=policy_id,
+                allocated_quota="100",
+                consumed_quota="40",
+                remaining_quota="1",  # 100 - 40 = 60이어야 하는데 틀림
+            )
+        ]
+        errors = _check_quota_arithmetic({VISA_QUOTA_POLICIES: [], VISA_QUOTA_SNAPSHOTS: snapshots})
+        assert any("remaining_quota" in e for e in errors)
+
+    def test_nullable_recommended_and_exempt_are_not_coerced_to_zero(self):
+        # recommended_count/quota_exempt_count가 비어 있으면 consumed_quota 등식 자체를
+        # 적용하지 않아야 한다(0으로 치환해서 억지로 검산하지 않음).
+        policy_id = generate_uuid4()
+        snapshots = [
+            _quota_snapshot_row(
+                quota_snapshot_id=generate_uuid4(),
+                quota_policy_id=policy_id,
+                allocated_quota="75",
+                recommended_count="",
+                quota_exempt_count="",
+                consumed_quota="42",
+                remaining_quota="33",
+            )
+        ]
+        errors = _check_quota_arithmetic({VISA_QUOTA_POLICIES: [], VISA_QUOTA_SNAPSHOTS: snapshots})
+        assert errors == []
+
+    def test_negative_consumed_quota_is_rejected(self):
+        policy_id = generate_uuid4()
+        snapshots = [
+            _quota_snapshot_row(
+                quota_snapshot_id=generate_uuid4(),
+                quota_policy_id=policy_id,
+                allocated_quota="100",
+                consumed_quota="-5",
+                remaining_quota="105",
+            )
+        ]
+        errors = _check_quota_arithmetic({VISA_QUOTA_POLICIES: [], VISA_QUOTA_SNAPSHOTS: snapshots})
+        assert any("consumed_quota" in e and "음수" in e for e in errors)
+
+    def test_negative_allocated_quota_is_rejected(self):
+        policy_id = generate_uuid4()
+        snapshots = [
+            _quota_snapshot_row(
+                quota_snapshot_id=generate_uuid4(),
+                quota_policy_id=policy_id,
+                allocated_quota="-1",
+                consumed_quota="0",
+                remaining_quota="-1",
+            )
+        ]
+        errors = _check_quota_arithmetic({VISA_QUOTA_POLICIES: [], VISA_QUOTA_SNAPSHOTS: snapshots})
+        assert any("allocated_quota" in e and "음수" in e for e in errors)

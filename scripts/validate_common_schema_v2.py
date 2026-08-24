@@ -14,13 +14,20 @@
 - nullable/필수 필드 계약
 - valid_from/valid_to 역전 여부
 - 금지된 테이블·컬럼명, 논리 테이블명의 .csv 접미사 여부
+- `visa_criterion_groups`의 ROOT 유일성, 부모-자식 visa_id 일치, 자기참조·순환참조,
+  OR 그룹 최소 참여 자식 수(2개 이상)
+- `document_attachment_relations`의 자기참조·순환 첨부관계
+- `source_record_mappings.target_table`이 NONE sentinel이거나 실제 v2 13개 테이블명
+  중 하나인지 여부
+- `visa_quota_policies`/`visa_quota_snapshots`의 쿼터 산술(UNLIMITED policy에 snapshot이
+  없는지, `consumed_quota`/`remaining_quota` 등식, 음수 금지) — nullable 숫자는 0으로
+  치환해서 검산하지 않고 관련 값이 모두 있을 때만 등식을 적용한다.
 
-`visa_criterion_groups`의 ROOT 유일성, 순환 참조, OR 그룹 최소 자식 수, 쿼터 스냅샷의
-계산식 검증 같은 더 깊은 무결성 규칙(`plans/issue-44-common-schema-v2-migration.md`의
-"검증기 세부 계약" 절)은 실제 마이그레이션 데이터가 준비되는 후속 작업(4~10단계)의
-범위이며 이 스크립트에는 아직 없다 — task-3-brief.md의 "검증 항목" 목록에 없는 항목은
-의도적으로 생략했다. 단, `visa_requirement_criteria`의 "AUTOMATED일 때 field_identifier/
-operator 필수"는 docs/schema-v2.md의 컬럼 표 자체에 있는 필수 계약이라 여기 포함한다.
+`plans/issue-44-common-schema-v2-migration.md`의 "검증기 세부 계약" 절에서 처음에는
+"실제 마이그레이션 데이터가 준비되는 후속 작업"으로 미뤄뒀던 항목들이지만, 이제 실제
+이관 데이터가 있으므로 위 목록에 모두 구현되어 있다. 단, `visa_requirement_criteria`의
+"AUTOMATED일 때 field_identifier/operator 필수"는 docs/schema-v2.md의 컬럼 표 자체에
+있는 필수 계약이라 별도로 포함했다.
 
 사용법: uv run python scripts/validate_common_schema_v2.py [--base-dir DIR]
 """
@@ -39,6 +46,8 @@ from scripts.schema_v2 import (
     DOCUMENT_ATTACHMENT_RELATIONS,
     SOURCE_RECORD_MAPPINGS,
     VISA_CRITERION_GROUPS,
+    VISA_QUOTA_POLICIES,
+    VISA_QUOTA_SNAPSHOTS,
     VISA_REQUIREMENT_CRITERIA,
     ColumnKind,
     ColumnSpec,
@@ -207,6 +216,36 @@ def _check_table_name_values(table: TableSpec, row: dict[str, str], line: int) -
                 f"{table.filename}:{line} - {col_name}={value!r}에 .csv 접미사가 있으면 안 됨"
             )
     return errors
+
+
+# source_record_mappings.target_table에서 "이관 대상 테이블 없음"을 뜻하는 명시적 sentinel.
+# 빈 문자열과 구분되는 값으로, 원천 행을 검토했지만 공통 마스터로 옮길 데이터 자체가
+# 없다는 것을 밝히는 감사 기록이다(docs/schema-v2.md §13, plan "출처·매핑" 절).
+TARGET_TABLE_NONE_SENTINEL = "NONE"
+
+
+def _check_target_table_is_real_table_name(
+    table: TableSpec, row: dict[str, str], line: int
+) -> list[str]:
+    """source_record_mappings.target_table이 채워져 있고 NONE sentinel이 아니면
+    실제 v2 13개 테이블 논리명 중 하나여야 한다(plan "검증기 세부 계약 > 출처·매핑" 절 —
+    "mapping action/status 조합과 대상 테이블 계약을 검사한다"의 대상 테이블 부분).
+
+    이 검사가 없으면 예전 `scoring_items`(→ 실제로는 `visa_scoring_items`/
+    `visa_scoring_models`)나 `visa_quota_status`(v1 이름, v2는 `visa_quota_snapshots`)처럼
+    존재하지 않는 테이블명이 장부에 조용히 섞여 들어가도 잡히지 않는다.
+    """
+    if table.name != SOURCE_RECORD_MAPPINGS:
+        return []
+    value = row.get("target_table", "")
+    if value == "" or value == TARGET_TABLE_NONE_SENTINEL:
+        return []
+    if value not in schema_v2.TABLE_ORDER:
+        return [
+            f"{table.filename}:{line} - target_table={value!r}는 실제 v2 테이블명이 아님 "
+            f"(허용: {TARGET_TABLE_NONE_SENTINEL} 또는 {', '.join(schema_v2.TABLE_ORDER)})"
+        ]
+    return []
 
 
 def _check_criteria_conditional_requirements(
@@ -392,6 +431,102 @@ def _check_criterion_group_tree_integrity(
     return errors
 
 
+def _quota_numeric(row: dict[str, str], col_name: str) -> float | None:
+    """쿼터 숫자 컬럼 값을 float로 반환한다. 빈 값은 None(= 미확인, 0이 아님)으로
+    돌려준다. 형식 오류(숫자가 아님)는 `_validate_column_value`가 이미 별도로 보고하므로
+    여기서는 조용히 None으로 취급해 중복 보고하지 않는다."""
+    value = row.get(col_name, "")
+    if value == "":
+        return None
+    try:
+        return float(value)
+    except ValueError:
+        return None
+
+
+def _check_quota_arithmetic(
+    tables_rows: dict[str, list[dict[str, str]]],
+) -> list[str]:
+    """쿼터 정책·스냅샷의 산술·정합성 규칙을 검사한다(plan "검증기 세부 계약 > 쿼터" 절,
+    docs/schema-v2.md §10~11 "확정 규칙"/"추가 적용 원칙").
+
+    - `UNLIMITED` policy에는 연결된 snapshot이 하나도 없어야 한다.
+    - `recommended_count`/`quota_exempt_count`처럼 nullable인 숫자는 0으로 치환해서
+      검산하지 않는다 — 관련 값이 전부 존재할 때만 등식을 검사한다.
+    - 값이 모두 있을 때: `consumed_quota == recommended_count - quota_exempt_count`.
+    - `allocated_quota`/`consumed_quota`가 있을 때: `remaining_quota ==
+      allocated_quota - consumed_quota`.
+    - 쿼터 관련 숫자 컬럼은 모두 음수가 아니어야 한다.
+    """
+    errors: list[str] = []
+    snapshot_table = schema_v2.SCHEMA_V2[VISA_QUOTA_SNAPSHOTS]
+    policy_rows = tables_rows.get(VISA_QUOTA_POLICIES, [])
+    snapshot_rows = tables_rows.get(VISA_QUOTA_SNAPSHOTS, [])
+
+    # UNLIMITED policy는 snapshot을 가지면 안 된다.
+    unlimited_policy_ids = {
+        row["quota_policy_id"]
+        for row in policy_rows
+        if row.get("quota_type", "") == "UNLIMITED" and row.get("quota_policy_id", "")
+    }
+    if unlimited_policy_ids:
+        for i, row in enumerate(snapshot_rows, start=2):
+            policy_id = row.get("quota_policy_id", "")
+            if policy_id in unlimited_policy_ids:
+                errors.append(
+                    f"{snapshot_table.filename}:{i} - quota_policy_id={policy_id}는 "
+                    f"UNLIMITED policy인데 snapshot이 존재함(UNLIMITED는 snapshot을 가지면 안 됨)"
+                )
+
+    numeric_cols = (
+        "allocated_quota",
+        "recommended_count",
+        "quota_exempt_count",
+        "consumed_quota",
+        "remaining_quota",
+    )
+    for i, row in enumerate(snapshot_rows, start=2):
+        values = {col: _quota_numeric(row, col) for col in numeric_cols}
+
+        # 음수 금지(값이 있는 컬럼만).
+        for col, val in values.items():
+            if val is not None and val < 0:
+                errors.append(
+                    f"{snapshot_table.filename}:{i} - {col}={val!r}가 음수임"
+                    "(쿼터 수량은 음수일 수 없음)"
+                )
+
+        allocated, recommended, exempt, consumed, remaining = (
+            values["allocated_quota"],
+            values["recommended_count"],
+            values["quota_exempt_count"],
+            values["consumed_quota"],
+            values["remaining_quota"],
+        )
+
+        # consumed_quota = recommended_count - quota_exempt_count (세 값 모두 있을 때만)
+        if recommended is not None and exempt is not None and consumed is not None:
+            expected = recommended - exempt
+            if consumed != expected:
+                errors.append(
+                    f"{snapshot_table.filename}:{i} - consumed_quota={consumed!r}가 "
+                    f"recommended_count({recommended!r}) - quota_exempt_count({exempt!r}) = "
+                    f"{expected!r}와 다름"
+                )
+
+        # remaining_quota = allocated_quota - consumed_quota (둘 다 있을 때만)
+        if allocated is not None and consumed is not None and remaining is not None:
+            expected = allocated - consumed
+            if remaining != expected:
+                errors.append(
+                    f"{snapshot_table.filename}:{i} - remaining_quota={remaining!r}가 "
+                    f"allocated_quota({allocated!r}) - consumed_quota({consumed!r}) = "
+                    f"{expected!r}와 다름"
+                )
+
+    return errors
+
+
 def _check_document_attachment_relation_integrity(
     tables_rows: dict[str, list[dict[str, str]]],
 ) -> list[str]:
@@ -487,12 +622,14 @@ def validate_all(tables_rows: dict[str, list[dict[str, str]]]) -> list[str]:
             errors.extend(_check_fk(table, row, i, pk_sets))
             errors.extend(_check_valid_period(table, row, i))
             errors.extend(_check_table_name_values(table, row, i))
+            errors.extend(_check_target_table_is_real_table_name(table, row, i))
             errors.extend(_check_criteria_conditional_requirements(table, row, i))
             errors.extend(_check_criteria_list_value_text_is_json(table, row, i))
 
-    # 3) 그룹 트리 / 첨부관계처럼 여러 테이블·행을 함께 봐야 하는 무결성 규칙
+    # 3) 그룹 트리 / 첨부관계 / 쿼터처럼 여러 테이블·행을 함께 봐야 하는 무결성 규칙
     errors.extend(_check_criterion_group_tree_integrity(tables_rows))
     errors.extend(_check_document_attachment_relation_integrity(tables_rows))
+    errors.extend(_check_quota_arithmetic(tables_rows))
 
     return errors
 
