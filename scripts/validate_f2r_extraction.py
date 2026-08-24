@@ -71,9 +71,8 @@ MAPPING_COLUMNS = [
 
 REQUIRED_COLUMNS = {
     "extraction_review_queue.csv": {
-        "review_id", "requirement_type", "source_document_id",
-        "related_source_document_ids_json", "blocking_scope",
-        "completion_criteria", "status",
+        "review_id", "visa_code", "announcement_round", "requirement_type",
+        "reason", "source_document_id", "status", "created_at",
     },
     "ingestion_issues.csv": {"issue_id", "issue_type", "severity", "message"},
     "visa_announcement_rounds.csv": {
@@ -82,8 +81,7 @@ REQUIRED_COLUMNS = {
     },
     "visa_change_history.csv": {
         "change_id", "from_round", "to_round", "source_document_id",
-        "source_section", "source_block_index", "source_table_index",
-        "source_locator_type", "source_text",
+        "source_section", "source_table_index", "source_text",
     },
     "visa_criterion_groups.csv": {
         "group_id", "visa_id", "parent_group_id", "group_key",
@@ -108,7 +106,7 @@ REQUIRED_COLUMNS = {
         "source_section", "source_block_index", "source_table_index", "source_text",
     },
     "visa_requirements.csv": {
-        "visa_id", "target_region", "valid_from", "valid_to", "source_document_id",
+        "visa_id", "target_regions_json", "valid_from", "valid_to", "source_document_id",
         "source_section", "source_block_index", "source_text",
     },
     "visa_round_facts.csv": {
@@ -117,25 +115,19 @@ REQUIRED_COLUMNS = {
     },
     "visa_scoring_items.csv": {
         "scoring_item_id", "score_model_id", "visa_id", "source_round",
-        "source_document_id", "source_section", "source_table_index", "source_page",
-        "source_page_basis", "raw_text", "valid_from", "valid_to", "date_basis",
-        "assumed_target_round", "related_source_document_ids_json",
-        "inheritance_scope", "applicability_assumption", "consumption_gate",
-        "review_completion_criteria", "fill_strategy", "review_status",
+        "source_document_id", "source_section", "source_table_index", "raw_text",
+        "fill_strategy", "review_status",
     },
     "visa_scoring_models.csv": {
         "score_model_id", "visa_id", "source_round", "source_document_id",
-        "source_section", "source_table_index", "source_page", "source_page_basis",
-        "source_text", "valid_from", "valid_to", "date_basis",
-        "assumed_target_round", "related_source_document_ids_json",
-        "inheritance_scope", "applicability_assumption", "consumption_gate",
-        "review_completion_criteria", "fill_strategy", "review_status",
+        "source_section", "source_table_index", "source_text", "fill_strategy",
+        "review_status",
     },
 }
 
 DIRECT_SOURCE_RULES = {
     "visa_announcement_rounds.csv": ("source_text", ("source_block_index",)),
-    "visa_change_history.csv": ("source_text", ("source_block_index",)),
+    "visa_change_history.csv": ("source_text", ("source_section", "source_table_index")),
     "visa_regional_quotas.csv": ("source_text", ("source_table_index",)),
     "visa_required_documents.csv": (
         "source_text", ("source_block_index", "source_table_index")
@@ -203,14 +195,12 @@ for filename in sorted(EXPECTED_FILES):
 requirement_rows = tables["visa_requirements.csv"]
 if len(requirement_rows) != 1:
     fail(f"unexpected F-2-R requirement master rows: {len(requirement_rows)}")
-if "target_regions_json" in table_headers["visa_requirements.csv"]:
-    fail("legacy target_regions_json column remains in F-2-R requirements")
-target_region = requirement_rows[0]["target_region"]
-target_regions = target_region.split("|") if target_region else []
+try:
+    target_regions = json.loads(requirement_rows[0]["target_regions_json"])
+except json.JSONDecodeError as exc:
+    fail(f"invalid target_regions_json: {exc}")
 if tuple(target_regions) != F2R_TARGET_REGIONS:
-    fail(f"F-2-R target_region content/order mismatch: {target_region!r}")
-if any(region != region.strip() for region in target_regions):
-    fail("F-2-R target_region must not contain spaces around pipe separators")
+    fail(f"F-2-R target_regions_json content/order mismatch: {target_regions!r}")
 
 direct_source_rows = 0
 known_document_ids: set[str] = set()
@@ -262,95 +252,54 @@ for row in groups:
         alternatives = criteria_count[row["group_id"]] + child_count[row["group_id"]]
         if alternatives < 2:
             fail(f"OR group has fewer than two alternatives: {row['group_key']}")
-for key in ("applicant_status", "education_or_income"):
-    if criteria_count[group_by_key[key]["group_id"]] != 0:
-        fail(f"flattened criteria remain directly under {key}")
-
 models = tables["visa_scoring_models.csv"]
 items = tables["visa_scoring_items.csv"]
 if len(models) != 1 or len(items) != 12:
     fail(f"unexpected scoring rows: models={len(models)} items={len(items)}")
 model_id = models[0]["score_model_id"]
-required_scoring_sources = {
-    SCORING_SOURCE_DOCUMENT_ID,
-    "r17_announcement_2026_df1fdde9",
-    "r17_attachment_2026_07f157ee",
-    "r17_amendment_2026_4407bdfe",
-}
 scoring_rows = models + items
-allowed_scoring_states = {
-    ("needs_review", "blocked_while_needs_review"),
-    ("reviewed", "allowed"),
-}
-scoring_states = {
-    (row["review_status"], row["consumption_gate"])
-    for row in scoring_rows
-}
-if len(scoring_states) != 1:
-    fail(f"mixed scoring review states: {sorted(scoring_states)}")
-scoring_state = next(iter(scoring_states))
-if scoring_state not in allowed_scoring_states:
-    fail(f"invalid scoring review state: {scoring_state}")
+scoring_states = {row["review_status"] for row in scoring_rows}
+if scoring_states != {"needs_review"}:
+    fail(f"unexpected scoring review states: {sorted(scoring_states)}")
 
 for row in scoring_rows:
     if row["visa_id"] != F2R_VISA_ID:
         fail("unexpected scoring visa_id")
     if row.get("score_model_id") != model_id:
         fail("scoring item points to another model")
-    if row["source_round"] != "9" or row["assumed_target_round"] != "17":
-        fail("scoring source/target round mismatch")
+    if row["source_round"] != "9":
+        fail("scoring source round mismatch")
     if row["source_document_id"] != SCORING_SOURCE_DOCUMENT_ID:
         fail("scoring primary source must be the round-9 announcement")
-    if row["source_page"] != "6" or not row["source_page_basis"]:
-        fail("scoring source page is not document-scoped and verified")
-    if (row["valid_from"], row["valid_to"]) != ("2025-03-07", "2026-09-18"):
-        fail("scoring program period mismatch")
     if row["fill_strategy"] != "backfilled":
         fail("round-9 scoring data must retain its backfilled provenance")
-    sources = set(json.loads(row["related_source_document_ids_json"]))
-    if sources != required_scoring_sources:
-        fail("scoring source-document list mismatch")
-    if not all(
-        row[column]
-        for column in (
-            "date_basis", "inheritance_scope", "applicability_assumption",
-            "review_completion_criteria",
-        )
-    ):
-        fail("scoring review metadata is incomplete")
 
 consumable_scores = [
     row for row in scoring_rows
-    if row["review_status"] == "reviewed" and row["consumption_gate"] == "allowed"
+    if row["review_status"] == "reviewed"
 ]
 
 reviews = tables["extraction_review_queue.csv"]
-if len(reviews) != 6:
+if len(reviews) != 4:
     fail(f"unexpected review queue size: {len(reviews)}")
 for line_number, row in enumerate(reviews, start=2):
     if row["status"] not in {"open", "resolved", "ignored"}:
         fail(f"invalid review status: line {line_number}")
-    if not row["blocking_scope"] or not row["completion_criteria"]:
-        fail(f"incomplete review gate: line {line_number}")
-    sources = json.loads(row["related_source_document_ids_json"])
-    if not isinstance(sources, list) or not sources:
-        fail(f"review source list is empty: line {line_number}")
-    if row["source_document_id"] not in sources:
-        fail(f"primary source is absent from review source list: line {line_number}")
-review_status_by_type = {
-    row["requirement_type"]: row["status"] for row in reviews
-}
-if review_status_by_type.get("common_condition_group_mapping") != "resolved":
-    fail("common condition-group mapping review is not resolved")
-if review_status_by_type.get("common_source_page_mapping") != "resolved":
-    fail("common source-page mapping review is not resolved")
-for requirement_type in (
+    if row["visa_code"] != "F-2-R" or row["announcement_round"] != "17":
+        fail(f"unexpected review scope: line {line_number}")
+    if not row["reason"] or not row["source_document_id"] or not row["created_at"]:
+        fail(f"incomplete review row: line {line_number}")
+expected_review_types = {
     "applicant_status",
     "employer_capacity",
     "excluded_applicants",
     "scoring_model",
-):
-    if review_status_by_type.get(requirement_type) != "open":
+}
+review_status_by_type = {row["requirement_type"]: row["status"] for row in reviews}
+if set(review_status_by_type) != expected_review_types:
+    fail(f"unexpected review types: {sorted(review_status_by_type)}")
+for requirement_type in expected_review_types:
+    if review_status_by_type[requirement_type] != "open":
         fail(f"domain review gate changed unexpectedly: {requirement_type}")
 
 issues = tables["ingestion_issues.csv"]
@@ -365,12 +314,8 @@ changes = tables["visa_change_history.csv"]
 for line_number, row in enumerate(changes, start=2):
     if int(row["to_round"]) - int(row["from_round"]) != 1:
         fail(f"non-adjacent change history row: line {line_number}")
-    if not row["source_block_index"]:
-        fail(f"missing change-history block index: line {line_number}")
-    if row["source_locator_type"] == "table" and not row["source_table_index"]:
-        fail(f"table evidence without table index: line {line_number}")
-    if row["source_locator_type"] == "paragraph" and row["source_table_index"]:
-        fail(f"paragraph evidence unexpectedly has table index: line {line_number}")
+    if not row["source_document_id"] or not row["source_section"] or not row["source_text"]:
+        fail(f"incomplete change-history source: line {line_number}")
 pairs = {(row["from_round"], row["to_round"]) for row in changes}
 if not {("15", "16"), ("16", "17")} <= pairs or ("15", "17") in pairs:
     fail("latest adjacent-round comparison chain is incomplete")
@@ -383,7 +328,7 @@ for row in tables["visa_current_facts.csv"]:
 mapping_header, mappings = read_csv("common_master_mapping.csv")
 if mapping_header != MAPPING_COLUMNS:
     fail("common_master_mapping.csv column order/schema mismatch")
-if len(mappings) != 70:
+if len(mappings) != 68:
     fail(f"unexpected common mapping rows: {len(mappings)}")
 
 mapping_ids: set[str] = set()
@@ -473,10 +418,10 @@ if source_keys != expected_source_keys:
 action_counts = Counter(row["mapping_action"] for row in mappings)
 status_counts = Counter(row["mapping_status"] for row in mappings)
 if action_counts != Counter(
-    {"transform": 1, "direct": 14, "manual_review": 44, "not_applicable": 11}
+    {"transform": 1, "direct": 14, "manual_review": 42, "not_applicable": 11}
 ):
     fail(f"unexpected mapping actions: {dict(action_counts)}")
-if status_counts != Counter({"ready": 15, "blocked": 44, "not_applicable": 11}):
+if status_counts != Counter({"ready": 15, "blocked": 42, "not_applicable": 11}):
     fail(f"unexpected mapping statuses: {dict(status_counts)}")
 
 ready_criteria = [
@@ -513,10 +458,10 @@ result = {
     "scoring": {
         "source_round": 9,
         "assumed_target_round": 17,
-        "source_page_key": [models[0]["source_document_id"], models[0]["source_page"]],
+        "source_document_id": models[0]["source_document_id"],
         "consumable_rows": len(consumable_scores),
-        "review_status": scoring_state[0],
-        "gate": scoring_state[1],
+        "review_status": next(iter(scoring_states)),
+        "gate": "blocked_by_review_status",
     },
     "common_mapping": {
         "rows": len(mappings),

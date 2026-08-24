@@ -317,6 +317,11 @@ def build_mapping(
             "an output inside extraction/D_visa_requirements is forbidden"
         )
     existing = load_existing(output)
+    existing_document_names = {
+        row["source_document_id"]: row["source_document_name"]
+        for row in existing.values()
+        if row.get("source_document_id") and row.get("source_document_name")
+    }
     manifest = load_manifest(manifest_path)
     requirements = read_csv(SOURCE_DIR / "visa_requirements.csv")
     groups = read_csv(SOURCE_DIR / "visa_criterion_groups.csv")
@@ -325,7 +330,16 @@ def build_mapping(
         raise ValueError("F-2-R source master must contain exactly one fixed visa_id row")
 
     current = requirements[0]
-    validate_pipe_list("target_region", current.get("target_region", ""))
+    try:
+        target_regions = json.loads(current.get("target_regions_json", ""))
+    except json.JSONDecodeError as exc:
+        raise ValueError(f"invalid target_regions_json: {exc}") from exc
+    if not isinstance(target_regions, list) or not target_regions:
+        raise ValueError("target_regions_json must be a non-empty JSON list")
+    if any(not isinstance(region, str) or not region.strip() for region in target_regions):
+        raise ValueError("target_regions_json must contain non-empty strings")
+    if len(target_regions) != len(set(target_regions)):
+        raise ValueError("target_regions_json contains duplicate values")
     by_group, paths = build_group_paths(groups)
     document_ids = {current["source_document_id"]} | {
         row["source_document_id"] for row in criteria
@@ -366,7 +380,7 @@ def build_mapping(
             "recommended_destination": "visa_requirements.csv",
             "mapping_note": (
                 "visa_id는 재사용한다. program_type은 REGIONAL_SPECIALIZED, "
-                "target_region은 공통 파이프 구분 형식을 유지하고, 17차 total_quota=311과 "
+                "target_regions_json은 공통 지역 목록으로 변환하고, 17차 total_quota=311과 "
                 "quota_type=LIMITED로 변환한다."
             ),
         }
@@ -412,7 +426,14 @@ def build_mapping(
                 "target_condition_operator": operator,
                 "source_document_id": row["source_document_id"],
                 "source_document_name": document_name(
-                    row["source_document_id"], manifest, old
+                    row["source_document_id"],
+                    manifest,
+                    old
+                    or {
+                        "source_document_name": existing_document_names.get(
+                            row["source_document_id"], ""
+                        )
+                    },
                 ),
                 "source_page": str(page),
                 "source_page_basis": "converted_pdf_page",
