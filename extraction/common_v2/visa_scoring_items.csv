@@ -1,0 +1,1 @@
+scoring_item_id,score_model_id,score_group,category,criterion,min_value,max_value,min_inclusive,max_inclusive,value_text,unit,measurement_window_value,measurement_window_unit,points,maximum_points,is_mandatory,minimum_required_points,exclusive_group,stacking_rule,evidence_document,display_order,valid_from,valid_to,source_document_id,source_page

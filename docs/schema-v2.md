@@ -135,9 +135,9 @@ document_requirements
 | `document_type` | `ANNOUNCEMENT`, `ATTACHMENT`, `AMENDMENT`, `GUIDELINE`, `FORM`, `OTHER` |
 | `document_name` | 공고문 파일명 또는 공식 문서명 |
 | `notice_round` | `8`, `9`, `17` 등. 차수 없는 문서는 null |
-| `published_at` | 공고일 |
+| `published_at` | 공고일. nullable(단일 게시일로 특정되지 않는 문서, 예: 웹 목록형 출처) |
 | `source_location` | 저장 경로 또는 원문 URL |
-| `file_hash_sha256` | 원문 파일 변경 확인용 |
+| `file_hash_sha256` | 원문 파일 변경 확인용. nullable(원본 PDF는 이 저장소에 올리지 않으므로 대부분 계산 불가) |
 | `page_basis` | `PDF`, `HWPX`, `CONVERTED_PDF`, `OTHER` |
 | `last_verified_at` | 마지막 검증일 |
 
@@ -891,8 +891,10 @@ remaining_quota
 | `source_table` | 확장자 없는 원천 테이블명 |
 | `source_record_id` | `REQ-*`, `SCORE-*`, 원천 UUID 등 |
 | `source_group_path` | #35 조건 트리 경로, nullable |
-| `source_document_id`, `source_page` | 원천 근거 |
-| `valid_from`, `valid_to` | 원천 행 유효기간 |
+| `source_document_id` | 원천 근거 문서 FK |
+| `source_page` | 원천 근거 페이지. nullable(웹 목록 등 페이지 번호가 없는 원천은 비움) |
+| `valid_from` | 원천 행 유효기간 시작. nullable(원문이 "미확인"으로 명시한 경우 등) |
+| `valid_to` | 원천 행 유효기간 종료. nullable(계속 유효 시) |
 | `target_table` | 확장자 없는 공통 테이블명 |
 | `target_record_id` | 공통 UUID. 발급 전에는 null |
 | `mapping_action` | `COPY`, `TRANSFORM`, `MERGE`, `SKIP`, `MANUAL_REVIEW` |
@@ -908,6 +910,59 @@ remaining_quota
 - `REQ-*`, `SCORE-*`, #35 criteria UUID는 공통 PK로 복사하지 않음
 - 원천 ID는 `source_record_mappings.source_record_id`에 보존
 - `target_record_id`는 검증이 끝난 마지막 단계에 발급
+
+## 마이그레이션 전제 — v1/원천 기준선
+
+이슈 #44 작업 단계 "1. 입력 데이터와 v1 기준선 고정"의 산출물이다. 이관 대상 4개 비자유형이
+어떤 원천·검수 결과를 기준으로 이관되는지, 그리고 `extraction/common_v2/source_documents.csv`·
+`source_record_mappings.csv` 초안이 어떤 범위를 다루는지 이 문서 자체에서 추적할 수 있게 남긴다.
+아래 스냅샷은 커밋 시점 기준이며 원천 폴더가 갱신되면 재조사가 필요하다.
+
+### `extraction/D_visa_requirements/` 6개 CSV 스냅샷
+
+| 파일 | 헤더 컬럼(순서대로) | 행 수 | PK | FK | PK UUIDv4 비율 |
+| --- | --- | --- | --- | --- | --- |
+| `visa_requirements.csv` | `visa_id, visa_code, visa_name_kr, program_type, target_region, total_score_threshold, residency_limit_years, allowed_industries, application_method, quota_type, total_quota, quota_shared_with, next_visa_code, valid_from, valid_to, source_document, source_page, last_verified_at` | 1 | `visa_id` | 없음 | 1/1 (100%) |
+| `visa_requirement_criteria.csv` | `criteria_id, visa_id, criteria_name, criteria_type, value_numeric, operator, unit, value_text, measurement_window_value, measurement_window_unit, condition_group, condition_operator, special_case_note, valid_from, valid_to, source_document, source_page, last_verified_at` | 10 | `criteria_id` | `visa_id` → `visa_requirements.visa_id` | 10/10 (100%) |
+| `visa_process_stages.csv` | `stage_id, visa_id, stage_order, stage_name, stage_name_kr, actor_from, actor_to, stage_start_date, stage_end_date, notes, notice_round, document_requirements_status, valid_from, valid_to, source_document, source_page, last_verified_at` | 4 | `stage_id` | `visa_id` → `visa_requirements.visa_id` | 4/4 (100%) |
+| `document_requirements.csv` | `document_requirement_id, stage_id, document_name, document_category, filled_by, submitted_by, submission_target, signer, required_attachments, is_mandatory, valid_from, valid_to, source_document, source_page, last_verified_at, notes` | 0 | `document_requirement_id` | `stage_id` → `visa_process_stages.stage_id` | 0/0 (해당 없음) |
+| `visa_quota_status.csv` | `quota_status_id, visa_id, notice_round, remaining_quota, as_of_date, source_document, source_page, recorded_at` | 0 | `quota_status_id` | `visa_id` → `visa_requirements.visa_id` | 0/0 (해당 없음) |
+| `change_history.csv` | `change_id, visa_id, table_name, field_identifier, from_round, to_round, old_value, new_value, change_type, old_source_page, new_source_page, description` | 0 | `change_id` | `visa_id` → `visa_requirements.visa_id` | 0/0 (해당 없음) |
+
+6개 파일 합계 15행, PK 전부 유효한 UUIDv4다(플래그할 위반 없음). `document_requirements.csv`·
+`visa_quota_status.csv`·`change_history.csv`는 F-4-R이 `UNLIMITED`·상시접수·무변경 이력이라 v1
+단계에서부터 행이 0개였다 — 원천 조사 누락이 아니라 실제로 빈 파일이다.
+
+### 비자유형별 입력 기준
+
+- **F-4-R**: `extraction/D_visa_requirements/`의 v1 공통 마스터 6개 CSV를 그대로 기준으로 삼는다.
+  이슈 #42가 이미 이 폴더를 검증했으므로 별도 검수 없이 이관 후보로 취급한다.
+- **E-7-4R**: `extraction/B_E-7-4R/`(특히 `schema_mapping.csv`, `requirements/_review_current_requirements.csv`,
+  `scoring/scoring_items.csv`, `documents/document_forms.csv`, `history/change_history.csv`)와 PR #43의
+  검수·매핑 결과를 기준으로 삼는다. `schema_mapping.csv`의 `mapping_status=pending_target_id`는
+  README가 명시하듯 "의미 매핑 미완료"가 아니라 "공통 UUID 발급 대기"이므로 이관 후보에 포함한다.
+- **F-2-R**: `extraction/A_F-2-R/`(특히 `common_master_mapping.csv`)와 PR #36의 원천·검수·매핑 결과를
+  기준으로 삼는다. `mapping_status=ready`는 열·논리·출처 형식상 변환 가능하다는 뜻일 뿐 업무영역
+  재검토가 끝났다는 뜻이 아니므로(`COMMON_MASTER_MAPPING.md` 참고), 이후 단계에서도 재확인이 필요하다.
+- **D-2**: `extraction/C_D-2-common/`(3개 CSV: `parttime_work_rules.csv`, `certified_universities.csv`,
+  `gwangyeok_eligible_departments.csv`)를 기준으로 삼는다. 이슈 #41의 연결 결과에 따라 D-2는
+  Lookup/Rule 구조를 그대로 유지하고 공통 자격조건 트리로 평탄화하지 않는다(plan 8단계) — 이번
+  초안에서는 연결 여부를 별도로 검증하지 않고, 전량을 공통 마스터 이관 대상에서 제외하는 매핑만
+  기록했다.
+
+### 검수 완료 범위 vs 보류 범위
+
+| 비자유형 | 원천 후보 행 수 | 이관 후보(검수 완료) | 보류(이관 대상 제외) | 보류 사유 요약 |
+| --- | --- | --- | --- | --- |
+| F-4-R | 15 | 14 | 1 | criteria 1건의 `special_case_note`에 "고시 국가 한정 여부는 별도 확인 필요" 명시 |
+| E-7-4R | 219 (원장 189 + 미참조 SCORE-* 21 + 서식 9) | 193 (READY 17 + PENDING 176) | 26 | PR #43 `review_decision=excluded` 확정 26건(섹션 제목·중복 조각·페이지 재배치 등) |
+| F-2-R | 68 | 15 | 53 | 중첩 AND/OR 평탄화 불가 42건 + 최초 신청자격 criteria 대상 아님(승인 이후 의무·동반가족 등) 11건 |
+| D-2 | 99 | 0 | 99 | plan 8단계 결정 — Lookup/Rule 구조 유지, 공통 마스터 이관 대상 자체가 아님(연결만 별도 검증) |
+
+E-7-4R의 "PENDING"은 검수 미완료가 아니라 공통 UUID 미발급 상태이므로 위 표에서는 이관 후보로
+집계했다 — `mapping_status=BLOCKED`(원장의 `review_decision=excluded`)만 진짜 보류/제외로 센다.
+D-2는 "검수가 부족해서" 보류가 아니라 애초에 이번 마이그레이션의 이관 대상 스코프 밖이라는 점을
+명확히 구분한다.
 
 ## 제외되는 것
 

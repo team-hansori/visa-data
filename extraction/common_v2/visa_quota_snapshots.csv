@@ -1,0 +1,1 @@
+quota_snapshot_id,quota_policy_id,notice_round,as_of_date,scope_type,scope_name,parent_scope_name,allocated_quota,recommended_count,quota_exempt_count,consumed_quota,remaining_quota,consumption_exception,valid_from,valid_to,source_document_id,source_page,recorded_at

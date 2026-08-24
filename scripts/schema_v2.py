@@ -236,9 +236,12 @@ _SOURCE_DOCUMENTS_TABLE = TableSpec(
         _enum("document_type", DOCUMENT_TYPE_VALUES),
         _text("document_name"),
         _numeric("notice_round", nullable=True),
-        _date("published_at"),
+        # 게시일이 명확히 하나로 특정되지 않는 문서(웹 목록 등)가 있어 nullable.
+        _date("published_at", nullable=True),
         _text("source_location"),
-        _text("file_hash_sha256"),
+        # 원본 PDF는 이 저장소에 올리지 않으므로(data/raw/ 또는 별도 공유 저장소
+        # 참조) 대부분의 문서는 해시를 계산할 파일 자체가 없다 — nullable.
+        _text("file_hash_sha256", nullable=True),
         _text("page_basis"),
         _date("last_verified_at"),
     ),
@@ -568,8 +571,12 @@ _SOURCE_RECORD_MAPPINGS_TABLE = TableSpec(
         _text("source_record_id"),
         _text("source_group_path", nullable=True),
         _uuid("source_document_id", fk=_fk(SOURCE_DOCUMENTS, "source_document_id")),
-        _text("source_page"),
-        _date("valid_from"),
+        # source_record_mappings는 서비스 판정용 코어가 아니라 이관 장부다. 원천 값
+        # 자체가 페이지·유효기간을 안 주는 경우(웹 목록, "미확인"으로 명시된 원문 등)가
+        # 있어 nullable — 실제 서비스 테이블(criteria/groups 등)의 source_page/
+        # valid_from은 여전히 필수다.
+        _text("source_page", nullable=True),
+        _date("valid_from", nullable=True),
         _date("valid_to", nullable=True),
         _text("target_table"),
         # 발급 전에는 null. 대상 테이블이 target_table 값에 따라 달라져 일반적인 단일

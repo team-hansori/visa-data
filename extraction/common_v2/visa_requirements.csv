@@ -1,0 +1,5 @@
+visa_id,visa_code,visa_name_kr,program_type,target_regions_json,residency_limit_years,allowed_industries_json,application_method,next_visa_code,valid_from,valid_to,source_document_id,source_page,last_verified_at
+606d8651-1d04-47fe-8f69-165b3ed3d834,F-4-R,,,,,,,,,,,,
+346834f7-ac6e-4958-8e0d-8c2b4fb03a7e,E-7-4R,,,,,,,,,,,,
+a228433b-abe4-4785-8496-3e1cb3d597c1,F-2-R,,,,,,,,,,,,
+8a295d32-46dd-43a8-8a9d-b3713251bf1f,D-2,,,,,,,,,,,,

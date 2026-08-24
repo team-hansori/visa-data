@@ -1,0 +1,1 @@
+criteria_id,group_id,criteria_name,field_identifier,criteria_type,evaluation_mode,operator,value_numeric,value_text,unit,measurement_window_value,measurement_window_unit,special_case_note,display_order,valid_from,valid_to,source_document_id,source_page,last_verified_at
