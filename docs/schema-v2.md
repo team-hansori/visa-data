@@ -1091,7 +1091,7 @@ plan 문서의 체크리스트는 17개 항목이다(브리프는 "16개"라고 
 1. **v2 명세에 13개 테이블의 컬럼·자료형·enum·null·PK/FK 규칙이 있다.** — 완료. 이 문서
    1~13번 절 + `scripts/schema_v2.py`가 단일 진실 공급원이다.
 2. **서비스 테이블 10개와 지원 테이블 3개의 실제 헤더가 명세와 일치한다.** — 완료.
-   `validate_directory()`가 13개 파일의 헤더 순서를 스키마와 대조하며, 현재 알려진 9건의
+   `validate_directory()`가 13개 파일의 헤더 순서를 스키마와 대조하며, 현재 알려진 8건의
    검증 실패(§14 참고) 중 헤더 불일치는 0건이다.
 3. **모든 이관 대상 비자에 eligibility ROOT 그룹이 정확히 하나 있다.** — 부분 완료. F-4-R,
    F-2-R은 각각 ROOT 1개(`f4r_root`, `f2r_root`)로 확인됨(이번 태스크의 Deliverable 1 검사로
@@ -1145,12 +1145,12 @@ plan 문서의 체크리스트는 17개 항목이다(브리프는 "16개"라고 
     "D-2 연결 검증(plan 8단계)" 절(Task 1)이 식별자 불일치, 출처·유효기간 완전성, 쿼터
     미생성, 서비스 소비 경계까지 상세히 검증·기록했다.
 14. **모든 공통 행에 필요한 출처·페이지·유효기간이 존재한다.** — 부분 완료. 알려진 위반이
-    9건 있다: (a) `source_documents.csv`의 `f4r_r12_announcement` 1행은 원본 파일이
-    로컬 저장소에 없어 `source_location`을 확인하지 못했다. (b) D-2는 plan 8단계 결정에
-    따라 공통 본문을 이관하지 않는 부트스트랩 행이라 `visa_requirements.csv`의 필수
-    본문·출처 필드 8건이 비어 있다. E-7-4R과 D-2 출처 중 로컬에서 확인 가능한 정보는
-    이번 보완에서 채웠다.
-    `uv run python scripts/validate_common_schema_v2.py`는 지금도 이 9건을 그대로
+    8건 있다: D-2는 plan 8단계 결정에 따라 공통 본문을 이관하지 않는 부트스트랩 행이라
+    `visa_requirements.csv`의 필수 본문·출처 필드 8건이 비어 있다. `source_documents.csv`의
+    `f4r_r12_announcement` 원본 파일(`.hwpx`, 12차 공고문)은 taeeunni가 확보해 로컬
+    저장소(`data/raw/지역특화_재외동포_F-4-R/`)에 추가했고, `source_location`을 채워
+    이 항목의 위반은 닫혔다.
+    `uv run python scripts/validate_common_schema_v2.py`는 지금도 이 8건을 그대로
     보고한다(억지로 통과시키지 않음).
 15. **원천 ID와 공통 UUID가 분리되고 매핑표로 추적된다.** — 완료.
     `source_record_mappings.csv`(463행)가 4개 원천 데이터셋(A_F-2-R 74, B_E-7-4R 274,
@@ -1163,7 +1163,7 @@ plan 문서의 체크리스트는 17개 항목이다(브리프는 "16개"라고 
     순환참조·OR 그룹 최소 자식 수는 "실제 데이터가 준비되면"으로 미뤄뒀었다. 이번 태스크
     (Deliverable 1)가 그 검사를 추가했고 실제 데이터에서 위반 0건을 확인했다. 전체 테스트는
     `uv run pytest -q` 기준 301건 통과(기존 300 + 매핑 원장 검증 테스트 1건). 독립 실행형 검증기
-    (`uv run python scripts/validate_common_schema_v2.py`)는 여전히 종료 코드 1과 9건을
+    (`uv run python scripts/validate_common_schema_v2.py`)는 여전히 종료 코드 1과 8건을
     보고하는데, 이는 pytest 실패가 아니라 항목 14에서 설명한 "알려진, 의도가 확인된 미완료
     데이터"를 검증기가 정직하게 계속 드러내고 있다는 뜻이다.
 17. **v1→v2 변환 규칙과 비자별 이관 결과·보류 항목이 문서화된다.** — 완료. 이 문서의
@@ -1193,9 +1193,6 @@ plan 문서의 체크리스트는 17개 항목이다(브리프는 "16개"라고 
 - **`change_history.csv`**: 모든 비자유형에 대해 여전히 비어 있음(헤더만). B_E-7-4R 원천
   매핑에 `target_table=change_history` 17행이 `PENDING` 상태로 대기 중이나 실제로 옮겨진
   행은 0개.
-- **`source_documents.csv`의 `source_location` 결측 1행**: `f4r_r12_announcement` — 원본
-  파일이 로컬 저장소에 없어 위치를 확인하지 못했다. `d2_gwangyeok_departments_guide_2026`는
-  로컬 원본 위치를 확인해 보완했다.
 - **`scripts/uuid_utils.UUID_ID_COLUMNS`**: 이번 태스크에서 확장 완료(기존 3개 v1 컬럼 +
   v2 10개 PK 컬럼명 = 13개). PR #38 이후 Task 9 계획 항목이었으나 그때는 반영되지 않았던
   것을, 위험이 낮은 한 줄 변경(순수 추가, 기존 검사 로직 무변경)으로 판단해 이번에 반영했다.
