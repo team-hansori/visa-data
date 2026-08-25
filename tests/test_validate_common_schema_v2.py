@@ -841,7 +841,7 @@ def _criteria_row(
 
 
 class TestCriterionGroupTreeIntegrityRealData:
-    """extraction/common_v2/의 실제 F-4-R·F-2-R 그룹 트리에 대한 긍정 검증."""
+    """extraction/common_v2/의 실제 F-4-R·F-2-R·E-7-4R 그룹 트리에 대한 긍정 검증."""
 
     def test_real_data_has_no_root_uniqueness_or_cycle_or_or_group_violations(self):
         tables_rows = {
@@ -857,13 +857,14 @@ class TestCriterionGroupTreeIntegrityRealData:
         for row in rows:
             if row["parent_group_id"] == "":
                 roots_by_visa.setdefault(row["visa_id"], []).append(row["group_id"])
-        # F-4-R, F-2-R 두 비자유형에 그룹 트리가 있고 각각 ROOT가 정확히 1개여야 한다.
-        assert len(roots_by_visa) == 2
+        # F-4-R, F-2-R, E-7-4R(task-11) 세 비자유형에 그룹 트리가 있고 각각 ROOT가 정확히 1개여야 한다.
+        assert len(roots_by_visa) == 3
         for visa_id, root_ids in roots_by_visa.items():
             assert len(root_ids) == 1, f"visa_id={visa_id}의 ROOT 그룹이 {root_ids}"
 
     def test_real_data_or_group_participant_counts(self):
-        """brief에 명시된 실제 수치를 고정한다: f2r_language(OR)=3, f4r_eligibility_paths(OR)=2."""
+        """brief에 명시된 실제 수치를 고정한다: f2r_language(OR)=3, f4r_eligibility_paths(OR)=2,
+        e74r_applicant_status_paths(OR)=2, e74r_income(OR)=2(task-11-brief.md)."""
         groups = {row["group_key"]: row for row in _load_real_table(VISA_CRITERION_GROUPS)}
         criteria = _load_real_table(VISA_REQUIREMENT_CRITERIA)
 
@@ -882,6 +883,12 @@ class TestCriterionGroupTreeIntegrityRealData:
 
         assert groups["f4r_eligibility_paths"]["boolean_operator"] == "OR"
         assert participant_count("f4r_eligibility_paths") == 3
+
+        assert groups["e74r_applicant_status_paths"]["boolean_operator"] == "OR"
+        assert participant_count("e74r_applicant_status_paths") == 2
+
+        assert groups["e74r_income"]["boolean_operator"] == "OR"
+        assert participant_count("e74r_income") == 2
 
 
 class TestCriterionGroupTreeIntegrityRejection:
