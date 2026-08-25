@@ -186,12 +186,24 @@ pytest tests/ -v
 `docs/schema-v2.md`에 있습니다.
 
 ```bash
-uv run python scripts/validate_common_schema_v2.py
+uv run python scripts/validate_common_schema_v2.py \
+  --baseline extraction/common_v2/known_validation_gaps.txt
+uv run python scripts/validate_source_record_mappings.py
 ```
 
 CI는 `extraction/common_v2/known_validation_gaps.txt`에 기록된 알려진 사전 공개 격차는
 통과시키되(`--baseline` 옵션), 새 에러나 기존 에러의 조용한 변경은 실패시킵니다. 알려진 격차
 중 하나를 실제로 고쳤다면 이 파일도 함께 갱신하세요.
+
+검수 완료된 13개 CSV를 원본과 겹치지 않는 별도 디렉터리에 결정적으로 재생성하려면 다음을
+실행하세요. 기본 출력 `build/common_v2/`는 git 추적에서 제외됩니다.
+
+```bash
+uv run python scripts/migrate_to_v2.py
+```
+
+이 명령은 v1 원천을 자동 해석하는 변환기가 아니라, 검수 결과와 매핑 원장을 포함한 현재 v2
+스냅샷을 생성 전후로 검증하며 materialize하는 안전한 빌더입니다.
 
 ---
 

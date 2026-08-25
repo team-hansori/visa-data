@@ -39,6 +39,7 @@ from scripts.validate_common_schema_v2 import (
 )
 
 REAL_COMMON_V2_DIR = Path("extraction/common_v2")
+E7_4R_QUOTA_POLICY_ID = "075f41cf-a090-4814-a4c3-9ab6c4da5d16"
 
 # --------------------------------------------------------------------------
 # 서로 참조가 맞물리는 13개 테이블의 최소 유효 fixture
@@ -1032,11 +1033,11 @@ def _relation_row(
 
 
 class TestDocumentAttachmentRelationIntegrityRealData:
-    """extraction/common_v2/document_attachment_relations.csv(실제 2행)에 대한 긍정 검증."""
+    """실제 E-7-4R 2행과 F-2-R 35행 첨부관계의 긍정 검증."""
 
     def test_real_data_has_no_self_reference_or_cycle(self):
         rows = _load_real_table(DOCUMENT_ATTACHMENT_RELATIONS)
-        assert len(rows) == 2, "브리프가 전제한 실제 행 수(2)와 다름 — 수치를 다시 확인할 것"
+        assert len(rows) == 37
         errors = _check_document_attachment_relation_integrity(
             {DOCUMENT_ATTACHMENT_RELATIONS: rows}
         )
@@ -1228,7 +1229,11 @@ class TestQuotaArithmeticRealData:
         assert errors == []
 
     def test_real_e7_4r_snapshot_values_are_542_246_10_236_306(self):
-        snapshots = _load_real_table(VISA_QUOTA_SNAPSHOTS)
+        snapshots = [
+            row
+            for row in _load_real_table(VISA_QUOTA_SNAPSHOTS)
+            if row["quota_policy_id"] == E7_4R_QUOTA_POLICY_ID
+        ]
         assert len(snapshots) == 1
         row = snapshots[0]
         assert row["allocated_quota"] == "542"

@@ -31,6 +31,16 @@ jobs:
           ruff format --check src/ tests/
           ruff check scripts/validate_e7r_mapping.py tests/test_validate_e7r_mapping.py
           ruff format --check scripts/validate_e7r_mapping.py tests/test_validate_e7r_mapping.py
+          ruff check \
+            scripts/schema_v2.py \
+            scripts/migrate_to_v2.py \
+            scripts/validate_common_schema_v2.py \
+            scripts/validate_source_record_mappings.py
+          ruff format --check \
+            scripts/schema_v2.py \
+            scripts/migrate_to_v2.py \
+            scripts/validate_common_schema_v2.py \
+            scripts/validate_source_record_mappings.py
 
       - name: 테스트 실행
         run: pytest tests/ -v --tb=short --cov=src --cov-report=term-missing
@@ -42,3 +52,6 @@ jobs:
         run: |
           python scripts/validate_common_schema_v2.py \
             --baseline extraction/common_v2/known_validation_gaps.txt
+
+      - name: 공통 스키마 v2 원천 매핑 검증
+        run: python scripts/validate_source_record_mappings.py

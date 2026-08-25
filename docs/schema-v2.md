@@ -1019,22 +1019,26 @@ visa_quota_policies.csv`·`visa_quota_snapshots.csv` 어디에도 D-2 행이 없
 
 ### 검수 완료 범위 vs 보류 범위
 
-> 이 표는 Task 1(1단계 "입력 데이터와 v1 기준선 고정") 시점의 스냅샷이다. 이후 Task 9의
-> 이관 장부(`source_record_mappings.csv`) 확장으로 E-7-4R·F-2-R의 실제 행 수가 달라졌으므로
-> 지금의 정확한 상태를 보려면 아래 "17개 완료 체크리스트 판정"과 "완전히 이관되지 않은 항목"
-> 절을 참고할 것 — 이 표를 최신 수치로 갱신하지 않는다.
+2026-08-25 통합 스냅샷의 `source_record_mappings.csv` 684행을 기준으로 집계했다.
 
-| 비자유형 | 원천 후보 행 수 | 이관 후보(검수 완료) | 보류(이관 대상 제외) | 보류 사유 요약 |
-| --- | --- | --- | --- | --- |
-| F-4-R | 15 | 14 | 1 | criteria 1건의 `special_case_note`에 "고시 국가 한정 여부는 별도 확인 필요" 명시 |
-| E-7-4R | 219 (원장 189 + 미참조 SCORE-* 21 + 서식 9) | 193 (READY 17 + PENDING 176) | 26 | PR #43 `review_decision=excluded` 확정 26건(섹션 제목·중복 조각·페이지 재배치 등) |
-| F-2-R | 68 | 15 | 53 | 중첩 AND/OR 평탄화 불가 42건 + 최초 신청자격 criteria 대상 아님(승인 이후 의무·동반가족 등) 11건 |
-| D-2 | 99 | 0 | 99 | plan 8단계 결정 — Lookup/Rule 구조 유지, 공통 마스터 이관 대상 자체가 아님(연결만 별도 검증) |
+| 비자유형 | 원장 행 | `MAPPED` | 의도적 `SKIP/BLOCKED` | 실제 `MANUAL_REVIEW/BLOCKED` |
+| --- | ---: | ---: | ---: | ---: |
+| F-4-R | 16 | 16 | 0 | 0 |
+| E-7-4R | 318 | 289 | 28 | 1 (`REQ-041`) |
+| F-2-R | 251 | 239 | 11 | 1 (학교장 추천 대상범위 충돌) |
+| D-2 | 99 | 0 | 99 | 0 |
+| 합계 | 684 | 544 | 138 | 2 |
 
-E-7-4R의 "PENDING"은 검수 미완료가 아니라 공통 UUID 미발급 상태이므로 위 표에서는 이관 후보로
-집계했다 — `mapping_status=BLOCKED`(원장의 `review_decision=excluded`)만 진짜 보류/제외로 센다.
-D-2는 "검수가 부족해서" 보류가 아니라 애초에 이번 마이그레이션의 이관 대상 스코프 밖이라는 점을
-명확히 구분한다.
+`PENDING`과 `READY`는 0건이다. 여기서 `BLOCKED`는 두 의미로 사용되므로 반드시
+`mapping_action`과 함께 읽는다.
+
+- `mapping_action=SKIP`, `target_table=NONE`: 제목·분할 전 부모 행·병합 조각·이관 범위 밖 원천을
+  검토한 뒤 의도적으로 공통 행을 만들지 않은 감사 기록이다.
+- `mapping_action=MANUAL_REVIEW`: 원문만으로 대상 레코드를 확정하지 못한 실제 보류다. 현재는
+  E-7-4R `REQ-041`과 F-2-R 학교장 추천 범위 충돌, 두 건뿐이다.
+
+D-2 99행은 검수 부족으로 버린 것이 아니라 Lookup/Rule 구조를 유지한다는 plan 8단계 결정에 따라
+서비스 공통 테이블로 평탄화하지 않은 것이다.
 
 ## 제외되는 것
 
@@ -1065,22 +1069,27 @@ D-2는 "검수가 부족해서" 보류가 아니라 애초에 이번 마이그�
 한곳에 모아 다음 작업이 어디서부터 시작해야 하는지 남긴다. 이 문서를 신뢰하고 이어받을 다음
 작업을 위해, 실제보다 낙관적으로 "완료"라고 적지 않는다.
 
-### `migrate_to_v2.py` 재생성 한계 — 먼저 밝혀둘 것
+### `migrate_to_v2.py` 재생성 계약
 
-plan 10단계는 원래 "v2 13개 CSV를 깨끗한 디렉터리에서 재생성해 결과가 결정적인지 확인"을
-요구했다. 이건 현재 온전히 달성할 수 없다. `scripts/migrate_to_v2.py`는 Task 3에서 의도적으로
-"헤더만 쓰는 스텁"으로 만들어졌고(`tests/test_migrate_to_v2.py`가 이 스텁 계약 — 13개 파일에
-헤더 한 줄만 있어야 함 — 을 그대로 검증한다), 실제 행 내용(F-4-R 4개 그룹 + 10개 조건, F-2-R
-5개 그룹 + 14개 조건, E-7-4R 점수·쿼터·절차·서류 32행 등)은 Task 1/4/5/6/7/9 각각의 리포트가
-공통으로 밝히듯 커밋되지 않은 1회성 스크립트로 채워졌다. 즉 **지금 `extraction/common_v2/`를
-지우고 `migrate_to_v2.py`를 다시 돌리면 헤더만 있는 빈 13개 CSV가 나온다 — 실제 이관 데이터는
-복원되지 않는다.** 이번 태스크에서 그 1회성 스크립트들을 되짚어 정식 마이그레이션 파이프라인으로
-재작성하는 일은 하지 않았다 — 시간 압박 속에서 이전 태스크들의 해석적 판단(어떤 v1 조건을 어떤
-그룹으로 나눌지, 어떤 행을 BLOCKED로 둘지 등)을 서둘러 재구현하는 것이기 때문이다. 대신
-확인 가능한 범위만 확인했다: `schema_v2.py`의 빈 스켈레톤 생성(`generate_empty_csvs`)은
-결정적이며 이미 테스트돼 있다. 실제 데이터의 재현성은 **git 커밋 이력**이 유일한 보장이다 —
-이 스냅샷을 실수로 덮어쓰거나 되돌릴 경우, 다시 만들 수 있는 유일한 방법은 각 태스크
-리포트(`task-{1,4,5,6,7,9}-report.md`)를 읽고 같은 해석적 판단을 사람이 다시 내리는 것뿐이다.
+`scripts/migrate_to_v2.py`는 더 이상 헤더만 생성하는 스텁이 아니다. 검수 완료된
+`extraction/common_v2/` 13개 CSV를 읽어 다음 계약으로 `build/common_v2/`에 재생성한다.
+
+1. 원본 헤더와 전체 무결성 결과가 `known_validation_gaps.txt`와 정확히 일치해야 한다.
+2. 행 순서를 유지하고 UTF-8/LF로 결정적으로 직렬화한다.
+3. 임시 디렉터리에서 13개 파일을 모두 만든 뒤 같은 검증기를 통과한 경우에만 출력으로 교체한다.
+4. 원본과 출력 경로가 같거나 서로 포함되면 `--force`여도 거부한다.
+5. 기존 출력은 `--force`가 있을 때만, 새 스냅샷 검증이 끝난 뒤 교체한다.
+
+```bash
+uv run python scripts/migrate_to_v2.py
+uv run python scripts/validate_common_schema_v2.py \
+  --base-dir build/common_v2 \
+  --baseline extraction/common_v2/known_validation_gaps.txt
+```
+
+이 빌더가 재현하는 대상은 **사람이 원문 대조를 마친 검수 스냅샷**이다. 원천 v1/HWPX/PDF만으로
+AND/OR 구조와 분할·병합 판단을 다시 자동 추론하는 도구는 아니다. 그 의미 결정의 추적 근거는
+`source_record_mappings.csv`, 원천 검수 CSV, 이 문서에 남긴다.
 
 ### 17개 완료 체크리스트 판정
 
@@ -1093,47 +1102,30 @@ plan 문서의 체크리스트는 17개 항목이다(브리프는 "16개"라고 
 2. **서비스 테이블 10개와 지원 테이블 3개의 실제 헤더가 명세와 일치한다.** — 완료.
    `validate_directory()`가 13개 파일의 헤더 순서를 스키마와 대조하며, 현재 알려진 8건의
    검증 실패(§14 참고) 중 헤더 불일치는 0건이다.
-3. **모든 이관 대상 비자에 eligibility ROOT 그룹이 정확히 하나 있다.** — 부분 완료. F-4-R,
-   F-2-R은 각각 ROOT 1개(`f4r_root`, `f2r_root`)로 확인됨(이번 태스크의 Deliverable 1 검사로
-   확인). E-7-4R은 `visa_criterion_groups`에 행 자체가 아직 없음(아래 "완전히 이관되지 않은
-   항목" 참고) — 검사 대상이 아니라 "아직 없음"이다. D-2는 plan 8단계 결정에 따라 조건 트리를
-   만들지 않으므로 대상 자체가 아니다.
-4. **조건 그룹에 부모 누락, 비자 불일치, 자기참조, 순환참조가 없다.** — 완료(실제 존재하는
-   그룹에 한해). Task 3이 "실제 마이그레이션 데이터가 준비되는 후속 작업 범위"로 명시적으로
-   미뤄뒀던 검사(ROOT 유일성 제외 나머지)를 이번 태스크(Deliverable 1)에서 구현해
-   `extraction/common_v2/visa_criterion_groups.csv`(F-4-R·F-2-R, 9행)에 돌린 결과 위반 0건.
-   합성 fixture로 자기참조·순환참조 거부 케이스도 함께 테스트했다(`tests/
-   test_validate_common_schema_v2.py`의 `TestCriterionGroupTreeIntegrityRejection`).
-5. **F-2-R의 차단된 복합 조건이 논리 손실 없이 이관된다.** — 부분 완료. 이관된 15행(원천
-   기준)은 중첩 AND/OR 구조(예: `f2r_language` OR 3개 조건, `f2r_conduct` AND)를 손실 없이
-   반영한다. 그러나 원천 68행 중 53행(중첩 AND/OR 평탄화 불가 42건 + 최초 신청자격 대상 아님
-   11건)은 여전히 보류 상태다 — "검수 완료 범위 vs 보류 범위" 표 참고. 이 53행은 이 이슈
-   범위가 아니라 PR #36 자체의 내용 검토 대상이다.
-6. **E-7-4R의 기본 자격과 K-POINT 점수표가 분리된다.** — 부분 완료, 정확히는 "점수표만
-   존재". `visa_scoring_models`/`visa_scoring_items`는 이관 완료(항목 7 참고). 그러나 E-7-4R의
-   기본 자격조건은 `visa_criterion_groups`/`visa_requirement_criteria`에 단 한 행도 없다 —
-   "분리"라고 부를 수 있으려면 분리된 두 쪽이 모두 있어야 하는데, 지금은 점수표 쪽만 있다.
+3. **모든 이관 대상 비자에 eligibility ROOT 그룹이 정확히 하나 있다.** — 완료. F-4-R,
+   E-7-4R, F-2-R에 각각 ROOT가 하나 있고 전체 그룹은 4/17/22행이다. D-2는 plan 8단계
+   결정에 따라 Lookup/Rule 구조를 유지하므로 eligibility 트리 이관 대상이 아니다.
+4. **조건 그룹에 부모 누락, 비자 불일치, 자기참조, 순환참조가 없다.** — 완료. 실제 43개
+   그룹 전체를 검증했고 위반은 0건이다. 합성 fixture에서도 부모 누락·자기참조·간접 순환을
+   거부한다.
+5. **F-2-R의 차단된 복합 조건이 논리 손실 없이 이관된다.** — 완료(확정 범위). 22개 그룹과
+   58개 criteria로 일반 경로·특례·언어 OR 조건을 보존했다. 이관 원장 251행 중 239행은
+   `MAPPED`, 독립 공통 행이 아닌 11행은 `SKIP`이다. 학교장 추천 대상범위가 원문 페이지끼리
+   충돌하는 1행만 `MANUAL_REVIEW`로 보존했다.
+6. **E-7-4R의 기본 자격과 K-POINT 점수표가 분리된다.** — 완료. 기본 자격은 17개 그룹·
+   43개 criteria, 점수표는 1개 모델·29개 항목으로 분리돼 있다.
 7. **점수 모델의 미확인 값은 null이며 검수 미완료 점수는 소비되지 않는다.** — 완료. E-7-4R
    `visa_scoring_models`의 `final_maximum_points`/`bonus_cap_points`/`tie_breaker_rule`은
    모두 null(미확인 값을 임의로 채우지 않음, 이번 태스크에서 재확인). #35(F-2-R) 점수표는
    현행성 미검증 상태라 아예 공통 마스터에 넣지 않았다 — "검수 미완료 점수는 소비되지 않는다"는
    원칙을 데이터를 만들지 않는 방식으로 지킨 것.
-8. **제출서류의 필수·선택·조건부·대체·첨부관계가 표현된다.** — 부분 완료. E-7-4R만 해당:
-   `document_requirements` 32행 전부(REQUIRED 17 / CONDITIONAL 8 / ALTERNATIVE 7,
-   `alternative_group` 채워진 행 7개)와 `document_attachment_relations` 2행이 이관돼
-   필수·조건부·대체·첨부관계 스펙트럼을 실제로 보여준다. F-4-R은 v1부터 0행이었으므로
-   해당 없음(누락이 아니라 원래 없음). F-2-R은 `document_requirements`가 아예 이관 후보에도
-   없다 — A_F-2-R 원천 매핑(`source_record_mappings.csv`)에 `target_table=document_requirements`
-   행 자체가 0개다. 이건 "이관 완료 범위 vs 보류 범위" 표에 별도로 명시되지 않은 추가 격차이므로
-   아래 "완전히 이관되지 않은 항목"에도 다시 적어둔다.
-9. **첨부관계에 자기참조나 순환참조가 없다.** — 완료. 실제 존재하는 2행(둘 다 E-7-4R)에 대해
-   이번 태스크(Deliverable 1)의 새 검사가 위반 0건을 확인했고, 합성 fixture로 자기참조·순환
-   거부 케이스도 확인했다(`TestDocumentAttachmentRelationIntegrityRejection`).
-10. **F-2-R 시군별 및 E-7-4R 광역별 쿼터 의미가 보존된다.** — 부분 완료. E-7-4R 광역(PROVINCE,
-    충청북도) 쿼터 스냅샷은 완전히 이관됨(항목 11 참고). F-2-R 시군별(MUNICIPALITY) 쿼터
-    스냅샷은 이관되지 않았다 — `visa_quota_snapshots.csv`에는 E-7-4R 행 1개만 있다. F-2-R의
-    `visa_quota_policies` 행(LIMITED)은 있지만 실제 시군별 배정·소진 수치(원천 61행, Task 6에서
-    보류)는 아직 없다.
+8. **제출서류의 필수·선택·조건부·대체·첨부관계가 표현된다.** — 완료. E-7-4R 32행과
+   F-2-R 44행을 이관했다. F-2-R은 REQUIRED 19 / CONDITIONAL 13 / ALTERNATIVE 12행이며,
+   전체 첨부관계는 37행이다. 원문에 없는 OPTIONAL 행을 임의 생성하지 않았다.
+9. **첨부관계에 자기참조나 순환참조가 없다.** — 완료. 실제 37행 전체에서 위반 0건이며,
+   합성 fixture에서도 자기참조와 간접 순환을 거부한다.
+10. **F-2-R 시군별 및 E-7-4R 광역별 쿼터 의미가 보존된다.** — 완료. F-2-R은 8~17차마다
+    6개 시군씩 총 60개 MUNICIPALITY 스냅샷, E-7-4R은 충청북도 PROVINCE 스냅샷 1개다.
 11. **E-7-4R 쿼터 집계 542/246/10/236/306이 검증된다.** — 완료. 이 값들은 실제
     `visa_quota_snapshots.csv`에 그대로 있고, 이번 태스크(Deliverable 2)에서
     `tests/test_v2_migration_regression.py::TestE7_4RQuotaSnapshot`로 고정했다.
@@ -1153,58 +1145,38 @@ plan 문서의 체크리스트는 17개 항목이다(브리프는 "16개"라고 
     `uv run python scripts/validate_common_schema_v2.py`는 지금도 이 8건을 그대로
     보고한다(억지로 통과시키지 않음).
 15. **원천 ID와 공통 UUID가 분리되고 매핑표로 추적된다.** — 완료.
-    `source_record_mappings.csv`(463행)가 4개 원천 데이터셋(A_F-2-R 74, B_E-7-4R 274,
-    C_D-2-common 99, D_visa_requirements 16)의 원천 ID와 공통 UUID를 분리해 추적하며,
-    `mapping_status`(PENDING/READY/MAPPED/BLOCKED)로 각 행의 이관 단계를 구분한다.
+    `source_record_mappings.csv` 684행(A_F-2-R 251, B_E-7-4R 318,
+    C_D-2-common 99, D_visa_requirements 16)이 원천 ID와 공통 UUID를 분리해 추적한다.
+    현재 상태는 MAPPED 544 / BLOCKED 140이며 PENDING·READY는 0이다. BLOCKED 140행 중
+    138행은 의도적 SKIP, 2행만 실제 MANUAL_REVIEW다.
     원천 파일의 실제 레코드 존재 여부와 MAPPED target UUID 연결은
     `scripts/validate_source_record_mappings.py`에서 별도로 검증한다.
-16. **FK·UUID·enum·헤더·쿼터·누락·순환 검증 테스트가 통과한다.** — 완료(이번 태스크로
-    마지막 공백을 메움). Task 3이 FK/UUID/enum/헤더 검증을 이미 구현했지만 ROOT 유일성·
-    순환참조·OR 그룹 최소 자식 수는 "실제 데이터가 준비되면"으로 미뤄뒀었다. 이번 태스크
-    (Deliverable 1)가 그 검사를 추가했고 실제 데이터에서 위반 0건을 확인했다. 전체 테스트는
-    `uv run pytest -q` 기준 301건 통과(기존 300 + 매핑 원장 검증 테스트 1건). 독립 실행형 검증기
-    (`uv run python scripts/validate_common_schema_v2.py`)는 여전히 종료 코드 1과 8건을
-    보고하는데, 이는 pytest 실패가 아니라 항목 14에서 설명한 "알려진, 의도가 확인된 미완료
-    데이터"를 검증기가 정직하게 계속 드러내고 있다는 뜻이다.
+16. **FK·UUID·enum·헤더·쿼터·누락·순환 검증 테스트가 통과한다.** — 완료. 13개 테이블의
+    구조·FK·UUID·트리·첨부·쿼터와 684개 원천 매핑을 검사한다. 독립 검증기는 D-2 부트스트랩의
+    알려진 8건과 정확히 일치할 때만 baseline 모드에서 통과하며, 새 오류나 조용한 해소 모두를
+    회귀로 감지한다. 스냅샷 빌더도 생성 전후에 같은 검증 결과를 강제한다.
 17. **v1→v2 변환 규칙과 비자별 이관 결과·보류 항목이 문서화된다.** — 완료. 이 문서의
     "마이그레이션 전제" 절(Task 1)이 변환 규칙과 비자별 기준을 이미 문서화했고, 이번 태스크가
     최종 체크리스트 판정과 아래 "완전히 이관되지 않은 항목" 전체 목록으로 마무리한다.
 
 ### 완전히 이관되지 않은 항목 (한곳에 모음)
 
-다음은 이 스냅샷 시점에 `extraction/common_v2/`가 아직 다루지 않는 것들이다. 위 체크리스트
-설명과 중복되더라도, 다음 작업이 훑어볼 단일 목록으로 여기 다시 모아둔다.
+다음은 2026-08-25 스냅샷에서 실제로 남아 있는 보류·경계 항목이다.
 
-- **E-7-4R 자격조건 + 그룹 트리**: 시작 전. `visa_criterion_groups`/
-  `visa_requirement_criteria`에 E-7-4R 행이 0개. `source_record_mappings.csv`에서
-  `source_dataset=B_E-7-4R AND target_table=visa_requirement_criteria`인 35행이 전부
-  `mapping_status=PENDING`이다(하나도 `MAPPED`가 아님).
-- **E-7-4R `visa_requirements` 본문 내용**: 부트스트랩(`visa_id`+`visa_code`)만 있음.
-- **D-2 `visa_requirements` 본문 내용**: 부트스트랩만 있음 — plan 8단계 결정에 따라 D-2는
-  Lookup/Rule 구조를 유지하고 공통 자격조건 트리로 평탄화하지 않으므로 이건 예상된 상태이지
-  격차가 아니다.
-- **F-2-R의 보류 53행**: PR #36 자체의 내용 검토 대상(중첩 AND/OR 평탄화 불가 42건 + 승인
-  이후 의무·동반가족 등 최초 신청자격 대상 아님 11건). 이 이슈 범위가 아니다.
-- **F-2-R `document_requirements`/`document_attachment_relations`**: 완전히 이관되지 않음.
-  A_F-2-R 원천 매핑에 `document_requirements`를 대상으로 하는 행 자체가 없다 — 53행 보류
-  목록과 별개로, 애초에 서류 요건 이관이 이 범위에서 다뤄진 적이 없다.
-- **F-2-R 쿼터 스냅샷(시군별 세부, 원천 61행)**: Task 6에서 보류. `visa_quota_snapshots.csv`에
-  F-2-R 행이 0개.
-- **`change_history.csv`**: 모든 비자유형에 대해 여전히 비어 있음(헤더만). B_E-7-4R 원천
-  매핑에 `target_table=change_history` 17행이 `PENDING` 상태로 대기 중이나 실제로 옮겨진
-  행은 0개.
-- **`scripts/uuid_utils.UUID_ID_COLUMNS`**: 이번 태스크에서 확장 완료(기존 3개 v1 컬럼 +
-  v2 10개 PK 컬럼명 = 13개). PR #38 이후 Task 9 계획 항목이었으나 그때는 반영되지 않았던
-  것을, 위험이 낮은 한 줄 변경(순수 추가, 기존 검사 로직 무변경)으로 판단해 이번에 반영했다.
-  기존 유닛 테스트 중 "criteria_id를 미지원 컬럼 예시로 쓰던" 테스트 하나만
-  `not_a_real_id_column`으로 바꿔 계속 통과하게 했다(`tests/test_uuid_utils.py`).
-- **`migrate_to_v2.py`의 실제 콘텐츠 재생성**: 위 "`migrate_to_v2.py` 재생성 한계" 절 참고 —
-  헤더 생성은 결정적이지만 행 내용 재생성은 현재 불가능하다.
-- **F-4-R `visa_criterion_groups` 4행의 원천 인용 누락**: `f4r_root`,
-  `f4r_eligibility_paths`, `f4r_dependent_child_requirements`,
-  `f4r_dependent_child_school_paths` 4개 그룹 행 모두 `source_record_mappings.csv`에서
-  `target_table=visa_criterion_groups`로 인용하는 행이 하나도 없다. 이건 데이터 누락이
-  아니라 Task 9의 의도된 판단이다 — v1에는 F-4-R 전용 그룹 파일이 애초에 없었으므로(그룹은
-  v2에서 새로 설계한 논리 구조) 이 4행 각각에 대응하는 자연스러운 단일 원천 행 자체가
-  존재하지 않는다. 반면 F-4-R의 10개 criteria 행은 v1 `visa_requirement_criteria.csv`의
-  실제 행에서 파생됐으므로 정상적으로 인용된다.
+- **E-7-4R `REQ-041`**: 원천에 `① |`만 남은 표 구조 조각이다. 점수 항목 이름·점수·대상 열을
+  특정할 수 없어 `MANUAL_REVIEW/BLOCKED`로 유지한다. 이 행을 제외한 E-7-4R 원장은 모두
+  MAPPED 또는 의도적 SKIP으로 닫혔다.
+- **F-2-R 학교장 추천 대상범위 1행**: 원문 페이지끼리 적용 대상 표현이 충돌한다.
+  `MANUAL_REVIEW/BLOCKED`로 유지하며 임의 해석하지 않는다.
+- **D-2 부트스트랩 필수값 8건**: `visa_requirements.csv`의 D-2 행은 공통 식별자 연결만 있고
+  본문·출처 필수값 8개가 비어 있다. 이는 `known_validation_gaps.txt`에 공개돼 있으며, D-2 전용
+  Lookup/Rule을 공통 eligibility 트리로 평탄화하지 않는 현재 경계와 함께 후속 결정이 필요하다.
+- **F-4-R 그룹 4행의 직접 원천 매핑 부재**: v1에 그룹 테이블이 없고 flat criteria에서 v2 논리
+  구조를 구성했기 때문에 각 그룹에 대응하는 단일 원천 행을 억지로 만들지 않았다. 10개 criteria의
+  실제 v1 근거와 그룹 자체의 `source_document_id`·페이지는 보존돼 있다.
+- **원천에서 의미 결정을 다시 만드는 자동 변환기**: 현재 빌더는 검수 완료 스냅샷을 결정적으로
+  재생성하지만, 원천 v1/HWPX/PDF만으로 사람의 분할·병합·AND/OR 판단을 다시 수행하지는 않는다.
+  의미 결정은 이관 원장과 검수 자료를 기준으로 변경한다.
+
+F-2-R 제출서류 44행·첨부관계 35행, 시군별 쿼터 60행, E-7-4R 자격 트리와 변경이력 17행은
+이미 이관됐으므로 더 이상 보류 목록에 포함하지 않는다.

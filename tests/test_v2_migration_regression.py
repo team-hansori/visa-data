@@ -5,10 +5,9 @@
 아니라 "이 특정 값이 나중에 실수로 바뀌면 테스트가 시끄럽게 실패해야 한다"는 회귀 방지다.
 
 각 숫자·문자열은 이 테스트를 작성하며 실제 CSV 파일을 다시 읽어 확인했다(task-10-brief.md의
-수치를 그대로 베끼지 않았다). `scripts/migrate_to_v2.py`는 헤더만 생성하는 스텁이고 실제 행
-내용은 각 태스크의 커밋되지 않은 1회성 스크립트로 채워졌으므로(docs/schema-v2.md, task-3~9
-리포트 참고), 이 파일이 "결정적으로 재생성 가능"함을 검증하지는 않는다 — 현재 커밋된 CSV
-스냅샷이 계속 이 값을 유지하는지만 확인한다.
+수치를 그대로 베끼지 않았다). 이 파일은 확정된 의미 값의 회귀를 고정하고,
+`tests/test_migrate_to_v2.py`는 검수 스냅샷 13개 파일의 결정적 재생성과 원본 보호를 별도로
+검증한다.
 """
 
 from __future__ import annotations
@@ -34,8 +33,12 @@ class TestE7_4RQuotaSnapshot:
 
     def test_single_snapshot_row_has_expected_values(self):
         rows = _read_rows("visa_quota_snapshots.csv")
-        assert len(rows) == 1
-        row = rows[0]
+        policies = {row["quota_policy_id"]: row for row in _read_rows("visa_quota_policies.csv")}
+        e74r_rows = [
+            row for row in rows if policies[row["quota_policy_id"]]["visa_id"] == E_7_4R_VISA_ID
+        ]
+        assert len(e74r_rows) == 1
+        row = e74r_rows[0]
         assert row["allocated_quota"] == "542"
         assert row["recommended_count"] == "246"
         assert row["quota_exempt_count"] == "10"
@@ -49,7 +52,11 @@ class TestE7_4RQuotaSnapshot:
         policy_rows = _read_rows("visa_quota_policies.csv")
         policies_by_id = {row["quota_policy_id"]: row for row in policy_rows}
 
-        snapshot = snapshot_rows[0]
+        snapshot = next(
+            row
+            for row in snapshot_rows
+            if policies_by_id[row["quota_policy_id"]]["visa_id"] == E_7_4R_VISA_ID
+        )
         policy = policies_by_id[snapshot["quota_policy_id"]]
         assert policy["visa_id"] == E_7_4R_VISA_ID
 
