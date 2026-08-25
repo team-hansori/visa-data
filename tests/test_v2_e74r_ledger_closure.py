@@ -119,13 +119,14 @@ def test_all_69_second_phase_rows_are_closed_without_forcing_the_parser_fragment
         assert all(row["target_record_id"] for row in rows)
         assert all(row["source_group_path"] for row in rows)
 
-    blocked = _mapping_rows("_review_current_requirements", "REQ-041")
-    assert len(blocked) == 1
-    assert blocked[0]["mapping_status"] == "BLOCKED"
-    assert blocked[0]["mapping_action"] == "MANUAL_REVIEW"
-    assert blocked[0]["target_record_id"] == ""
-    assert "'① |'" in blocked[0]["blocking_reason"]
-    assert "target" in blocked[0]["blocking_reason"]
+    skipped = _mapping_rows("_review_current_requirements", "REQ-041")
+    assert len(skipped) == 1
+    assert skipped[0]["mapping_status"] == "BLOCKED"
+    assert skipped[0]["mapping_action"] == "SKIP"
+    assert skipped[0]["target_table"] == "NONE"
+    assert skipped[0]["target_record_id"] == ""
+    assert "표 번호 파싱 잔재" in skipped[0]["blocking_reason"]
+    assert "중복 행을 생성하지 않음" in skipped[0]["mapping_note"]
 
     for source_id in HISTORY_SOURCE_IDS:
         rows = _mapping_rows("change_history", source_id)
