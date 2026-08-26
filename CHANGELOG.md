@@ -40,6 +40,7 @@
 
 ### 기타
 
+- Supabase 로컬 연결 메타데이터 제외 (#47) ([b05b238](https://github.com/team-hansori/visa-data/commit/b05b238449d4ecb5fe08f0106132b72fb4d3789f))
 - Docs/ gitignore 제외 규칙 삭제 (#44) ([d08793b](https://github.com/team-hansori/visa-data/commit/d08793b2f7f389e4b0d307c1922ced72706ff1cc))
 - Ruff 포맷 정리 및 초안 CSV 재생성 ([2df55e2](https://github.com/team-hansori/visa-data/commit/2df55e274137acec74948b9e843ea5e0c2f2a7fc))
 - Ruff 정리, condition_group 문서화, 회귀 테스트 추가 ([29839e0](https://github.com/team-hansori/visa-data/commit/29839e02fa5886e0d3f1c61684ab1e3d3e921d93))
@@ -61,6 +62,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([6874917](https://github.com/team-hansori/visa-data/commit/687491750233c704036f02d7670bde96b2c66581))
 - Schema-v2.md 수치·범위 표기 정정 (#44) ([84dd974](https://github.com/team-hansori/visa-data/commit/84dd97410dd177ed23a6eaa85488a0a327551ee7))
 - 공통 UUID 매핑 장부 마감 - target_record_id 확정 (#44) ([2b0f015](https://github.com/team-hansori/visa-data/commit/2b0f0158abf6e0bb683a1b5355f861da4e03e8e1))
 - D-2 문서화 리뷰 피드백 반영 - 잘못된 출처 인용 수정 (#44) ([cc47975](https://github.com/team-hansori/visa-data/commit/cc479757538649a52625cc0359d1ee7b95b37fb3))
@@ -152,6 +154,7 @@
 
 ### 새 기능
 
+- 공통 스키마 v2 Supabase migration 및 데이터 importer 구축 (#47) ([979617a](https://github.com/team-hansori/visa-data/commit/979617a8b07d19bdcb3d530cb0e0857b20eef22e))
 - [자동화] 공통 UUID 생성 및 중복 검증 스크립트 추가 (#37) ([7739a95](https://github.com/team-hansori/visa-data/commit/7739a95008193ac65b0a2f3358fe4852fffc74da))
 - F-2-R 공통 마스터 매핑 추가 (#39) ([ba2ad92](https://github.com/team-hansori/visa-data/commit/ba2ad923a9ad6e72c9e95dbf2a665269c752907c))
 - 지역특화_우수인재_F-2-R 자료 추출 (#35) ([66f0004](https://github.com/team-hansori/visa-data/commit/66f00049b9e1973e67622021dbae8f50ac988203))
