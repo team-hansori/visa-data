@@ -2,6 +2,10 @@
 
 ## 미출시 변경사항
 
+### CI/CD
+
+- Validate_common_schema_v2.py를 CI에 연결하고 README에 문서화 (#44) ([81c0f0a](https://github.com/team-hansori/visa-data/commit/81c0f0aa60e47f08c28c5c4137f67e95732ece84))
+
 ### data
 
 - 회차 대조 완료 상태 반영 (#40) ([5e39cdd](https://github.com/team-hansori/visa-data/commit/5e39cddb2648ed52d472b57d72bc4c2426b7d49c))
@@ -13,14 +17,30 @@
 - 메모 기준 상태값 정리 (#40) ([35211ae](https://github.com/team-hansori/visa-data/commit/35211ae3b95047a195f8f8fe97ab4d4123d0748a))
 - 메모 기반 상태값 보정 (#40) ([71b4bd9](https://github.com/team-hansori/visa-data/commit/71b4bd9f75b4313c413c8e8864dc13a5a064a193))
 
+### migrate
+
+- 공통 스키마 v2 이관 및 검증 마감 (#44) ([0046854](https://github.com/team-hansori/visa-data/commit/00468541c3755fa7de2d28b0fe461b82d1af37e6))
+- E-7-4R 기본 자격조건 v2 이관 (#44) ([a74d67e](https://github.com/team-hansori/visa-data/commit/a74d67e9eba795b2c7e55bcbaf5879a1f19c5b7f))
+- F-2-R 보류 42행(중첩 AND/OR) v2 이관 (#44) ([bda65ce](https://github.com/team-hansori/visa-data/commit/bda65ce2f006bf379bef2525e2f412897e78703d))
+- E-7-4R 절차 단계·제출서류 이관 (#44) ([f2ee6dd](https://github.com/team-hansori/visa-data/commit/f2ee6ddd8b5346e0c3d3bf1d013be44c0a4639ca))
+- E-7-4R K-POINT 점수표·8차 쿼터 이관 (#44) ([9eaeff9](https://github.com/team-hansori/visa-data/commit/9eaeff98e84bbf3ef2fee4a5308a1c8d014cc592))
+- F-2-R v2 이관 - READY 15행 (#44) ([c3caf67](https://github.com/team-hansori/visa-data/commit/c3caf67ad6b179377585427dfa60b8428699cd52))
+- F-4-R v2 이관 (#44) ([d538f57](https://github.com/team-hansori/visa-data/commit/d538f573295c1281d72d17c829adad83b0da2de0))
+
+### schema
+
+- V2 스키마 정의·빈 CSV 골격·검증기 추가 (#44) ([2dcf17c](https://github.com/team-hansori/visa-data/commit/2dcf17cbc1ebc66cb5246f8bf3feacba13f8e9c2))
+
 ### style
 
+- F-2-R 문서 검증 테스트 포맷 정리 (#44) ([999c16f](https://github.com/team-hansori/visa-data/commit/999c16fc8433b2daf10c2c01c1a214238368ace0))
 - E-7-4R 관련 테스트 포맷 정리 (#40) ([1d6b503](https://github.com/team-hansori/visa-data/commit/1d6b503db0e6bce31048c54e25b17f61c36bb74b))
 - Ruff format 적용 (CI lint 실패 수정) ([2144163](https://github.com/team-hansori/visa-data/commit/214416392ff42478ec2bbd08bc99f6ad72d1d2a4))
 - 테스트 코드 ruff 포맷 적용 ([00ca0d1](https://github.com/team-hansori/visa-data/commit/00ca0d1a8137ec7a8c83932008cd4e5bc42cdb83))
 
 ### 기타
 
+- Docs/ gitignore 제외 규칙 삭제 (#44) ([d08793b](https://github.com/team-hansori/visa-data/commit/d08793b2f7f389e4b0d307c1922ced72706ff1cc))
 - Ruff 포맷 정리 및 초안 CSV 재생성 ([2df55e2](https://github.com/team-hansori/visa-data/commit/2df55e274137acec74948b9e843ea5e0c2f2a7fc))
 - Ruff 정리, condition_group 문서화, 회귀 테스트 추가 ([29839e0](https://github.com/team-hansori/visa-data/commit/29839e02fa5886e0d3f1c61684ab1e3d3e921d93))
 - B_E-7-4R 8차 공고 current_requirements.csv 초안 생성 (#9) ([5d432bd](https://github.com/team-hansori/visa-data/commit/5d432bd7f4f30c79f0acf0057b2a3f16ff3d9e13))
@@ -41,6 +61,14 @@
 
 ### 문서
 
+- Schema-v2.md 수치·범위 표기 정정 (#44) ([84dd974](https://github.com/team-hansori/visa-data/commit/84dd97410dd177ed23a6eaa85488a0a327551ee7))
+- 공통 UUID 매핑 장부 마감 - target_record_id 확정 (#44) ([2b0f015](https://github.com/team-hansori/visa-data/commit/2b0f0158abf6e0bb683a1b5355f861da4e03e8e1))
+- D-2 문서화 리뷰 피드백 반영 - 잘못된 출처 인용 수정 (#44) ([cc47975](https://github.com/team-hansori/visa-data/commit/cc479757538649a52625cc0359d1ee7b95b37fb3))
+- D-2 연결 검증 - 식별자·출처·유효기간·쿼터 미생성 확인 (#44) ([74bdc88](https://github.com/team-hansori/visa-data/commit/74bdc88dbbea3388bfc1a3be2ea98f9eed8fa887))
+- V1 기준선 스냅샷 및 source_record_mappings 초안 (#44) ([23c1653](https://github.com/team-hansori/visa-data/commit/23c165326927844ad598488fbbb945aab89789e1))
+- 공통 스키마 v2 명세 확정 및 plan 보완 (#44) ([b2d19f8](https://github.com/team-hansori/visa-data/commit/b2d19f85f27c5118e89152de6aaceb851e1c26b1))
+- 공통 스키마 v2 마이그레이션 plan 추가 (#44) ([2bda1e2](https://github.com/team-hansori/visa-data/commit/2bda1e2969294db2fd77898f0593198e638aa748))
+- CHANGELOG 자동 업데이트 [skip ci] ([32f92c8](https://github.com/team-hansori/visa-data/commit/32f92c89792a0e4884d1d16013665a9e98507ce0))
 - UUID 유틸리티 구조로 계획 수정 (#37) ([e0a3ead](https://github.com/team-hansori/visa-data/commit/e0a3ead0ce40a1cd641330f51c6cb6a2eb3fec9c))
 - UUID 생성 계획을 유틸리티 방식으로 정리 (#37) ([ca9144a](https://github.com/team-hansori/visa-data/commit/ca9144a65779ea5333fe3e5c2e0e186e47eaf7ea))
 - CHANGELOG 자동 업데이트 [skip ci] ([10ee453](https://github.com/team-hansori/visa-data/commit/10ee4534179b5a5d364ffd11dd7eb9b78e3f3650))
@@ -81,6 +109,20 @@
 
 ### 버그 수정
 
+- REQ-041 매핑 결정을 제외 상태로 동기화 (#44) ([f5e24ac](https://github.com/team-hansori/visa-data/commit/f5e24ac7ffc3056839a75e064401d33f78cbdce1))
+- D-2 광역형 비자 적용 기준일 확정 (#44) ([683d47d](https://github.com/team-hansori/visa-data/commit/683d47dd4c7d6b42f9bc234c7e82458d694226e7))
+- D-2 광역형 비자 신청 절차 보강 (#44) ([ec3d137](https://github.com/team-hansori/visa-data/commit/ec3d137dac3ce48d543f451bd253af23d104cf0d))
+- F-2-R 학교장 추천서 조건부 이관 (#44) ([a48ca3e](https://github.com/team-hansori/visa-data/commit/a48ca3e14410428833ed03cc38bcc9c482aea166))
+- E-7-4R 파싱 잔재와 D-2 출처 정리 (#44) ([54bcb68](https://github.com/team-hansori/visa-data/commit/54bcb683db36faa489406e42afc579ffa2c4f5a1))
+- F-4-R 12차 공고문 source_location 보완 (#44) ([ee81d83](https://github.com/team-hansori/visa-data/commit/ee81d83dcb5f23db4448396c01576c30417c49e9))
+- V2 매핑 검증 및 누락 메타데이터 보완 (#44) ([8374f6d](https://github.com/team-hansori/visa-data/commit/8374f6decd31460ef58ab339b2763b26de33099a))
+- F-2-R 승인 후 유지의무 criteria를 INFORMATIONAL로 재분류 (#44) ([e225352](https://github.com/team-hansori/visa-data/commit/e2253521662f476de8fb4ac13cfbbf81bea14052))
+- Source_record_mappings target_table 정정 및 검증기 보강 (#44) ([45e9b7a](https://github.com/team-hansori/visa-data/commit/45e9b7af8b79cc59ea762400d262c0eb6801bc85))
+- V2 마이그레이션 스크립트의 파괴적 기본 출력 경로 방지 (#44) ([9518bf7](https://github.com/team-hansori/visa-data/commit/9518bf7c5a57c0ae19e618e93eae44013e2852d1))
+- E-7-4R 고용주측 제출서류 9행의 submitted_by 정정 (#44) ([e0e9c81](https://github.com/team-hansori/visa-data/commit/e0e9c812325c83700d7a1e678e32e2c103462c0f))
+- E-7-4R scoring_items.csv 9개 SCORE-* 누락된 gap-fill 행 추가 (#44) ([96d1d0b](https://github.com/team-hansori/visa-data/commit/96d1d0bb2f5df35f2eb7ad5d36a4905224b43666))
+- Source_record_mappings.mapped_at를 nullable로 수정 (#44) ([6ddb7b2](https://github.com/team-hansori/visa-data/commit/6ddb7b211a5a5ce502373dc4f320fa27a450a181))
+- V2 스키마 nullable 규칙 일관성 위반 3건 수정 (#44) ([c38c564](https://github.com/team-hansori/visa-data/commit/c38c564decd58fb05b885e97d78ed14804705a81))
 - 되돌린 F-2-R 원천 스키마에 검증기 정합화 (#36) ([e209f15](https://github.com/team-hansori/visa-data/commit/e209f15f268c0a3b1df69f9d8d774d1ed530928e))
 - E-7-4R 데이터 정규화 스크립트 5건 데이터 무결성 버그 수정 (#43 코드래빗 리뷰) ([7c22f92](https://github.com/team-hansori/visa-data/commit/7c22f92d59c1b84cda828aab04f043a55d4acbaa))
 - HWPX 원문 표식 재추출 및 리뷰 하위 행 반영 (#40) ([53535f8](https://github.com/team-hansori/visa-data/commit/53535f88ada117ef6e525adc20663998901970e4))
@@ -138,6 +180,7 @@
 
 ### 테스트
 
+- V2 통합·회귀 검증 및 순환참조 무결성 검사 추가 (#44) ([f7953b8](https://github.com/team-hansori/visa-data/commit/f7953b87cfe46cd22c7168466db3cfa44c0cb722))
 - E-7-4R 매핑 무결성 검증 추가 (#40) ([86f675f](https://github.com/team-hansori/visa-data/commit/86f675faec8526dbbc4a56393f7dfe89a915b603))
 
 
