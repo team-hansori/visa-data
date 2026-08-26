@@ -15,6 +15,7 @@ from scripts.validate_fk_integrity import (
     collect_lookup_sets,
     read_fieldnames,
     read_rows,
+    reference_tables,
     validate,
 )
 
@@ -274,6 +275,17 @@ class TestReadFieldnames:
         path = tmp_path / "t.csv"
         write_csv(path, ["a", "b"], [{"a": "1", "b": "2"}])
         assert read_fieldnames(path) == ["a", "b"]
+
+
+class TestReferenceTableSchema:
+    def test_risk_routing_requires_message_addendum_column(self, tmp_path: Path):
+        routing_table = next(
+            table
+            for table in reference_tables(tmp_path)
+            if table.path.name == "risk_routing_table.csv"
+        )
+
+        assert "message_addendum" in routing_table.required_columns
 
 
 class TestValidateCatchesMissingColumns:

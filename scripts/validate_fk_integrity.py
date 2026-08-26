@@ -94,6 +94,7 @@ def reference_tables(base_dir: Path = REFERENCE_DIR) -> list[TableSpec]:
             base_dir / "risk_routing_table.csv",
             pk="routing_id",
             fks={"target_agency_category": (agency_contacts, "category_minor")},
+            required_columns=("message_addendum",),
             # resolution_type=EXTERNAL 행에 한해서만 target_agency_category가 "해당 없음"이라
             # 비어 있는 것이 정상(reference/README.md NULL 규약). resolution_type=IN_DOMAIN
             # 행은 항상 채워야 하므로 빈 값이면 에러로 잡는다. 값이 있는 행(IN_DOMAIN)은
