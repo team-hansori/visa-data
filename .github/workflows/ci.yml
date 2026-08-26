@@ -36,19 +36,33 @@ jobs:
             scripts/migrate_to_v2.py \
             scripts/validate_common_schema_v2.py \
             scripts/validate_source_record_mappings.py \
-            scripts/import_common_v2.py
+            scripts/import_common_v2.py \
+            scripts/reference_schema.py \
+            scripts/migrate_agency_contacts_map_columns.py \
+            scripts/import_reference_data.py \
+            scripts/validate_fk_integrity.py
           ruff format --check \
             scripts/schema_v2.py \
             scripts/migrate_to_v2.py \
             scripts/validate_common_schema_v2.py \
             scripts/validate_source_record_mappings.py \
-            scripts/import_common_v2.py
+            scripts/import_common_v2.py \
+            scripts/reference_schema.py \
+            scripts/migrate_agency_contacts_map_columns.py \
+            scripts/import_reference_data.py \
+            scripts/validate_fk_integrity.py
 
       - name: 테스트 실행
         run: pytest tests/ -v --tb=short --cov=src --cov-report=term-missing
 
       - name: E-7-4R 매핑 무결성 검증
         run: python scripts/validate_e7r_mapping.py
+
+      - name: reference/ FK·지도 컬럼 무결성 검증
+        run: python scripts/validate_fk_integrity.py
+
+      - name: reference importer dry-run
+        run: python scripts/import_reference_data.py
 
       - name: 공통 스키마 v2 검증
         run: |
@@ -88,7 +102,13 @@ jobs:
         run: |
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE ROLE anon; CREATE ROLE authenticated;'
           psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20260826000000_common_schema_v2.sql
+      - name: Apply reference migration
+        run: psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20260827000000_reference_agency_map_schema.sql
       - name: Import twice and verify idempotency
         run: |
           python scripts/import_common_v2.py --apply
           python scripts/import_common_v2.py --apply
+      - name: Import reference data twice and verify idempotency
+        run: |
+          python scripts/import_reference_data.py --apply
+          python scripts/import_reference_data.py --apply
