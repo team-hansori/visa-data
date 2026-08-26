@@ -36,10 +36,13 @@ class TableSpec:
     # 부모 조회 컬럼은 부모의 PK가 아닐 수도 있다(예: agency_contacts.category_minor).
     fks: dict[str, tuple[Path, str]] = field(default_factory=dict)
     required_columns: tuple[str, ...] = ()  # 필수 컬럼 추가
-    # 값이 비어 있어도 에러로 보지 않을 FK 컬럼명 (예: EXTERNAL 라우팅의 target_agency_category
-    # 는 "해당 없음"을 의미하는 정상적인 빈 값 — reference/README.md NULL 규약 참고).
-    # 값이 존재하는 경우에는 여전히 정상적으로 부모 테이블에 대해 검사한다.
-    nullable_fks: frozenset[str] = frozenset()
+    # {FK 컬럼명: (조건 컬럼명, 조건 값)}. 조건 컬럼이 조건 값과 같을 때만 해당 FK 컬럼의
+    # 빈 값을 에러로 보지 않는다 (예: EXTERNAL 라우팅의 target_agency_category는 "해당
+    # 없음"을 의미하는 정상적인 빈 값 — reference/README.md NULL 규약 참고). 조건이
+    # 성립하지 않는데 값이 비어 있으면(예: IN_DOMAIN 행의 target_agency_category) 그대로
+    # 에러로 처리한다. 값이 존재하는 경우에는 조건과 무관하게 항상 부모 테이블에 대해
+    # 검사한다.
+    nullable_fks: dict[str, tuple[str, str]] = field(default_factory=dict)
 
 
 def default_tables(base_dir: Path = D_DIR) -> list[TableSpec]:
@@ -91,10 +94,11 @@ def reference_tables(base_dir: Path = REFERENCE_DIR) -> list[TableSpec]:
             base_dir / "risk_routing_table.csv",
             pk="routing_id",
             fks={"target_agency_category": (agency_contacts, "category_minor")},
-            # resolution_type=EXTERNAL 행은 target_agency_category가 "해당 없음"이라 비어
-            # 있는 것이 정상(reference/README.md NULL 규약). 값이 있는 행(IN_DOMAIN)은
+            # resolution_type=EXTERNAL 행에 한해서만 target_agency_category가 "해당 없음"이라
+            # 비어 있는 것이 정상(reference/README.md NULL 규약). resolution_type=IN_DOMAIN
+            # 행은 항상 채워야 하므로 빈 값이면 에러로 잡는다. 값이 있는 행(IN_DOMAIN)은
             # agency_contacts.category_minor에 존재해야 하므로 그 검사는 그대로 적용된다.
-            nullable_fks=frozenset({"target_agency_category"}),
+            nullable_fks={"target_agency_category": ("resolution_type", "EXTERNAL")},
         ),
     ]
 
@@ -182,9 +186,11 @@ def check_fk_integrity(
 ) -> list[str]:
     """FK 컬럼 값이 참조 테이블의 지정된 조회 컬럼 값 집합에 실제로 존재하는지 검사한다.
 
-    table.nullable_fks에 포함된 FK 컬럼은 값이 비어 있어도 에러로 보지 않는다(예:
-    EXTERNAL 라우팅의 target_agency_category="해당 없음"). 값이 존재하면 그 값은 여전히
-    부모 테이블에 대해 정상적으로 검사한다.
+    table.nullable_fks에 포함된 FK 컬럼은, 지정된 조건 컬럼이 조건 값과 같을 때만 값이
+    비어 있어도 에러로 보지 않는다(예: resolution_type=EXTERNAL인 행의
+    target_agency_category="해당 없음"). 조건이 성립하지 않는데 값이 비어 있으면(예:
+    resolution_type=IN_DOMAIN인데 target_agency_category가 빈 값) 그대로 에러로 처리한다.
+    값이 존재하면 그 값은 여전히 부모 테이블에 대해 정상적으로 검사한다.
     """
     errors: list[str] = []
     for fk_column, (parent_path, parent_column) in table.fks.items():
@@ -192,8 +198,11 @@ def check_fk_integrity(
         for i, row in enumerate(rows, start=2):
             value = row.get(fk_column, "")
             if not value:
-                if fk_column in table.nullable_fks:
-                    continue
+                condition = table.nullable_fks.get(fk_column)
+                if condition is not None:
+                    condition_column, condition_value = condition
+                    if row.get(condition_column) == condition_value:
+                        continue
                 errors.append(f"{table.path}:{i} - {fk_column}가 비어 있음")
                 continue
             if value not in parent_values:
@@ -255,6 +264,47 @@ def check_document_requirements_status(
     return errors
 
 
+RISK_ROUTING_FILENAME = "risk_routing_table.csv"
+RISK_KEYWORD_MESSAGES_FILENAME = "risk_keyword_messages.csv"
+
+
+def check_risk_message_coverage(routing_path: Path, messages_path: Path) -> list[str]:
+    """risk_routing_table.csv의 (keyword_category, resolution_type) 조합이
+    risk_keyword_messages.csv에 boilerplate 행으로 존재하는지, 그리고
+    risk_keyword_messages.csv 자체에 같은 조합의 중복 행이 없는지 검사한다.
+
+    risk_keyword_messages.csv는 (keyword_category, resolution_type) 복합키라 단일
+    컬럼 PK 유일성 검사(check_pk_uniqueness)로는 중복을 잡을 수 없다 — 그래서 이 두
+    검사를 함께 여기서 처리한다.
+    """
+    routing_rows = read_rows(routing_path)
+    message_rows = read_rows(messages_path)
+
+    errors: list[str] = []
+
+    # risk_keyword_messages.csv 자체의 (keyword_category, resolution_type) 중복 검사
+    seen: dict[tuple[str, str], int] = {}
+    for row in message_rows:
+        key = (row.get("keyword_category", ""), row.get("resolution_type", ""))
+        seen[key] = seen.get(key, 0) + 1
+    for key, count in seen.items():
+        if count > 1:
+            errors.append(
+                f"{messages_path} - (keyword_category, resolution_type)={key} 중복 {count}회"
+            )
+
+    # risk_routing_table.csv의 각 조합이 risk_keyword_messages.csv에 존재하는지 검사
+    message_keys = set(seen.keys())
+    for i, row in enumerate(routing_rows, start=2):
+        key = (row.get("keyword_category", ""), row.get("resolution_type", ""))
+        if key not in message_keys:
+            errors.append(
+                f"{routing_path}:{i} - (keyword_category, resolution_type)={key}에 대응하는 "
+                f"boilerplate 행이 {messages_path}에 없음"
+            )
+    return errors
+
+
 def validate(tables: list[TableSpec]) -> list[str]:
     """모든 테이블에 대해 필수 컬럼 존재, PK 유일성, FK 참조 무결성을 검사하고 에러 목록을 반환한다."""
     errors: list[str] = []
@@ -286,6 +336,15 @@ def validate(tables: list[TableSpec]) -> list[str]:
     )
     if stages_table is not None and documents_table is not None:
         errors.extend(check_document_requirements_status(stages_table.path, documents_table.path))
+
+    routing_table = next(
+        (t for t in checkable_tables if t.path.name == RISK_ROUTING_FILENAME), None
+    )
+    messages_table = next(
+        (t for t in checkable_tables if t.path.name == RISK_KEYWORD_MESSAGES_FILENAME), None
+    )
+    if routing_table is not None and messages_table is not None:
+        errors.extend(check_risk_message_coverage(routing_table.path, messages_table.path))
 
     return errors
 

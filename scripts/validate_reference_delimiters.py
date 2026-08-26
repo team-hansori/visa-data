@@ -20,10 +20,11 @@ MULTI_VALUE_COLUMNS: dict[str, list[str]] = {
     "risk_routing_table.csv": ["applies_to_visa_code", "external_region_scope"],
 }
 
-# 다중값: 쉼표 양쪽에 영문자나 한글 문자 포함 필수
-# 전화번호 내선 표기("2,4")는 양쪽이 숫자만이므로 제외됨
+# 다중값: 쉼표 양쪽에 영문자나 한글 문자 포함 필수(하이픈 포함 비자코드 등도 한 토큰으로
+# 인식). 쉼표 앞뒤 공백("청주, 진천")도 허용한다.
+# 전화번호 내선 표기("2,4")는 양쪽이 숫자/하이픈뿐이라 문자로 시작하지 않으므로 제외됨
 COMMA_IN_VALUE_RE = re.compile(
-    r"[가-힣A-Za-z][가-힣A-Za-z0-9]*,[가-힣A-Za-z][가-힣A-Za-z0-9]*"
+    r"[가-힣A-Za-z][가-힣A-Za-z0-9\-]*\s*,\s*[가-힣A-Za-z][가-힣A-Za-z0-9\-]*"
 )
 
 
@@ -32,6 +33,8 @@ def find_comma_in_pipe_columns(
 ) -> list[tuple[int, str, str]]:
     """지정된 컬럼에서 쉼표로 여러 값을 나열한 셀을 찾는다."""
     violations: list[tuple[int, str, str]] = []
+    if not path.exists():  # 파일이 아직 없으면 조용히 건너뜀 (validate_fk_integrity.py와 동일한 관례)
+        return violations
     with path.open(encoding="utf-8-sig", newline="") as f:
         reader = csv.DictReader(f)
         for row_num, row in enumerate(reader, start=2):
