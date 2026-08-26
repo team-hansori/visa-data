@@ -55,6 +55,7 @@
 
 ### 리팩터링
 
+- Escalation_message_template boilerplate를 keyword_category 단위로 분리 ([4e74a9a](https://github.com/team-hansori/visa-data/commit/4e74a9a0f8ecda5b43f68595f8791a4729e7de01))
 - Replace CSV UUID generator with reusable utility: CSV UUID 생성기를 공용 유틸리티로 교체 ([c43d78a](https://github.com/team-hansori/visa-data/commit/c43d78a03c7a0e7247a1571f3e783c3ed7cbace4))
 - History 매핑표 단일화 (#40) ([631165d](https://github.com/team-hansori/visa-data/commit/631165d3be47ea7927c68614b16f9e2a426bab31))
 - Review 스크립트 통합 진입점 및 행 정렬 추가 (#40) ([e7dd3c8](https://github.com/team-hansori/visa-data/commit/e7dd3c816295afe6cc2f4d2acfa9686fe49ed7a9))
@@ -62,6 +63,11 @@
 
 ### 문서
 
+- 이슈 45 테스트 수정 리포트 추가 ([e21f566](https://github.com/team-hansori/visa-data/commit/e21f5660742eb6f1bbd4843843ad373fadd76082))
+- Risk_routing_table README 설계 원칙 순서·서술 정리 ([9a7c461](https://github.com/team-hansori/visa-data/commit/9a7c4610941bffa04b80a31f0eae3f0e71dad52d))
+- Risk_routing_table 빈칸(NULL) 의미를 컬럼별로 명문화, source_page N/A 리터럴 제거 ([b080b86](https://github.com/team-hansori/visa-data/commit/b080b86e101b629b3dcd7b04c8176e673acfc25f))
+- Risk_routing_table 설계 원칙에서 제거된 escalation_message_template 참조 정리 ([c2f2693](https://github.com/team-hansori/visa-data/commit/c2f2693e03e6ae8ddd324de965bbc5556c872be9))
+- CHANGELOG 자동 업데이트 [skip ci] ([d81a66f](https://github.com/team-hansori/visa-data/commit/d81a66f7fec0df5a406b303acec2cd789e18a162))
 - README 핵심 가치와 아키텍처 보강 ([b0d4bfe](https://github.com/team-hansori/visa-data/commit/b0d4bfeefe076fbb9eae9945b7c88d3c6683f9a9))
 - CHANGELOG 자동 업데이트 [skip ci] ([580b26c](https://github.com/team-hansori/visa-data/commit/580b26c0f6239fd99add506031ec394ebf0e5e24))
 - README 소개 문구와 배지 정렬 수정 ([215fdc9](https://github.com/team-hansori/visa-data/commit/215fdc97f155da0873bbb580ef6a711ed5cbff83))
@@ -117,6 +123,12 @@
 
 ### 버그 수정
 
+- 충주지청 지역대표번호 안내를 행별 문구로 분리 (#45) ([567f501](https://github.com/team-hansori/visa-data/commit/567f501c3079bc07d6c8d56aba446d8179c6f2f0))
+- Risk_routing_table.csv BOM 제거, source_page N/A 리터럴 제거 ([e506655](https://github.com/team-hansori/visa-data/commit/e50665543fe6a23d31b7bb59327695e4c37f185f))
+- FK 검증기에 risk 메시지 커버리지 검사와 조건부 nullable FK 추가 ([27ac003](https://github.com/team-hansori/visa-data/commit/27ac00309345a457988187b3fd2238f25c69ac0d))
+- 근로복지공단 중복 행(청주지사/충주지사) 병합 ([1701456](https://github.com/team-hansori/visa-data/commit/1701456713e746d72200139fe19aa6764747a53a))
+- 다중값 구분 정규식이 전화번호 내선표기를 실제로 배제하도록 수정 ([aeda651](https://github.com/team-hansori/visa-data/commit/aeda6516d96601c671cf51dfcfe9cb784b805d93))
+- Agency_contacts.csv 다중 지역 표기를 파이프 구분자로 통일 ([46b4bfe](https://github.com/team-hansori/visa-data/commit/46b4bfe23e1b7776496423e6714568d9684de4fe))
 - REQ-041 매핑 결정을 제외 상태로 동기화 (#44) ([f5e24ac](https://github.com/team-hansori/visa-data/commit/f5e24ac7ffc3056839a75e064401d33f78cbdce1))
 - D-2 광역형 비자 적용 기준일 확정 (#44) ([683d47d](https://github.com/team-hansori/visa-data/commit/683d47dd4c7d6b42f9bc234c7e82458d694226e7))
 - D-2 광역형 비자 신청 절차 보강 (#44) ([ec3d137](https://github.com/team-hansori/visa-data/commit/ec3d137dac3ce48d543f451bd253af23d104cf0d))
@@ -189,6 +201,8 @@
 
 ### 테스트
 
+- Validate_fk_integrity 테스트를 신규 API(fks 튜플, nullable_fks, risk 메시지 커버리지)에 맞춰 갱신 ([28940b5](https://github.com/team-hansori/visa-data/commit/28940b529ffdb277e248377820c044a70ee6c289))
+- Validate_fk_integrity.py를 reference/ 테이블까지 확장 ([6912d3e](https://github.com/team-hansori/visa-data/commit/6912d3e63c9347879d95825ea7b16f3996aa1e58))
 - V2 통합·회귀 검증 및 순환참조 무결성 검사 추가 (#44) ([f7953b8](https://github.com/team-hansori/visa-data/commit/f7953b87cfe46cd22c7168466db3cfa44c0cb722))
 - E-7-4R 매핑 무결성 검증 추가 (#40) ([86f675f](https://github.com/team-hansori/visa-data/commit/86f675faec8526dbbc4a56393f7dfe89a915b603))
 
