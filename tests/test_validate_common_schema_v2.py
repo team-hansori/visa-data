@@ -770,7 +770,7 @@ class TestBaseline:
         errors = validate_directory(REAL_COMMON_V2_DIR)
         exit_code = _check_against_baseline(errors, REAL_BASELINE_PATH)
         assert exit_code == 0
-        assert len(errors) == 1
+        assert errors == []
 
 
 class TestD2ApplicationMethodProvenance:
@@ -787,6 +787,7 @@ class TestD2ApplicationMethodProvenance:
             "지원서류를 해당 대학에 제출하고, 대학이 국내 관할 출입국사무소에 "
             "사증발급인정신청서를 제출"
         )
+        assert d2["valid_from"] == "2025-04-02"
         assert d2["source_page"] == "1"
         assert source["source_document_key"] == "d2_chsu_admissions_guide_2026"
         assert source["file_hash_sha256"] == (

@@ -1,7 +1,6 @@
-# extraction/common_v2/의 알려진(사전 공개된) 검증 실패 1건.
+# extraction/common_v2/의 알려진(사전 공개된) 검증 실패 0건.
 # scripts/validate_common_schema_v2.py --baseline이 CI에서 회귀만 감지하도록
 # 이 목록과 실제 검증 결과를 정확히 비교한다. 근거: docs/schema-v2.md
 # "17개 완료 체크리스트 판정" 항목 14, "완전히 이관되지 않은 항목" 절.
 # 새 에러가 생기거나 아래 항목이 조용히 바뀌면 CI가 실패한다.
 # 아래 항목 중 하나를 실제로 고쳤다면(의도한 수정) 이 파일에서도 해당 줄을 지울 것.
-visa_requirements.csv:5 - 필수 필드 'valid_from'가 비어 있음
