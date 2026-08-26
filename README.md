@@ -8,11 +8,13 @@
   흩어진 비자 공고문을 <strong>검색·검증·계산 가능한 데이터</strong>로 바꿉니다.
 </p>
 
-[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com/)
-[![Tests](https://img.shields.io/badge/tests-407%20passed-2D6D5D)](#검증하기)
+<p align="center">
+  <a href="https://www.python.org/"><img src="https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white" alt="Python 3.11 이상" /></a>
+  <a href="https://supabase.com/"><img src="https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white" alt="Supabase PostgreSQL" /></a>
+  <a href="#검증하기"><img src="https://img.shields.io/badge/tests-407%20passed-2D6D5D" alt="407개 테스트 통과" /></a>
+</p>
 
-**비자부기(visa-bugi)**는 충청북도 외국인 주민이 비자 요건, 준비서류, 행정 절차와 지원기관을 이해하고 추적하도록 돕는 디지털 서비스입니다. 이 저장소는 서비스의 데이터 기반을 담당합니다.
+비자부기(visa-bugi)는 충청북도 외국인 주민이 비자 요건, 준비서류, 행정 절차와 지원기관을 이해하고 추적하도록 돕는 디지털 서비스입니다. 이 저장소는 서비스의 데이터 기반을 담당합니다.
 
 PDF·HWPX·HWP 형태의 공고문과 붙임자료에서 원문을 추출하고, 자격요건·점수표·신청절차·제출서류·쿼터·변경이력으로 구조화합니다. 자동 추출 결과를 바로 서비스하지 않고, **원문과 사람이 대조해 검수한 데이터만** 공통 스키마와 Supabase로 전달합니다.
 
