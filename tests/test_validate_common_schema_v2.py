@@ -770,7 +770,28 @@ class TestBaseline:
         errors = validate_directory(REAL_COMMON_V2_DIR)
         exit_code = _check_against_baseline(errors, REAL_BASELINE_PATH)
         assert exit_code == 0
-        assert len(errors) == 2
+        assert len(errors) == 1
+
+
+class TestD2ApplicationMethodProvenance:
+    def test_application_method_is_backed_by_preserved_official_guide(self):
+        _, visa_rows = read_csv(REAL_COMMON_V2_DIR / "visa_requirements.csv")
+        d2 = next(row for row in visa_rows if row["visa_code"] == "D-2")
+
+        _, source_rows = read_csv(REAL_COMMON_V2_DIR / "source_documents.csv")
+        source = next(
+            row for row in source_rows if row["source_document_id"] == d2["source_document_id"]
+        )
+
+        assert d2["application_method"] == (
+            "지원서류를 해당 대학에 제출하고, 대학이 국내 관할 출입국사무소에 "
+            "사증발급인정신청서를 제출"
+        )
+        assert d2["source_page"] == "1"
+        assert source["source_document_key"] == "d2_chsu_admissions_guide_2026"
+        assert source["file_hash_sha256"] == (
+            "51d7e6ab1f2747c6f465d3cd35e47ab7c45627a03c309dec45410137724fe681"
+        )
 
 
 # --------------------------------------------------------------------------
