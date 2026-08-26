@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 
 D_DIR = Path("extraction/D_visa_requirements")
+REFERENCE_DIR = Path("reference")
 STAGE_STATUS_COLUMN = "document_requirements_status"
 # 허용값 추가
 ALLOWED_DOCUMENT_REQUIREMENTS_STATUSES = frozenset(
@@ -31,8 +32,17 @@ class TableSpec:
 
     path: Path
     pk: str | None  # PK 컬럼명. 없으면 None(PK 유일성 검사를 건너뜀)
-    fks: dict[str, Path] = field(default_factory=dict)  # {FK 컬럼명: 참조할 부모 테이블 경로}
+    # {FK 컬럼명: (참조할 부모 테이블 경로, 부모 테이블에서 조회할 컬럼명)}
+    # 부모 조회 컬럼은 부모의 PK가 아닐 수도 있다(예: agency_contacts.category_minor).
+    fks: dict[str, tuple[Path, str]] = field(default_factory=dict)
     required_columns: tuple[str, ...] = ()  # 필수 컬럼 추가
+    # {FK 컬럼명: (조건 컬럼명, 조건 값)}. 조건 컬럼이 조건 값과 같을 때만 해당 FK 컬럼의
+    # 빈 값을 에러로 보지 않는다 (예: EXTERNAL 라우팅의 target_agency_category는 "해당
+    # 없음"을 의미하는 정상적인 빈 값 — reference/README.md NULL 규약 참고). 조건이
+    # 성립하지 않는데 값이 비어 있으면(예: IN_DOMAIN 행의 target_agency_category) 그대로
+    # 에러로 처리한다. 값이 존재하는 경우에는 조건과 무관하게 항상 부모 테이블에 대해
+    # 검사한다.
+    nullable_fks: dict[str, tuple[str, str]] = field(default_factory=dict)
 
 
 def default_tables(base_dir: Path = D_DIR) -> list[TableSpec]:
@@ -44,45 +54,76 @@ def default_tables(base_dir: Path = D_DIR) -> list[TableSpec]:
         TableSpec(
             base_dir / "visa_requirement_criteria.csv",
             pk="criteria_id",
-            fks={"visa_id": visa_requirements},
+            fks={"visa_id": (visa_requirements, "visa_id")},
         ),
         TableSpec(
             visa_process_stages,
             pk="stage_id",
-            fks={"visa_id": visa_requirements},
+            fks={"visa_id": (visa_requirements, "visa_id")},
             required_columns=(STAGE_STATUS_COLUMN,),  # visa_process_stages에 상태 컬럼 지정
         ),
         TableSpec(
             base_dir / "document_requirements.csv",
             pk="document_requirement_id",
-            fks={"stage_id": visa_process_stages},
+            fks={"stage_id": (visa_process_stages, "stage_id")},
         ),
         TableSpec(
             base_dir / "visa_quota_status.csv",
             pk="quota_status_id",
-            fks={"visa_id": visa_requirements},
+            fks={"visa_id": (visa_requirements, "visa_id")},
         ),
         TableSpec(
             base_dir / "change_history.csv",
             pk="change_id",
-            fks={"visa_id": visa_requirements},
+            fks={"visa_id": (visa_requirements, "visa_id")},
+        ),
+    ]
+
+
+def reference_tables(base_dir: Path = REFERENCE_DIR) -> list[TableSpec]:
+    """reference/ 폴더의 서비스·라우팅 테이블 구성. 새 참조 테이블이 생기면 여기에 추가한다."""
+    agency_contacts = base_dir / "agency_contacts.csv"
+    risk_keyword_messages = base_dir / "risk_keyword_messages.csv"
+    return [
+        TableSpec(agency_contacts, pk="agency_id"),
+        TableSpec(
+            risk_keyword_messages,
+            pk=None,  # keyword_category+resolution_type 복합키라 단일 PK 검사는 건너뜀
+        ),
+        TableSpec(
+            base_dir / "risk_routing_table.csv",
+            pk="routing_id",
+            fks={"target_agency_category": (agency_contacts, "category_minor")},
+            required_columns=("message_addendum",),
+            # resolution_type=EXTERNAL 행에 한해서만 target_agency_category가 "해당 없음"이라
+            # 비어 있는 것이 정상(reference/README.md NULL 규약). resolution_type=IN_DOMAIN
+            # 행은 항상 채워야 하므로 빈 값이면 에러로 잡는다. 값이 있는 행(IN_DOMAIN)은
+            # agency_contacts.category_minor에 존재해야 하므로 그 검사는 그대로 적용된다.
+            nullable_fks={"target_agency_category": ("resolution_type", "EXTERNAL")},
         ),
     ]
 
 
 def read_rows(path: Path) -> list[dict[str, str]]:
-    """CSV를 읽어 행 딕셔너리 리스트로 반환한다. 파일이 없으면 빈 리스트."""
+    """CSV를 읽어 행 딕셔너리 리스트로 반환한다. 파일이 없으면 빈 리스트.
+
+    utf-8-sig로 열어 파일 앞에 BOM(byte-order mark)이 있어도 첫 컬럼명이
+    깨지지 않게 한다. BOM이 없는 파일은 일반 utf-8과 동일하게 동작한다.
+    """
     if not path.exists():
         return []
-    with path.open(newline="", encoding="utf-8") as f:
+    with path.open(newline="", encoding="utf-8-sig") as f:
         return list(csv.DictReader(f))
 
 
 def read_fieldnames(path: Path) -> list[str] | None:
-    """CSV 헤더를 읽어 컬럼명 리스트를 반환한다. 파일이 없으면 None, 빈 파일이면 빈 리스트."""
+    """CSV 헤더를 읽어 컬럼명 리스트를 반환한다. 파일이 없으면 None, 빈 파일이면 빈 리스트.
+
+    utf-8-sig로 열어 BOM이 첫 컬럼명에 섞여 들어가지 않게 한다.
+    """
     if not path.exists():
         return None
-    with path.open(newline="", encoding="utf-8") as f:
+    with path.open(newline="", encoding="utf-8-sig") as f:
         return next(csv.reader(f), [])
 
 
@@ -106,18 +147,21 @@ def check_required_columns(table: TableSpec, fieldnames: list[str]) -> list[str]
     ]
 
 
-def collect_pk_sets(tables: list[TableSpec]) -> dict[Path, set[str]]:
-    """각 테이블의 PK 값 집합을 미리 모아둔다 (다른 테이블의 FK 검사에서 참조용으로 씀).
+def collect_lookup_sets(tables: list[TableSpec]) -> dict[tuple[Path, str], set[str]]:
+    """FK가 참조하는 (부모 테이블 경로, 부모 조회 컬럼) 조합별 값 집합을 미리 모아둔다.
 
-    호출 전에 check_required_columns로 PK 컬럼 존재가 확인된 테이블만 넘겨야 한다.
+    부모 조회 컬럼은 부모 테이블의 PK와 다를 수 있으므로(예: agency_contacts.category_minor),
+    각 테이블의 fks 값에 등장하는 (경로, 컬럼) 조합을 기준으로 직접 모은다.
     """
-    pk_sets: dict[Path, set[str]] = {}
+    lookup_sets: dict[tuple[Path, str], set[str]] = {}
     for table in tables:
-        if table.pk is None:
-            continue
-        rows = read_rows(table.path)
-        pk_sets[table.path] = {row[table.pk] for row in rows if row.get(table.pk)}
-    return pk_sets
+        for parent_path, parent_column in table.fks.values():
+            key = (parent_path, parent_column)
+            if key in lookup_sets:
+                continue
+            rows = read_rows(parent_path)
+            lookup_sets[key] = {row[parent_column] for row in rows if row.get(parent_column)}
+    return lookup_sets
 
 
 def check_pk_uniqueness(table: TableSpec, rows: list[dict[str, str]]) -> list[str]:
@@ -139,20 +183,33 @@ def check_pk_uniqueness(table: TableSpec, rows: list[dict[str, str]]) -> list[st
 
 
 def check_fk_integrity(
-    table: TableSpec, rows: list[dict[str, str]], pk_sets: dict[Path, set[str]]
+    table: TableSpec, rows: list[dict[str, str]], lookup_sets: dict[tuple[Path, str], set[str]]
 ) -> list[str]:
-    """FK 컬럼 값이 참조 테이블의 PK 집합에 실제로 존재하는지 검사한다."""
+    """FK 컬럼 값이 참조 테이블의 지정된 조회 컬럼 값 집합에 실제로 존재하는지 검사한다.
+
+    table.nullable_fks에 포함된 FK 컬럼은, 지정된 조건 컬럼이 조건 값과 같을 때만 값이
+    비어 있어도 에러로 보지 않는다(예: resolution_type=EXTERNAL인 행의
+    target_agency_category="해당 없음"). 조건이 성립하지 않는데 값이 비어 있으면(예:
+    resolution_type=IN_DOMAIN인데 target_agency_category가 빈 값) 그대로 에러로 처리한다.
+    값이 존재하면 그 값은 여전히 부모 테이블에 대해 정상적으로 검사한다.
+    """
     errors: list[str] = []
-    for fk_column, parent_path in table.fks.items():
-        parent_ids = pk_sets.get(parent_path, set())
+    for fk_column, (parent_path, parent_column) in table.fks.items():
+        parent_values = lookup_sets.get((parent_path, parent_column), set())
         for i, row in enumerate(rows, start=2):
             value = row.get(fk_column, "")
             if not value:
+                condition = table.nullable_fks.get(fk_column)
+                if condition is not None:
+                    condition_column, condition_value = condition
+                    if row.get(condition_column) == condition_value:
+                        continue
                 errors.append(f"{table.path}:{i} - {fk_column}가 비어 있음")
                 continue
-            if value not in parent_ids:
+            if value not in parent_values:
                 errors.append(
-                    f"{table.path}:{i} - {fk_column}={value}가 {parent_path}에 존재하지 않음"
+                    f"{table.path}:{i} - {fk_column}={value}가 "
+                    f"{parent_path}의 {parent_column}에 존재하지 않음"
                 )
     return errors
 
@@ -208,6 +265,47 @@ def check_document_requirements_status(
     return errors
 
 
+RISK_ROUTING_FILENAME = "risk_routing_table.csv"
+RISK_KEYWORD_MESSAGES_FILENAME = "risk_keyword_messages.csv"
+
+
+def check_risk_message_coverage(routing_path: Path, messages_path: Path) -> list[str]:
+    """risk_routing_table.csv의 (keyword_category, resolution_type) 조합이
+    risk_keyword_messages.csv에 boilerplate 행으로 존재하는지, 그리고
+    risk_keyword_messages.csv 자체에 같은 조합의 중복 행이 없는지 검사한다.
+
+    risk_keyword_messages.csv는 (keyword_category, resolution_type) 복합키라 단일
+    컬럼 PK 유일성 검사(check_pk_uniqueness)로는 중복을 잡을 수 없다 — 그래서 이 두
+    검사를 함께 여기서 처리한다.
+    """
+    routing_rows = read_rows(routing_path)
+    message_rows = read_rows(messages_path)
+
+    errors: list[str] = []
+
+    # risk_keyword_messages.csv 자체의 (keyword_category, resolution_type) 중복 검사
+    seen: dict[tuple[str, str], int] = {}
+    for row in message_rows:
+        key = (row.get("keyword_category", ""), row.get("resolution_type", ""))
+        seen[key] = seen.get(key, 0) + 1
+    for key, count in seen.items():
+        if count > 1:
+            errors.append(
+                f"{messages_path} - (keyword_category, resolution_type)={key} 중복 {count}회"
+            )
+
+    # risk_routing_table.csv의 각 조합이 risk_keyword_messages.csv에 존재하는지 검사
+    message_keys = set(seen.keys())
+    for i, row in enumerate(routing_rows, start=2):
+        key = (row.get("keyword_category", ""), row.get("resolution_type", ""))
+        if key not in message_keys:
+            errors.append(
+                f"{routing_path}:{i} - (keyword_category, resolution_type)={key}에 대응하는 "
+                f"boilerplate 행이 {messages_path}에 없음"
+            )
+    return errors
+
+
 def validate(tables: list[TableSpec]) -> list[str]:
     """모든 테이블에 대해 필수 컬럼 존재, PK 유일성, FK 참조 무결성을 검사하고 에러 목록을 반환한다."""
     errors: list[str] = []
@@ -225,13 +323,13 @@ def validate(tables: list[TableSpec]) -> list[str]:
             continue
         checkable_tables.append(table)
 
-    pk_sets = collect_pk_sets(checkable_tables)
+    lookup_sets = collect_lookup_sets(checkable_tables)
     for table in checkable_tables:
         rows = read_rows(table.path)
         if not rows:
             continue
         errors.extend(check_pk_uniqueness(table, rows))
-        errors.extend(check_fk_integrity(table, rows, pk_sets))
+        errors.extend(check_fk_integrity(table, rows, lookup_sets))
 
     stages_table = next((t for t in checkable_tables if t.path.name == STAGES_FILENAME), None)
     documents_table = next(
@@ -240,11 +338,20 @@ def validate(tables: list[TableSpec]) -> list[str]:
     if stages_table is not None and documents_table is not None:
         errors.extend(check_document_requirements_status(stages_table.path, documents_table.path))
 
+    routing_table = next(
+        (t for t in checkable_tables if t.path.name == RISK_ROUTING_FILENAME), None
+    )
+    messages_table = next(
+        (t for t in checkable_tables if t.path.name == RISK_KEYWORD_MESSAGES_FILENAME), None
+    )
+    if routing_table is not None and messages_table is not None:
+        errors.extend(check_risk_message_coverage(routing_table.path, messages_table.path))
+
     return errors
 
 
 def main() -> int:
-    errors = validate(default_tables())
+    errors = validate(default_tables() + reference_tables())
 
     if errors:
         print(f"FK/PK 검증 실패: {len(errors)}건")
