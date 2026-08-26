@@ -17,7 +17,10 @@
 - **도메인 안/밖 구분**: 담당기관이 우리 서비스가 이미 추적하는 도메인 안에 있으면(`resolution_type=IN_DOMAIN`) `target_agency_category`에 `agency_contacts.category_minor` 값을 적어두고, 실제 지역별 기관은 화면에서 `region + target_agency_category`로 `agency_contacts.csv`를 조인해 조회한다. 도메인 밖(노동청·근로복지공단·다누리콜센터 등 범용 공공기관)이면 `resolution_type=EXTERNAL`로 두고 `external_*` 필드에 연락처를 직접 보유한다 — agency_contacts에는 도메인 밖 기관을 추가하지 않는다.
 - **user_type=FOREIGN_WORKER만 채움**: 현재 6행 모두 이주노동자 대상으로만 확인했다. 유학생(STUDENT)에게도 동일 카테고리가 적용되는지는 검토하지 않았으므로 임의로 행을 늘리지 않았다 — 필요 시 검토 후 추가.
 - **한국어 템플릿만 작성**: `risk_keyword_messages.csv`의 `message_stem`은 한국어 원문만 채운다. 다국어 지원은 앱 전체 i18n 전략이 정해진 뒤 별도 테이블(예: `risk_routing_message_i18n.csv`)로 확장할 예정이며, 지금은 보류 상태다.
-- **`external_region_scope`는 NULL과 `NATIONWIDE`를 구분한다**: `resolution_type=EXTERNAL`인 행에서 이 필드가 비어 있으면 "관할지역을 아직 확인 안 함"이라는 뜻이다. 전국 단일기관으로 **확인된** 경우(예: 다누리콜센터)는 빈 칸이 아니라 `NATIONWIDE`를 명시한다 — `quota_type`(LIMITED/UNLIMITED/UNKNOWN)과 같은 이유로, 비어 있는 값을 자동으로 "지역 제한 없음"으로 해석해 넘어가면 안 된다. `resolution_type=IN_DOMAIN`인 행은 이 필드 자체가 해당 없음이라 빈 칸이어도 무방하다(`resolution_type`으로 구분됨).
+- **`external_region_scope`는 `resolution_type`에 따라 의미가 다르다**: `resolution_type=IN_DOMAIN`인 행은 이 필드 자체가 해당 없음이라 빈 칸이어도 무방하다. `resolution_type=EXTERNAL`인 행은 빈 칸이 허용되지 않는다 — "관할지역을 아직 확인 안 함" 상태를 빈 칸으로 남겨두지 않고, 전국 단일기관으로 **확인된** 경우(예: 다누리콜센터)는 `NATIONWIDE`, 특정 지역이 확인된 경우는 파이프로 시군을 나열한다. `quota_type`(LIMITED/UNLIMITED/UNKNOWN)과 같은 이유로, 비어 있는 값을 자동으로 "지역 제한 없음"으로 해석해 넘어가면 안 된다. 컬럼별 빈 칸 규칙 전체는 아래 "빈 칸(NULL) 의미 정리" 표 참고.
+- **`notes`에 확인되지 않은 부분을 명시**: 예를 들어 다누리콜센터(1577-1366)는 이주여성 대상 서비스로 명시돼 있어 남성 피해자 커버 여부가 확인되지 않았고, 근로복지공단 콜센터(1588-0075)는 지사 직통이 아니라 전국 단일번호다. 이런 확인되지 않은 판단은 추측해서 메우지 않고 `notes`에 남긴다.
+- **보류된 카테고리**: `ATTENDANCE_SHORTAGE`(출석미달)는 단일 담당기관을 확인하지 못해 제외했다. `RESTRICTED_PARTTIME_WORK`(제한업종 시간제취업)는 필요성 재검토 후 채택하지 않기로 했다.
+- **동일 연락처를 공유하는 지사는 행을 합친다**: `external_phone`·`external_url`·`notes`가 지역과 무관하게 완전히 동일하다면(예: 근로복지공단 전국 콜센터 1588-0075) 지사별로 행을 나누지 않고 `external_region_scope`에 해당 지역을 모두 나열한 1행으로 합친다. `external_agency_name`이 지사명만 다르고(예: 청주지사/충주지사) 상위 기관명(예: 근로복지공단)으로 수렴하는 경우는 병합을 막는 조건이 아니다 — 병합된 행에는 상위 기관명만 남긴다. 안내 문구 수정 시 여러 행을 동시에 고쳐야 하는 갱신 이상(update anomaly)을 막기 위함이다.
 
 ### 빈 칸(NULL) 의미 정리
 
@@ -27,11 +30,7 @@
 |------|------|------|
 | `applies_to_visa_code` | 특정 비자 제한 없음(전체 적용) | 제한이 있으면 파이프로 비자코드 나열 |
 | `target_agency_category` | `resolution_type=EXTERNAL`이라 해당 없음 | — (`resolution_type=IN_DOMAIN`이면 항상 채움) |
-| `external_agency_name`/`external_region_scope`/`external_phone`/`external_url` | `resolution_type=IN_DOMAIN`이라 해당 없음 | — (`resolution_type=EXTERNAL`이면 항상 채움) |
-| `external_region_scope`(EXTERNAL 행 한정) | **사용 금지** — 관할지역 미확인 상태를 빈칸으로 남기지 않는다 | 전국 단일기관이면 `NATIONWIDE`, 특정 지역이면 파이프로 시군 나열 |
+| `external_agency_name`/`external_phone`/`external_url` | `resolution_type=IN_DOMAIN`이라 해당 없음 | — (`resolution_type=EXTERNAL`이면 항상 채움) |
+| `external_region_scope` | `resolution_type=IN_DOMAIN`이면 이 필드 자체가 해당 없음이라 빈 칸이어도 무방. `resolution_type=EXTERNAL`이면 **빈 칸 사용 금지** — 관할지역 미확인 상태를 빈칸으로 남기지 않는다 | EXTERNAL 행: 전국 단일기관으로 확인되면 `NATIONWIDE`, 특정 지역이 확인되면 파이프로 시군 나열 |
 | `valid_to` | 종료일 미정(현재 유효) | 종료가 확정되면 날짜 기입 |
 | `source_page` | 출처 문서에 페이지 구분이 없음(예: 웹페이지 종합) | 페이지 번호가 있으면 숫자 기입 — `"N/A"` 같은 리터럴 문자열 사용 금지 |
-
-- **`notes`에 확인되지 않은 부분을 명시**: 예를 들어 다누리콜센터(1577-1366)는 이주여성 대상 서비스로 명시돼 있어 남성 피해자 커버 여부가 확인되지 않았고, 근로복지공단 콜센터(1588-0075)는 지사 직통이 아니라 전국 단일번호다. 이런 확인되지 않은 판단은 추측해서 메우지 않고 `notes`에 남긴다.
-- **보류된 카테고리**: `ATTENDANCE_SHORTAGE`(출석미달)는 단일 담당기관을 확인하지 못해 제외했다. `RESTRICTED_PARTTIME_WORK`(제한업종 시간제취업)는 필요성 재검토 후 채택하지 않기로 했다.
-- **동일 연락처를 공유하는 지사는 행을 합친다**: `external_phone`·`external_url`·`notes`가 지역과 무관하게 완전히 동일하다면(예: 근로복지공단 전국 콜센터 1588-0075) 지사별로 행을 나누지 않고 `external_region_scope`에 해당 지역을 모두 나열한 1행으로 합친다 — 안내 문구 수정 시 여러 행을 동시에 고쳐야 하는 갱신 이상(update anomaly)을 막기 위함.
