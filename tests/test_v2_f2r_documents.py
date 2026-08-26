@@ -77,10 +77,7 @@ class TestF2RDocumentSourceCoverage:
         assert all(len(rows) == 1 for rows in by_source.values())
         assert Counter(row["mapping_status"] for row in direct_mappings) == {"MAPPED": 45}
 
-        mapped_targets = {
-            rows[0]["target_record_id"]
-            for source_id, rows in by_source.items()
-        }
+        mapped_targets = {rows[0]["target_record_id"] for source_id, rows in by_source.items()}
         assert mapped_targets == F2R_DOCUMENT_IDS
 
     def test_school_recommendation_uses_the_explicit_page_8_scope(self):
@@ -244,10 +241,7 @@ class TestF2RDocumentProvenance:
         assert all(row["valid_to"] == "2027-12-31" for row in pilot_rows)
         assert all(row["valid_from"] == "2026-08-03" for row in period_round_rows)
         assert all(row["valid_to"] == "2026-09-18" for row in period_round_rows)
-        assert all(
-            row["last_verified_at"] == "2026-08-25"
-            for row in round_rows
-        )
+        assert all(row["last_verified_at"] == "2026-08-25" for row in round_rows)
 
     def test_attachment_relations_preserve_page_and_attachment_period(self):
         assert all(row["source_document_id"] == ANNOUNCEMENT_SOURCE_ID for row in F2R_RELATION_ROWS)
