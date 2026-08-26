@@ -35,12 +35,14 @@ jobs:
             scripts/schema_v2.py \
             scripts/migrate_to_v2.py \
             scripts/validate_common_schema_v2.py \
-            scripts/validate_source_record_mappings.py
+            scripts/validate_source_record_mappings.py \
+            scripts/import_common_v2.py
           ruff format --check \
             scripts/schema_v2.py \
             scripts/migrate_to_v2.py \
             scripts/validate_common_schema_v2.py \
-            scripts/validate_source_record_mappings.py
+            scripts/validate_source_record_mappings.py \
+            scripts/import_common_v2.py
 
       - name: 테스트 실행
         run: pytest tests/ -v --tb=short --cov=src --cov-report=term-missing
@@ -55,3 +57,38 @@ jobs:
 
       - name: 공통 스키마 v2 원천 매핑 검증
         run: python scripts/validate_source_record_mappings.py
+
+      - name: Supabase importer dry-run
+        run: python scripts/import_common_v2.py
+
+  migration-import-regression:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+      - run: pip install -e .
+      - name: Apply migration
+        run: |
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -c 'CREATE ROLE anon; CREATE ROLE authenticated;'
+          psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20260826000000_common_schema_v2.sql
+      - name: Import twice and verify idempotency
+        run: |
+          python scripts/import_common_v2.py --apply
+          python scripts/import_common_v2.py --apply
