@@ -62,6 +62,8 @@
 
 ### 문서
 
+- 비자부기 README 및 데이터 출처 정비 ([2042746](https://github.com/team-hansori/visa-data/commit/2042746a244179b15d6deb9f7b125648bd73cad7))
+- CHANGELOG 자동 업데이트 [skip ci] ([4e77cee](https://github.com/team-hansori/visa-data/commit/4e77ceee63808d4761fe56998d0980d5f4e30879))
 - CHANGELOG 자동 업데이트 [skip ci] ([6874917](https://github.com/team-hansori/visa-data/commit/687491750233c704036f02d7670bde96b2c66581))
 - Schema-v2.md 수치·범위 표기 정정 (#44) ([84dd974](https://github.com/team-hansori/visa-data/commit/84dd97410dd177ed23a6eaa85488a0a327551ee7))
 - 공통 UUID 매핑 장부 마감 - target_record_id 확정 (#44) ([2b0f015](https://github.com/team-hansori/visa-data/commit/2b0f0158abf6e0bb683a1b5355f861da4e03e8e1))
