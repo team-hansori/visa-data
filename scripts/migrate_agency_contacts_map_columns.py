@@ -8,6 +8,8 @@
 from __future__ import annotations
 
 import csv
+import os
+import tempfile
 from pathlib import Path
 
 from scripts.reference_schema import AGENCY_CONTACTS, REFERENCE_SCHEMA
@@ -29,10 +31,21 @@ def migrate(path: Path = CSV_PATH) -> int:
         for column in new_columns:
             row[column] = "true" if column == "is_active" else ""
 
-    with path.open("w", newline="", encoding="utf-8") as f:
-        writer = csv.DictWriter(f, fieldnames=table.header)
-        writer.writeheader()
-        writer.writerows(rows)
+    # 원자적 쓰기: 임시 파일에 먼저 쓴 뒤 os.replace로 교체
+    tmp_fd, tmp_path_str = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.tmp-")
+    os.close(tmp_fd)
+    tmp_path = Path(tmp_path_str)
+
+    try:
+        with tmp_path.open("w", newline="", encoding="utf-8") as f:
+            writer = csv.DictWriter(f, fieldnames=table.header)
+            writer.writeheader()
+            writer.writerows(rows)
+        os.replace(tmp_path, path)
+    finally:
+        if tmp_path.exists():
+            tmp_path.unlink()
+
     return len(rows)
 
 
