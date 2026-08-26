@@ -19,7 +19,8 @@ F2R_VISA_ID = "a228433b-abe4-4785-8496-3e1cb3d597c1"
 ANNOUNCEMENT_SOURCE_ID = "2c892d50-7de9-431f-95f7-c02c7b2a7d76"
 ATTACHMENT_SOURCE_ID = "6fe08cb5-96dd-4784-b266-f72d517595fc"
 ROUND_17_ID = "6833996f-8110-5836-b1d6-1f94bd249d59"
-BLOCKED_SCHOOL_RECOMMENDATION_ID = "1dc9c6a3-6581-57c8-ac24-6b8e3a87cc41"
+SCHOOL_RECOMMENDATION_SOURCE_ID = "1dc9c6a3-6581-57c8-ac24-6b8e3a87cc41"
+SCHOOL_RECOMMENDATION_TARGET_ID = "6a3802b8-ad3f-48c5-9612-62e6a402d23d"
 DOSSIER_SOURCE_ID = "e8d9e3f9-fdbe-5733-a035-3abd4c605ae4"
 PILOT_DOCUMENT_IDS = {
     "74d649df-7e93-4767-b297-622227a12b53",
@@ -60,7 +61,7 @@ F2R_MAPPING_ROWS = [
 
 
 class TestF2RDocumentSourceCoverage:
-    def test_every_source_document_row_is_mapped_once_or_blocked_once(self):
+    def test_every_source_document_row_is_mapped_once(self):
         direct_mappings = [
             row
             for row in F2R_MAPPING_ROWS
@@ -74,35 +75,38 @@ class TestF2RDocumentSourceCoverage:
         assert len(SOURCE_DOCUMENT_ROWS) == 45
         assert set(by_source) == {row["document_requirement_id"] for row in SOURCE_DOCUMENT_ROWS}
         assert all(len(rows) == 1 for rows in by_source.values())
-        assert Counter(row["mapping_status"] for row in direct_mappings) == {
-            "MAPPED": 44,
-            "BLOCKED": 1,
-        }
+        assert Counter(row["mapping_status"] for row in direct_mappings) == {"MAPPED": 45}
 
         mapped_targets = {
             rows[0]["target_record_id"]
             for source_id, rows in by_source.items()
-            if source_id != BLOCKED_SCHOOL_RECOMMENDATION_ID
         }
         assert mapped_targets == F2R_DOCUMENT_IDS
 
-    def test_school_recommendation_scope_conflict_remains_blocked(self):
+    def test_school_recommendation_uses_the_explicit_page_8_scope(self):
         row = next(
             row
             for row in F2R_MAPPING_ROWS
-            if row["source_record_id"] == BLOCKED_SCHOOL_RECOMMENDATION_ID
+            if row["source_record_id"] == SCHOOL_RECOMMENDATION_SOURCE_ID
             and row["target_table"] == "document_requirements"
         )
-        assert row["mapping_action"] == "MANUAL_REVIEW"
-        assert row["mapping_status"] == "BLOCKED"
-        assert row["target_record_id"] == ""
+        assert row["mapping_action"] == "TRANSFORM"
+        assert row["mapping_status"] == "MAPPED"
+        assert row["target_record_id"] == SCHOOL_RECOMMENDATION_TARGET_ID
         assert row["source_document_id"] == ATTACHMENT_SOURCE_ID
         assert row["source_page"] == "8,16"
-        assert row["blocking_reason"] == (
-            "school_recommendation_applicant_scope_conflicts_between_source_pages"
-        )
+        assert row["blocking_reason"] == ""
         assert "국내 대학 졸업생 필수 제출" in row["mapping_note"]
-        assert "졸업예정 신청자" in row["mapping_note"]
+
+        document = next(
+            row
+            for row in F2R_DOCUMENT_ROWS
+            if row["document_requirement_id"] == SCHOOL_RECOMMENDATION_TARGET_ID
+        )
+        assert document["requirement_status"] == "CONDITIONAL"
+        assert document["condition_note"] == "국내 대학 졸업생 필수 제출"
+        assert document["source_document_id"] == ATTACHMENT_SOURCE_ID
+        assert document["source_page"] == "8,16"
 
     def test_round_17_has_exact_one_to_many_stage_mappings(self):
         rows = [
@@ -121,10 +125,10 @@ class TestF2RDocumentSourceCoverage:
 
 class TestF2RDocumentSemantics:
     def test_only_source_supported_requirement_statuses_are_created(self):
-        assert len(F2R_DOCUMENT_ROWS) == 44
+        assert len(F2R_DOCUMENT_ROWS) == 45
         assert Counter(row["requirement_status"] for row in F2R_DOCUMENT_ROWS) == {
             "REQUIRED": 19,
-            "CONDITIONAL": 13,
+            "CONDITIONAL": 14,
             "ALTERNATIVE": 12,
         }
         assert all(row["requirement_status"] != "OPTIONAL" for row in F2R_DOCUMENT_ROWS)
@@ -155,7 +159,7 @@ class TestF2RAttachmentIntegrity:
             ("2", "APPLICATION_SUBMISSION"),
             ("4", "STATUS_CHANGE_APPLICATION"),
         }
-        assert len(F2R_DOCUMENT_ROWS) == 44
+        assert len(F2R_DOCUMENT_ROWS) == 45
         assert all(row["stage_id"] in F2R_STAGE_IDS for row in F2R_DOCUMENT_ROWS)
 
     def test_dossier_relations_have_valid_fks_and_no_cycle(self):
@@ -219,13 +223,18 @@ class TestF2RAttachmentIntegrity:
 
 class TestF2RDocumentProvenance:
     def test_migrated_documents_preserve_page_and_applicable_period(self):
-        assert all(row["source_document_id"] == ANNOUNCEMENT_SOURCE_ID for row in F2R_DOCUMENT_ROWS)
-        assert all(row["source_page"] == "9" for row in F2R_DOCUMENT_ROWS)
+        round_rows = [
+            row
+            for row in F2R_DOCUMENT_ROWS
+            if row["document_requirement_id"] != SCHOOL_RECOMMENDATION_TARGET_ID
+        ]
+        assert all(row["source_document_id"] == ANNOUNCEMENT_SOURCE_ID for row in round_rows)
+        assert all(row["source_page"] == "9" for row in round_rows)
 
         pilot_rows = [
             row for row in F2R_DOCUMENT_ROWS if row["document_requirement_id"] in PILOT_DOCUMENT_IDS
         ]
-        round_rows = [
+        period_round_rows = [
             row
             for row in F2R_DOCUMENT_ROWS
             if row["document_requirement_id"] not in PILOT_DOCUMENT_IDS
@@ -233,9 +242,12 @@ class TestF2RDocumentProvenance:
         assert len(pilot_rows) == 4
         assert all(row["valid_from"] == "2026-05-18" for row in pilot_rows)
         assert all(row["valid_to"] == "2027-12-31" for row in pilot_rows)
-        assert all(row["valid_from"] == "2026-08-03" for row in round_rows)
-        assert all(row["valid_to"] == "2026-09-18" for row in round_rows)
-        assert all(row["last_verified_at"] == "2026-08-25" for row in F2R_DOCUMENT_ROWS)
+        assert all(row["valid_from"] == "2026-08-03" for row in period_round_rows)
+        assert all(row["valid_to"] == "2026-09-18" for row in period_round_rows)
+        assert all(
+            row["last_verified_at"] == "2026-08-25"
+            for row in round_rows
+        )
 
     def test_attachment_relations_preserve_page_and_attachment_period(self):
         assert all(row["source_document_id"] == ANNOUNCEMENT_SOURCE_ID for row in F2R_RELATION_ROWS)
