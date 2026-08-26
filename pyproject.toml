@@ -30,6 +30,7 @@ dependencies = [
     "pdfplumber>=0.11.10",
     "pyhwp>=0.1b15",
     "lxml>=5.0",
+    "psycopg[binary]>=3.2",
 ]
 
 [project.optional-dependencies]
