@@ -70,6 +70,3 @@ htmlcov/
 
 # ruff / black 캐시
 .ruff_cache/
-
-# 문서 / 설계 산출물
-docs/
