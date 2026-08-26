@@ -62,6 +62,8 @@
 
 ### 문서
 
+- README 핵심 가치와 아키텍처 보강 ([b0d4bfe](https://github.com/team-hansori/visa-data/commit/b0d4bfeefe076fbb9eae9945b7c88d3c6683f9a9))
+- CHANGELOG 자동 업데이트 [skip ci] ([580b26c](https://github.com/team-hansori/visa-data/commit/580b26c0f6239fd99add506031ec394ebf0e5e24))
 - README 소개 문구와 배지 정렬 수정 ([215fdc9](https://github.com/team-hansori/visa-data/commit/215fdc97f155da0873bbb580ef6a711ed5cbff83))
 - CHANGELOG 자동 업데이트 [skip ci] ([a683edc](https://github.com/team-hansori/visa-data/commit/a683edce43031f8c75f6d3bdb4d72a5a27c39abe))
 - 비자부기 README 및 데이터 출처 정비 ([2042746](https://github.com/team-hansori/visa-data/commit/2042746a244179b15d6deb9f7b125648bd73cad7))
