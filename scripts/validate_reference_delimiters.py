@@ -20,8 +20,11 @@ MULTI_VALUE_COLUMNS: dict[str, list[str]] = {
     "risk_routing_table.csv": ["applies_to_visa_code", "external_region_scope"],
 }
 
-# "042-220-2001~2,4" 같은 전화번호 내선 표기는 다중값이 아니므로 제외
-COMMA_IN_VALUE_RE = re.compile(r"[가-힣A-Za-z0-9]+,[가-힣A-Za-z0-9]+")
+# 다중값: 쉼표 양쪽에 영문자나 한글 문자 포함 필수
+# 전화번호 내선 표기("2,4")는 양쪽이 숫자만이므로 제외됨
+COMMA_IN_VALUE_RE = re.compile(
+    r"[가-힣A-Za-z][가-힣A-Za-z0-9]*,[가-힣A-Za-z][가-힣A-Za-z0-9]*"
+)
 
 
 def find_comma_in_pipe_columns(
