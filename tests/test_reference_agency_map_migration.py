@@ -38,6 +38,18 @@ def test_coordinate_range_checks_present():
     assert "BETWEEN -180 AND 180" in migration
 
 
+def test_check_constraints_are_explicitly_named():
+    migration = _read_migration()
+    for name in (
+        "agency_contacts_type_allowed",
+        "agency_contacts_latitude_range",
+        "agency_contacts_longitude_range",
+        "agency_contacts_coords_paired",
+        "agency_contacts_map_pin_requires_type",
+    ):
+        assert f'"{name}"' in migration, f"{name} 제약이 이름 없이 만들어짐"
+
+
 def test_map_visible_view_uses_security_invoker():
     migration = _read_migration()
     assert 'CREATE VIEW public."map_visible_agency_contacts"' in migration

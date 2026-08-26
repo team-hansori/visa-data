@@ -18,7 +18,7 @@ CREATE TABLE public."agency_contacts" (
   "source_document" text NOT NULL,
   "source_page" text,
   "last_verified_at" date NOT NULL,
-  "agency_type" text CHECK (
+  "agency_type" text CONSTRAINT "agency_contacts_type_allowed" CHECK (
     "agency_type" IS NULL OR "agency_type" IN (
       'COMMUNITY_CENTER', 'ADMINISTRATIVE_AGENCY', 'UNIVERSITY_DEPT_OFFICE',
       'FOREIGN_SUPPORT_CENTER', 'OTHER'
@@ -28,8 +28,8 @@ CREATE TABLE public."agency_contacts" (
   "sigungu" text,
   "eupmyeondong" text,
   "road_address" text,
-  "latitude" numeric(9,6) CHECK ("latitude" BETWEEN -90 AND 90),
-  "longitude" numeric(9,6) CHECK ("longitude" BETWEEN -180 AND 180),
+  "latitude" numeric(9,6) CONSTRAINT "agency_contacts_latitude_range" CHECK ("latitude" BETWEEN -90 AND 90),
+  "longitude" numeric(9,6) CONSTRAINT "agency_contacts_longitude_range" CHECK ("longitude" BETWEEN -180 AND 180),
   "geocode_method" text,
   "geocoded_at" date,
   "operating_hours" text,

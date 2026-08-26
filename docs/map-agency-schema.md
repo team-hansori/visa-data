@@ -179,15 +179,16 @@ ALTER TABLE public.agency_contacts
 
 **(a) 지도 핀 목록 — 매칭되는 모든 행 반환, 개수 제한 없음:**
 
+"지도 표시 대상" 조건(§1.4)은 `map_visible_agency_contacts` VIEW 하나에만 존재해야 하므로,
+이 쿼리는 `agency_contacts`를 직접 조회하지 않고 이 VIEW를 통해 조회한다 — 조건을 여기서
+다시 인라인으로 복제하면 §1.4와 어긋날 위험이 생긴다(카테고리·지역 조건처럼 VIEW가 걸러주지
+않는 조건만 WHERE에 남긴다).
+
 ```sql
 SELECT agency_id, department_name, agency_type, road_address, latitude, longitude,
        phone, url, operating_hours
-FROM agency_contacts
+FROM map_visible_agency_contacts
 WHERE category_minor = :target_agency_category
-  AND agency_type IS NOT NULL
-  AND latitude IS NOT NULL
-  AND is_active = true
-  AND is_user_facing = true
   AND (
     :user_sigungu = ANY(string_to_array(region, '|'))
     OR region = '충청북도'
@@ -272,10 +273,13 @@ CREATE INDEX agency_contacts_region_idx ON public.agency_contacts (sido, sigungu
 CREATE INDEX risk_routing_category_idx ON public.risk_routing_table (keyword_category, user_type);
 ```
 
-partial index 조건을 §2.2의 실제 조회 조건(`is_active`, `is_user_facing` 포함)과 맞췄다 —
-조건이 어긋나면 인덱스가 실제로는 쓰이지 않는다. MVP 15~20행 규모에서는 이 인덱스 자체가
-성능상 필수는 아니며, 향후 반경/거리 조회가 핵심이 되면 B-tree가 아니라 PostGIS
-`geography(Point, 4326)` + GiST 인덱스 도입을 검토한다(지금 범위 아님).
+partial index 조건은 `map_visible_agency_contacts` VIEW 정의(§1.4/§3.1)와 동일한 5개
+조건(`agency_type`, `latitude`, `longitude`, `is_active`, `is_user_facing`)이다 — §2.2 (a)가
+이제 이 VIEW를 통해 조회하므로, VIEW를 `agency_contacts`로 인라인 전개했을 때의 조건과
+인덱스 술어가 일치해야 PostgreSQL 플래너가 인덱스를 쓸 수 있다. 조건이 어긋나면 인덱스가
+실제로는 쓰이지 않는다. MVP 15~20행 규모에서는 이 인덱스 자체가 성능상 필수는 아니며, 향후
+반경/거리 조회가 핵심이 되면 B-tree가 아니라 PostGIS `geography(Point, 4326)` + GiST 인덱스
+도입을 검토한다(지금 범위 아님).
 
 ### 3.3 RLS와 쓰기 경로
 
@@ -339,8 +343,9 @@ GRANT SELECT ON public.agency_contacts, public.risk_routing_table,
 - **CSV/조회 결과는 헤더(컬럼명) 기준으로 파싱한다** — 위치 인덱스 기준 파싱 금지. 기존
   15개 컬럼의 이름·의미는 불변이며 신규 컬럼은 항상 그 뒤에 append된다. 구버전 소비자는
   알 수 없는 trailing 컬럼을 무시해야 한다.
-- 지도 핀 목록 조회: §2.2 (a) SQL 그대로 — `SELECT *` 대신 필요한 컬럼만 명시해 응답
-  크기와 타입 생성이 컬럼 추가에 흔들리지 않게 한다. 정렬은 웹 쪽에서 좌표 기준 거리
+- 지도 핀 목록 조회: §2.2 (a) SQL 그대로 — `agency_contacts`가 아니라
+  `map_visible_agency_contacts` VIEW를 통해 수행한다. `SELECT *` 대신 필요한 컬럼만 명시해
+  응답 크기와 타입 생성이 컬럼 추가에 흔들리지 않게 한다. 정렬은 웹 쪽에서 좌표 기준 거리
   계산(반경/개수 기준은 범위 밖 — 웹이 결정).
 - 위치 권한 거부 시 조회 필드: `sigungu`, `eupmyeondong` (지도 화면 목록 필터용).
 - 위험 라우팅 → 대표 연락처 조회: §2.2 (b) SQL 그대로. 지도 핀(복수)과 라우팅 메시지용
