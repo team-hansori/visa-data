@@ -84,6 +84,17 @@ def import_data(database_url: str, data_dir: Path) -> dict[str, int]:
     return counts
 
 
+def verification_query(table: TableSpec, expected: set[tuple[str, ...]]) -> tuple[str, list[str]]:
+    """CSV의 모든 PK가 DB에 존재하는지 확인하는 쿼리와 플랫튼된 파라미터 목록을 만든다.
+    실제 DB 연결 없이 단위 테스트하기 위해 SQL 생성 로직을 분리했다."""
+    pk_columns_sql = ", ".join(f'"{c}"' for c in table.pk)
+    row_placeholders = "(" + ", ".join(["%s"] * len(table.pk)) + ")"
+    placeholders = ", ".join([row_placeholders] * len(expected))
+    flat_params = [value for pk_tuple in expected for value in pk_tuple]
+    sql = f'SELECT count(*) FROM public."{table.name}" WHERE ({pk_columns_sql}) IN ({placeholders})'
+    return sql, flat_params
+
+
 def verify_database(connection, data_dir: Path) -> None:
     """CSV의 모든 PK가 DB에 존재하는지만 확인한다(삭제 정책이 없어 행 수 동일성은
     가정하지 않는다)."""
@@ -92,15 +103,9 @@ def verify_database(connection, data_dir: Path) -> None:
         rows = read_rows(data_dir, table)
         if not rows:
             continue
-        pk_columns_sql = ", ".join(f'"{c}"' for c in table.pk)
         expected = {tuple(row[c] for c in table.pk) for row in rows}
-        row_placeholders = "(" + ", ".join(["%s"] * len(table.pk)) + ")"
-        placeholders = ", ".join([row_placeholders] * len(expected))
-        flat_params = [value for pk_tuple in expected for value in pk_tuple]
-        found = connection.execute(
-            f'SELECT count(*) FROM public."{name}" WHERE ({pk_columns_sql}) IN ({placeholders})',
-            flat_params,
-        ).fetchone()[0]
+        sql, flat_params = verification_query(table, expected)
+        found = connection.execute(sql, flat_params).fetchone()[0]
         if found != len(expected):
             raise RuntimeError(f"{name}: CSV {len(expected)}건 중 {found}건만 DB에서 확인됨")
 
