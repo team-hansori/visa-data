@@ -70,8 +70,19 @@ def import_data(database_url: str, data_dir: Path) -> dict[str, int]:
     except ImportError as exc:  # pragma: no cover - environment-specific guidance
         raise RuntimeError("psycopg is required: uv sync") from exc
 
+    try:
+        connection = psycopg.connect(database_url)
+    except Exception as exc:
+        # psycopg는 malformed DSN 등 일부 오류에서 원본 예외 메시지에 자격증명 조각을
+        # 그대로 포함시킨다(예: 퍼센트 인코딩 안 된 비밀번호가 있으면 그 값 일부가 그대로
+        # 노출됨) — 그래서 여기서 str(exc)를 절대 그대로 전파하지 않는다.
+        raise RuntimeError(
+            f"{safe_target(database_url)} 연결 실패: {type(exc).__name__} "
+            "(자격증명 노출 방지를 위해 원본 메시지 생략 — DATABASE_URL 형식과 자격증명을 확인할 것)"
+        ) from None
+
     counts: dict[str, int] = {}
-    with psycopg.connect(database_url) as connection:
+    with connection:
         with connection.transaction():
             with connection.cursor() as cursor:
                 for name in TABLE_ORDER:

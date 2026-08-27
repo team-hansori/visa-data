@@ -1,6 +1,10 @@
 """import_reference_data.py 회귀 테스트."""
 
-from scripts.import_reference_data import upsert_sql, verification_query
+from pathlib import Path
+
+import pytest
+
+from scripts.import_reference_data import import_data, upsert_sql, verification_query
 from scripts.reference_schema import (
     AGENCY_CONTACTS,
     RISK_KEYWORD_MESSAGES,
@@ -74,3 +78,13 @@ def test_verification_query_empty_expected_set():
     # SQL should still be well-formed (though unused when expected is empty)
     assert 'SELECT count(*) FROM public."agency_contacts"' in sql
     assert params == []
+
+
+def test_connect_failure_never_leaks_raw_dsn_in_error_message():
+    """malformed DSN(퍼센트 인코딩 안 된 비밀번호 등)으로 연결 실패 시 psycopg의 원본
+    예외 메시지에 자격증명 조각이 그대로 담겨 있어도 그걸 그대로 전파하면 안 된다."""
+    bad_url = "postgresql://user:bad%secret@localhost:5432/db"
+    with pytest.raises(RuntimeError) as excinfo:
+        import_data(bad_url, Path("reference"))
+    assert "bad%secret" not in str(excinfo.value)
+    assert "bad" not in str(excinfo.value)
