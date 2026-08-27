@@ -9,6 +9,7 @@
 
 ### data
 
+- Source_document의 '공식 페이지 미확인' 문구 제거 ([6c9e995](https://github.com/team-hansori/visa-data/commit/6c9e99535d4b889c367951d92fc11e80e90d222c))
 - 4개 기관 operating_hours를 2차 출처(블로그/민원정보 사이트) 기준으로 보강 ([b902ffe](https://github.com/team-hansori/visa-data/commit/b902ffed437e752bfe8ff0d87d76dc6f06bfed7f))
 - 신규 15개 기관 행에 Kakao Local API 좌표 반영 ([5afbfeb](https://github.com/team-hansori/visa-data/commit/5afbfeb71884cdf50d2c501372b177ca83d7f66e))
 - 실증 4개 지역 지도 노출용 기관 15행 추가 (좌표 제외) ([3e412f6](https://github.com/team-hansori/visa-data/commit/3e412f66c4535a616f58b2cb4a734b14359d9625))
@@ -68,6 +69,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([fb41535](https://github.com/team-hansori/visa-data/commit/fb41535151d278b11a3f05b270a8f432e5713809))
 - CHANGELOG 자동 업데이트 [skip ci] ([03e177c](https://github.com/team-hansori/visa-data/commit/03e177cdcb68e14e896c170eabd28a9a141da0dd))
 - 이슈 #51 구현 계획 문서 2건 추가 (스키마 SDD 계획, 데이터 수집 계획 v2) ([1925074](https://github.com/team-hansori/visa-data/commit/19250744f27abab192dc7c36c8704670ddf58a61))
 - 지도 탭 기관·위험 라우팅 스키마 설계 문서 추가 (#51) ([0615085](https://github.com/team-hansori/visa-data/commit/0615085b2b4198b996b5a38b0dc026bd51b49ebe))
