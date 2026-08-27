@@ -113,7 +113,7 @@ class TestF2RDocumentSourceCoverage:
             and row["source_record_id"] == ROUND_17_ID
             and row["target_table"] == "visa_process_stages"
         ]
-        assert len(rows) == 2
+        assert len(rows) == 4
         assert {row["target_record_id"] for row in rows} == F2R_STAGE_IDS
         assert {row["mapping_action"] for row in rows} == {"TRANSFORM"}
         assert {row["mapping_status"] for row in rows} == {"MAPPED"}
@@ -153,7 +153,9 @@ class TestF2RDocumentSemantics:
 class TestF2RAttachmentIntegrity:
     def test_document_stage_fks_belong_to_f2r(self):
         assert {(row["stage_order"], row["stage_code"]) for row in F2R_STAGE_ROWS} == {
+            ("1", "NOTICE_PUBLICATION"),
             ("2", "APPLICATION_SUBMISSION"),
+            ("3", "RECOMMENDATION_REVIEW"),
             ("4", "STATUS_CHANGE_APPLICATION"),
         }
         assert len(F2R_DOCUMENT_ROWS) == 45
