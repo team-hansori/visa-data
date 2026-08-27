@@ -4,10 +4,14 @@
 
 ### CI/CD
 
+- Reference 스키마 검증·importer dry-run·migration 회귀를 CI에 연결 ([ed1a9e0](https://github.com/team-hansori/visa-data/commit/ed1a9e0a466d4c6ad49177600bd7ef4920352b68))
 - Validate_common_schema_v2.py를 CI에 연결하고 README에 문서화 (#44) ([81c0f0a](https://github.com/team-hansori/visa-data/commit/81c0f0aa60e47f08c28c5c4137f67e95732ece84))
 
 ### data
 
+- 신규 15개 기관 행에 Kakao Local API 좌표 반영 ([5afbfeb](https://github.com/team-hansori/visa-data/commit/5afbfeb71884cdf50d2c501372b177ca83d7f66e))
+- 실증 4개 지역 지도 노출용 기관 15행 추가 (좌표 제외) ([3e412f6](https://github.com/team-hansori/visa-data/commit/3e412f66c4535a616f58b2cb4a734b14359d9625))
+- Agency_contacts.csv에 지도용 컬럼 12개 추가(기존 97행 값 불변, is_active=true 백필) ([fe5c221](https://github.com/team-hansori/visa-data/commit/fe5c221d7395d45068f62b16fc906c27bfddd64b))
 - 회차 대조 완료 상태 반영 (#40) ([5e39cdd](https://github.com/team-hansori/visa-data/commit/5e39cddb2648ed52d472b57d72bc4c2426b7d49c))
 - E-7-4R history 및 공통 매핑 반영 (#40) ([1489fa6](https://github.com/team-hansori/visa-data/commit/1489fa68aba903b434bce6bd433cf8aa685372bf))
 - 리뷰 결정 반영 (#40) ([e9c1720](https://github.com/team-hansori/visa-data/commit/e9c17201d357cfaa420970ba148594c565438b32))
@@ -63,6 +67,9 @@
 
 ### 문서
 
+- 이슈 #51 구현 계획 문서 2건 추가 (스키마 SDD 계획, 데이터 수집 계획 v2) ([1925074](https://github.com/team-hansori/visa-data/commit/19250744f27abab192dc7c36c8704670ddf58a61))
+- 지도 탭 기관·위험 라우팅 스키마 설계 문서 추가 (#51) ([0615085](https://github.com/team-hansori/visa-data/commit/0615085b2b4198b996b5a38b0dc026bd51b49ebe))
+- CHANGELOG 자동 업데이트 [skip ci] ([939fd98](https://github.com/team-hansori/visa-data/commit/939fd986a1919bcbc5944b7eba669b698bba3c65))
 - 이슈 45 테스트 수정 리포트 추가 ([e21f566](https://github.com/team-hansori/visa-data/commit/e21f5660742eb6f1bbd4843843ad373fadd76082))
 - Risk_routing_table README 설계 원칙 순서·서술 정리 ([9a7c461](https://github.com/team-hansori/visa-data/commit/9a7c4610941bffa04b80a31f0eae3f0e71dad52d))
 - Risk_routing_table 빈칸(NULL) 의미를 컬럼별로 명문화, source_page N/A 리터럴 제거 ([b080b86](https://github.com/team-hansori/visa-data/commit/b080b86e101b629b3dcd7b04c8176e673acfc25f))
@@ -123,6 +130,9 @@
 
 ### 버그 수정
 
+- DB 연결 실패 시 psycopg 원본 예외 메시지에서 자격증명 노출 방지 ([cd5ca00](https://github.com/team-hansori/visa-data/commit/cd5ca008bfbac995953969642f27b5fb34425e3b))
+- 최종 브랜치 리뷰 Important 지적 3건 반영 (VIEW 사용 드리프트, CHECK 제약 명명, runbook 갱신) ([20abc69](https://github.com/team-hansori/visa-data/commit/20abc6966a4e7a5762f5616befc9a2f0d1aaa7b3))
+- Agency_contacts.csv 마이그레이션 스크립트 원자적 쓰기로 변경 ([b03e5a0](https://github.com/team-hansori/visa-data/commit/b03e5a0c7f6ab8e9e54150994dfc77e042b4f1af))
 - 충주지청 지역대표번호 안내를 행별 문구로 분리 (#45) ([567f501](https://github.com/team-hansori/visa-data/commit/567f501c3079bc07d6c8d56aba446d8179c6f2f0))
 - Risk_routing_table.csv BOM 제거, source_page N/A 리터럴 제거 ([e506655](https://github.com/team-hansori/visa-data/commit/e50665543fe6a23d31b7bb59327695e4c37f185f))
 - FK 검증기에 risk 메시지 커버리지 검사와 조건부 nullable FK 추가 ([27ac003](https://github.com/team-hansori/visa-data/commit/27ac00309345a457988187b3fd2238f25c69ac0d))
@@ -172,6 +182,11 @@
 
 ### 새 기능
 
+- Agency_contacts 지도용 컬럼(agency_type/좌표/is_active) 검증 규칙 추가 ([b04268d](https://github.com/team-hansori/visa-data/commit/b04268d71d03d8ff6710fd25421d266ee7f089fd))
+- Reference 3개 테이블 Supabase importer 추가 ([ea17fdd](https://github.com/team-hansori/visa-data/commit/ea17fddab3b2a91a28859631b4adda626f7d415d))
+- Agency_contacts/risk_routing_table/risk_keyword_messages Supabase migration 추가 ([03b9174](https://github.com/team-hansori/visa-data/commit/03b91746c3b6e07a9255c69b64b94fe68fccdb1a))
+- Agency_contacts.csv 지도용 컬럼 마이그레이션 스크립트 추가 ([c1c8e8c](https://github.com/team-hansori/visa-data/commit/c1c8e8c731b96792153fb81ab2ab33edf7d1dba0))
+- Reference 3개 테이블(agency_contacts/risk_routing_table/risk_keyword_messages) 스키마 SSOT 추가 ([bc35a93](https://github.com/team-hansori/visa-data/commit/bc35a93cef43176e62cbf66f8b10f73b0ce10d55))
 - 공통 스키마 v2 Supabase migration 및 데이터 importer 구축 (#47) ([979617a](https://github.com/team-hansori/visa-data/commit/979617a8b07d19bdcb3d530cb0e0857b20eef22e))
 - [자동화] 공통 UUID 생성 및 중복 검증 스크립트 추가 (#37) ([7739a95](https://github.com/team-hansori/visa-data/commit/7739a95008193ac65b0a2f3358fe4852fffc74da))
 - F-2-R 공통 마스터 매핑 추가 (#39) ([ba2ad92](https://github.com/team-hansori/visa-data/commit/ba2ad923a9ad6e72c9e95dbf2a665269c752907c))
@@ -201,6 +216,7 @@
 
 ### 테스트
 
+- Import_reference_data.py verify_database 복합 PK SQL 생성 로직 단위 테스트 추가 ([5b36c3e](https://github.com/team-hansori/visa-data/commit/5b36c3e9cc88a52dddf6cdbec56a80195d9cdecf))
 - Validate_fk_integrity 테스트를 신규 API(fks 튜플, nullable_fks, risk 메시지 커버리지)에 맞춰 갱신 ([28940b5](https://github.com/team-hansori/visa-data/commit/28940b529ffdb277e248377820c044a70ee6c289))
 - Validate_fk_integrity.py를 reference/ 테이블까지 확장 ([6912d3e](https://github.com/team-hansori/visa-data/commit/6912d3e63c9347879d95825ea7b16f3996aa1e58))
 - V2 통합·회귀 검증 및 순환참조 무결성 검사 추가 (#44) ([f7953b8](https://github.com/team-hansori/visa-data/commit/f7953b87cfe46cd22c7168466db3cfa44c0cb722))
