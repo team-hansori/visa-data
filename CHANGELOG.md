@@ -9,6 +9,7 @@
 
 ### data
 
+- 4개 기관 operating_hours를 2차 출처(블로그/민원정보 사이트) 기준으로 보강 ([b902ffe](https://github.com/team-hansori/visa-data/commit/b902ffed437e752bfe8ff0d87d76dc6f06bfed7f))
 - 신규 15개 기관 행에 Kakao Local API 좌표 반영 ([5afbfeb](https://github.com/team-hansori/visa-data/commit/5afbfeb71884cdf50d2c501372b177ca83d7f66e))
 - 실증 4개 지역 지도 노출용 기관 15행 추가 (좌표 제외) ([3e412f6](https://github.com/team-hansori/visa-data/commit/3e412f66c4535a616f58b2cb4a734b14359d9625))
 - Agency_contacts.csv에 지도용 컬럼 12개 추가(기존 97행 값 불변, is_active=true 백필) ([fe5c221](https://github.com/team-hansori/visa-data/commit/fe5c221d7395d45068f62b16fc906c27bfddd64b))
@@ -67,6 +68,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([03e177c](https://github.com/team-hansori/visa-data/commit/03e177cdcb68e14e896c170eabd28a9a141da0dd))
 - 이슈 #51 구현 계획 문서 2건 추가 (스키마 SDD 계획, 데이터 수집 계획 v2) ([1925074](https://github.com/team-hansori/visa-data/commit/19250744f27abab192dc7c36c8704670ddf58a61))
 - 지도 탭 기관·위험 라우팅 스키마 설계 문서 추가 (#51) ([0615085](https://github.com/team-hansori/visa-data/commit/0615085b2b4198b996b5a38b0dc026bd51b49ebe))
 - CHANGELOG 자동 업데이트 [skip ci] ([939fd98](https://github.com/team-hansori/visa-data/commit/939fd986a1919bcbc5944b7eba669b698bba3c65))
