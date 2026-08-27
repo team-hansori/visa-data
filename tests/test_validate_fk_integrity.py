@@ -7,6 +7,7 @@ from pathlib import Path
 
 from scripts.validate_fk_integrity import (
     TableSpec,
+    check_agency_contacts_map_columns,
     check_document_requirements_status,
     check_fk_integrity,
     check_pk_uniqueness,
@@ -511,3 +512,99 @@ class TestCheckRiskMessageCoverage:
         assert len(errors) == 1
         assert "중복" in errors[0]
         assert str(messages_path) in errors[0]
+
+
+class TestCheckAgencyContactsMapColumns:
+    HEADER = [
+        "agency_id",
+        "category_major",
+        "category_minor",
+        "region",
+        "department_name",
+        "address",
+        "phone",
+        "url",
+        "target_audience",
+        "is_user_facing",
+        "valid_from",
+        "valid_to",
+        "source_document",
+        "source_page",
+        "last_verified_at",
+        "agency_type",
+        "sido",
+        "sigungu",
+        "eupmyeondong",
+        "road_address",
+        "latitude",
+        "longitude",
+        "geocode_method",
+        "geocoded_at",
+        "operating_hours",
+        "is_active",
+        "source_url",
+    ]
+
+    def base_row(self, **overrides):
+        row = {column: "" for column in self.HEADER}
+        row.update(
+            agency_id="a1",
+            category_major="X",
+            category_minor="Y",
+            region="청주",
+            department_name="테스트기관",
+            phone="043-000-0000",
+            target_audience="STUDENT",
+            is_user_facing="true",
+            valid_from="2026-01-01",
+            source_document="doc.pdf",
+            last_verified_at="2026-08-01",
+            is_active="true",
+        )
+        row.update(overrides)
+        return row
+
+    def test_valid_row_without_map_pin_passes(self, tmp_path: Path):
+        path = tmp_path / "agency_contacts.csv"
+        write_csv(path, self.HEADER, [self.base_row()])
+        assert check_agency_contacts_map_columns(path) == []
+
+    def test_valid_map_pin_row_passes(self, tmp_path: Path):
+        path = tmp_path / "agency_contacts.csv"
+        row = self.base_row(
+            agency_type="COMMUNITY_CENTER",
+            sido="충청북도",
+            sigungu="청주시",
+            road_address="충청북도 청주시 상당구 1",
+            latitude="36.6",
+            longitude="127.5",
+            geocode_method="Kakao Map API",
+            geocoded_at="2026-08-20",
+        )
+        write_csv(path, self.HEADER, [row])
+        assert check_agency_contacts_map_columns(path) == []
+
+    def test_flags_invalid_agency_type(self, tmp_path: Path):
+        path = tmp_path / "agency_contacts.csv"
+        write_csv(path, self.HEADER, [self.base_row(agency_type="NOT_A_REAL_TYPE")])
+        errors = check_agency_contacts_map_columns(path)
+        assert any("agency_type" in e for e in errors)
+
+    def test_flags_invalid_is_active(self, tmp_path: Path):
+        path = tmp_path / "agency_contacts.csv"
+        write_csv(path, self.HEADER, [self.base_row(is_active="")])
+        errors = check_agency_contacts_map_columns(path)
+        assert any("is_active" in e for e in errors)
+
+    def test_flags_latitude_without_longitude(self, tmp_path: Path):
+        path = tmp_path / "agency_contacts.csv"
+        write_csv(path, self.HEADER, [self.base_row(latitude="36.6")])
+        errors = check_agency_contacts_map_columns(path)
+        assert any("latitude/longitude" in e for e in errors)
+
+    def test_flags_latitude_without_required_metadata(self, tmp_path: Path):
+        path = tmp_path / "agency_contacts.csv"
+        row = self.base_row(latitude="36.6", longitude="127.5")  # road_address 등 누락
+        write_csv(path, self.HEADER, [row])
+        errors = check_agency_contacts_map_columns(path)
+        assert any("road_address" in e for e in errors)

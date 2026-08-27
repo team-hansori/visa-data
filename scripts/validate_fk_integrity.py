@@ -13,6 +13,8 @@ import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from scripts.reference_schema import AGENCY_TYPE_VALUES
+
 D_DIR = Path("extraction/D_visa_requirements")
 REFERENCE_DIR = Path("reference")
 STAGE_STATUS_COLUMN = "document_requirements_status"
@@ -85,7 +87,26 @@ def reference_tables(base_dir: Path = REFERENCE_DIR) -> list[TableSpec]:
     agency_contacts = base_dir / "agency_contacts.csv"
     risk_keyword_messages = base_dir / "risk_keyword_messages.csv"
     return [
-        TableSpec(agency_contacts, pk="agency_id"),
+        TableSpec(
+            agency_contacts,
+            pk="agency_id",
+            # 지도 기능용 신규 컬럼 — 헤더 존재만 검사(값 규칙은
+            # check_agency_contacts_map_columns가 별도로 검사).
+            required_columns=(
+                "agency_type",
+                "sido",
+                "sigungu",
+                "eupmyeondong",
+                "road_address",
+                "latitude",
+                "longitude",
+                "geocode_method",
+                "geocoded_at",
+                "operating_hours",
+                "is_active",
+                "source_url",
+            ),
+        ),
         TableSpec(
             risk_keyword_messages,
             pk=None,  # keyword_category+resolution_type 복합키라 단일 PK 검사는 건너뜀
@@ -306,6 +327,44 @@ def check_risk_message_coverage(routing_path: Path, messages_path: Path) -> list
     return errors
 
 
+AGENCY_CONTACTS_FILENAME = "agency_contacts.csv"
+COORDINATE_METADATA_COLUMNS = (
+    "agency_type",
+    "road_address",
+    "sido",
+    "sigungu",
+    "geocode_method",
+    "geocoded_at",
+)
+
+
+def check_agency_contacts_map_columns(path: Path) -> list[str]:
+    """agency_contacts.csv의 지도 기능용 신규 컬럼이 docs/map-agency-schema.md §1.5/§1.6
+    규칙을 지키는지 검사한다: agency_type enum, is_active 값, 좌표 페어링, 좌표가 있으면
+    필수 메타데이터(§1.5의 DB CHECK와 동일하게 좌표 기준 — agency_type 기준이 아님)."""
+    rows = read_rows(path)
+    errors: list[str] = []
+    for i, row in enumerate(rows, start=2):
+        agency_type = row.get("agency_type", "")
+        if agency_type and agency_type not in AGENCY_TYPE_VALUES:
+            errors.append(f"{path}:{i} - agency_type={agency_type!r}가 허용된 enum이 아님")
+
+        is_active = row.get("is_active", "")
+        if is_active not in ("true", "false"):
+            errors.append(f"{path}:{i} - is_active 값이 'true'/'false'가 아님: {is_active!r}")
+
+        latitude = row.get("latitude", "")
+        longitude = row.get("longitude", "")
+        if bool(latitude) != bool(longitude):
+            errors.append(f"{path}:{i} - latitude/longitude 중 한쪽만 비어 있음")
+
+        if latitude:
+            for column in COORDINATE_METADATA_COLUMNS:
+                if not row.get(column, ""):
+                    errors.append(f"{path}:{i} - latitude가 있는데 {column}이 비어 있음")
+    return errors
+
+
 def validate(tables: list[TableSpec]) -> list[str]:
     """모든 테이블에 대해 필수 컬럼 존재, PK 유일성, FK 참조 무결성을 검사하고 에러 목록을 반환한다."""
     errors: list[str] = []
@@ -346,6 +405,12 @@ def validate(tables: list[TableSpec]) -> list[str]:
     )
     if routing_table is not None and messages_table is not None:
         errors.extend(check_risk_message_coverage(routing_table.path, messages_table.path))
+
+    agency_contacts_table = next(
+        (t for t in checkable_tables if t.path.name == AGENCY_CONTACTS_FILENAME), None
+    )
+    if agency_contacts_table is not None:
+        errors.extend(check_agency_contacts_map_columns(agency_contacts_table.path))
 
     return errors
 

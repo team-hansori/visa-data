@@ -6,7 +6,7 @@
 
 | 파일 | 내용 |
 |------|------|
-| `agency_contacts.csv` | 충북 시군별 가족센터·다문화가족지원센터·외국인지원센터 연락처. `url` 컬럼 추가됨(전화 다음 위치) — 기존 행은 아직 URL 미검증이라 빈 값, 추가 조사 필요 |
+| `agency_contacts.csv` | 충북 시군별 가족센터·다문화가족지원센터·외국인지원센터 연락처. `url` 컬럼 추가됨(전화 다음 위치) — 기존 행은 아직 URL 미검증이라 빈 값, 추가 조사 필요. 지도 탭용 컬럼 12개(`agency_type`/좌표/`is_active` 등, 이슈 #51)가 끝에 추가됨 — 스키마는 `docs/map-agency-schema.md` 참고 |
 | `risk_routing_table.csv` | ⑤번 위험 키워드 감지 기능의 라우팅 규칙표. 사용자 대화에서 위험 신호(임금체불·산재·폭행·불법취업·거주지 유지의무 위반 등)가 감지되면 AI가 직접 답하지 않고 전문기관으로 연결한다. `admin_guide_corpus`(사용자가 물어봤을 때만 답하는 RAG)와 달리 선제적으로 개입하는 성격이 다르다 |
 | `risk_keyword_messages.csv` | `risk_routing_table.csv`의 `keyword_category`+`resolution_type`별 공통 안내 문구(boilerplate). 지역별로 반복되던 `escalation_message_template`을 카테고리 단위로 분리해 문구 수정 시 한 곳만 고치면 되도록 함. 실제 발송 메시지는 앱이 `message_stem` + 라우팅 행의 `message_addendum`(있는 경우) + 연락처 정보를 조합해 만든다. |
 
