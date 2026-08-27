@@ -69,6 +69,7 @@
 
 ### 문서
 
+- CHANGELOG 자동 업데이트 [skip ci] ([4e99fcd](https://github.com/team-hansori/visa-data/commit/4e99fcd77446d6fa55562461811ab272ab33f096))
 - CHANGELOG 자동 업데이트 [skip ci] ([fb41535](https://github.com/team-hansori/visa-data/commit/fb41535151d278b11a3f05b270a8f432e5713809))
 - CHANGELOG 자동 업데이트 [skip ci] ([03e177c](https://github.com/team-hansori/visa-data/commit/03e177cdcb68e14e896c170eabd28a9a141da0dd))
 - 이슈 #51 구현 계획 문서 2건 추가 (스키마 SDD 계획, 데이터 수집 계획 v2) ([1925074](https://github.com/team-hansori/visa-data/commit/19250744f27abab192dc7c36c8704670ddf58a61))
@@ -186,6 +187,8 @@
 
 ### 새 기능
 
+- Complete F-2-R process stages ([acaf4de](https://github.com/team-hansori/visa-data/commit/acaf4de6754c6c009aa8c17201e213452835e8fc))
+- Add F-4-R document requirements ([bb540c4](https://github.com/team-hansori/visa-data/commit/bb540c414f63edc31d6d6811ad744e53d12a0ef4))
 - Agency_contacts 지도용 컬럼(agency_type/좌표/is_active) 검증 규칙 추가 ([b04268d](https://github.com/team-hansori/visa-data/commit/b04268d71d03d8ff6710fd25421d266ee7f089fd))
 - Reference 3개 테이블 Supabase importer 추가 ([ea17fdd](https://github.com/team-hansori/visa-data/commit/ea17fddab3b2a91a28859631b4adda626f7d415d))
 - Agency_contacts/risk_routing_table/risk_keyword_messages Supabase migration 추가 ([03b9174](https://github.com/team-hansori/visa-data/commit/03b91746c3b6e07a9255c69b64b94fe68fccdb1a))
@@ -220,6 +223,7 @@
 
 ### 테스트
 
+- Update F-2-R stage coverage expectations ([ecd7ee1](https://github.com/team-hansori/visa-data/commit/ecd7ee1914368e326224fffc7884bc988fea5a8c))
 - Import_reference_data.py verify_database 복합 PK SQL 생성 로직 단위 테스트 추가 ([5b36c3e](https://github.com/team-hansori/visa-data/commit/5b36c3e9cc88a52dddf6cdbec56a80195d9cdecf))
 - Validate_fk_integrity 테스트를 신규 API(fks 튜플, nullable_fks, risk 메시지 커버리지)에 맞춰 갱신 ([28940b5](https://github.com/team-hansori/visa-data/commit/28940b529ffdb277e248377820c044a70ee6c289))
 - Validate_fk_integrity.py를 reference/ 테이블까지 확장 ([6912d3e](https://github.com/team-hansori/visa-data/commit/6912d3e63c9347879d95825ea7b16f3996aa1e58))
